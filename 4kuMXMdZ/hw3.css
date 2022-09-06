@@ -1,0 +1,63 @@
+body {
+    background-color: white;
+    height: 100%;
+}
+#wrapper {
+    position: absolute;
+    margin: auto;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 580px;
+    height: 100%;
+    background-color: white;
+    text-align: center;
+}
+a:link {
+    margin: 7px;
+    text-decoration: none;
+}
+header {
+    border: 2px solid black; 
+    margin: 30px 55px 60px;
+    text-align: center;
+}
+h1 {
+    font-size: 40px;
+    font-weight: normal;
+    margin: 15px 10px 0px;
+    font-family: Georgia;
+}
+a.hlink{
+    font-size: 9px;
+    font-style: italic;
+    font-family: Georgia;
+    color: black;
+}
+a.links {
+    font-size: 9px;
+    font-style: italic;
+    font-family: Georgia;
+    color: grey;
+}
+img.cropper {
+    object-fit: cover;
+    object-position: center;
+    margin: 1px auto;
+    width: 550px;
+    height: 550px;
+}
+div.footnote {
+    margin-bottom: 20px;
+}
+p.copyright {
+    font-size: 8px;
+    font-style: italic;
+    margin: 30px 20px 20px;
+    font-family: Georgia;
+}
+img.socialmedia {
+    width: 15px;
+    height: 15px;
+}
