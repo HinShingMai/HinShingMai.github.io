@@ -257,7 +257,7 @@ function drawControlBar(x, y) {
     ellipse(x, y, h/25, h/25);
   
     
-    image(cursor_img, x-0.4*h*cos(angAcc), y-0.4*h*sin(angAcc));
+    image(cursor_img, x-0.4*h*cos(angAcc), y-0.4*h*sin(angAcc), 16, 16);
 }
 function handleMouseMove(e) {
     if(isDraw) {
