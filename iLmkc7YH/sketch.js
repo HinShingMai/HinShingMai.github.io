@@ -9,9 +9,11 @@ var dotX;
 var dotY;
 var dotV;
 var dotA;
-var maxX = 160;
-var width_x = 24;
+var maxX;
+var width_x = 240;
 var scaling = 1.5;
+var scaling_x;
+var scaling_y;
 var angAcc;
 var lines;
 var currentSession = 0;
@@ -20,21 +22,18 @@ var offset;
 var blockType;
 var isDraw;
 var path;
-var dotU;
 var act;
-var handleMode = -1;
-var locked = -1;
+//var handleMode = -1;
+//var locked = -1;
 var h;
 var maxA;
+var maxPoints;
 //X: +-15
 //Theta: +-2rad
 //AngAcc: +-4rad
 var subjTrials = {
     fullname: null,
-    type : -1,
-    ground : [],
-    states : [],
-    actions : []
+    blocks : []
 }
 var textDesc = [
     "short testing session of normal control",
@@ -46,7 +45,6 @@ var textDesc = [
 function setup() {
     isDraw = false;
     maxA = PI/2;
-    h = min(windowHeight*1/6, 100);
     select('#endDiv').hide();
     select('#instrDiv').hide();
     startGame();
@@ -54,13 +52,14 @@ function setup() {
 function trainBlockStart() {
     blockType = trainBlocks[currentTrainBlock];
     offset = 1-blockType;
-    subjTrials.type = blockType;
+    //subjTrials.type = blockType;
     currentSession = 0;
     sessionInfo(0);
 }
 function trainBlockNext() {
-    subjTrials.states.push(path);
-    subjTrials.actions.push(act);
+    //subjTrials.states.push(path);
+    //subjTrials.actions.push(act);
+    subjTrials.blocks.push({mode:blockType, states:path, actions:act, ground:lines})
     currentSession += 1;
     if(currentSession<2)
         sessionInfo(0);
@@ -74,49 +73,55 @@ function startSession(type) {
     dotY = 0;
     dotV = 1;
     dotA = 0;
-    dotU = 0;
     angAcc = 0;
-    width_x = windowWidth/2;
+    dotU =0;
+    //width_x = 240;
+    maxX = 260;
     isDraw = true;
-    document.onclick = null;
-    document.onmousemove = handleMouseMove;
+    select('#container-exp').show()
+    document.getElementById("container-exp").onmousemove = handleMouseMove;
+    //document.onclick = null;
+    //document.onmousemove = handleMouseMove;
     path = []; 
     act = [];
-    var maxPoints = 0;
+    maxPoints = 0;
     if(type == 0)
-        maxPoints = 1000;
+        maxPoints = 1000; //1000
     else if(type == 1)
-        maxPoints = 10000;
+        maxPoints = 10000; //10000
     lines = sinuousCurve(maxPoints);
-    subjTrials.ground.push(lines);
+    //subjTrials.ground.push(lines);
     clear();
-    //var timer = setTimeout(trainBlockNext, type==0? 8000: 20000);
     timeout = maxPoints+60;
     frameNum = 0;
     loop();
 }
 function sessionInfo(type) {
-    document.onmousemove = null;
+    //document.onmousemove = null;
     noLoop();
     handleMode = -1;
     locked = -1;
     clear();
     isdraw = false;
     let htmlDiv = select('#endDiv');
+    let instr = select('#endInstr');
+    select('#container-exp').hide()
+    document.getElementById("container-exp").onmousemove = null;
+    let button = document.getElementById("startBt");
     if(type == 0) {
         offset = 1-offset;
-        htmlDiv.html(`<br><br>Session ${currentSession}/${sessions} of Block ${currentTrainBlock+1}/${totalTrainBlocks+1} completed.<br>The next session is a ${textDesc[offset]}.<br>Click to continue.`);
-        document.onclick = ()=>{select('#endDiv').hide();startSession(type);};
+        instr.html(`<br><br>Session ${currentSession}/${sessions} of Block ${currentTrainBlock+1}/${totalTrainBlocks+1} completed.<br>The next session is a ${textDesc[offset]}.<br>Click the Continue button to proceed.`);
+        button.onclick = ()=>{select('#endDiv').hide();startSession(type);};
     } else if(type == 1) {
         offset = 1-offset;
-        htmlDiv.html(`<br><br>Session ${currentSession}/${sessions} of Block ${currentTrainBlock+1}/${totalTrainBlocks+1} completed.<br>The next session is a ${textDesc[2+offset]}.<br>Click to continue.`);
-        document.onclick = ()=>{select('#endDiv').hide();startSession(type);};
+        instr.html(`<br><br>Session ${currentSession}/${sessions} of Block ${currentTrainBlock+1}/${totalTrainBlocks+1} completed.<br>The next session is a ${textDesc[2+offset]}.<br>Click the Continue button to proceed.`);
+        button.onclick = ()=>{select('#endDiv').hide();startSession(type);};
     } else if(currentTrainBlock < totalTrainBlocks){
-        htmlDiv.html(`<br><br>Session ${currentSession}/${sessions} of Block ${currentTrainBlock+1}/${totalTrainBlocks+1} completed.<br>Click to proceed to next training block.`);
-        document.onclick = ()=>{select('#endDiv').hide();currentTrainBlock++; trainBlockStart();};
+        instr.html(`<br><br>Session ${currentSession}/${sessions} of Block ${currentTrainBlock+1}/${totalTrainBlocks+1} completed.<br>Click the Continue button to proceed to next training block.`);
+        button.onclick = ()=>{select('#endDiv').hide();currentTrainBlock++; trainBlockStart();};
     } else{
-        htmlDiv.html(`<br><br>Session ${currentSession}/${sessions} of Block ${currentTrainBlock+1}/${totalTrainBlocks+1} completed.<br>Click to proceed.`);
-        document.onclick = ()=>{select('#endDiv').hide();currentTrainBlock++; endGame();};
+        instr.html(`<br><br>Session ${currentSession}/${sessions} of Block ${currentTrainBlock+1}/${totalTrainBlocks+1} completed.<br>Click the Continue button to proceed.`);
+        button.onclick = ()=>{select('#endDiv').hide();currentTrainBlock++; endGame();};
     }
     htmlDiv.show();
     
@@ -129,29 +134,38 @@ function draw() {
             trainBlockNext();
             return;
         }
-        translate(windowWidth/2, windowHeight*2/3 - dotY*scaling);
-        dotA = fixBetween(dotA + angAcc, -maxA, +maxA);
-        dotX = fixBetween(dotX + dotV*dotA, -windowWidth/3, windowWidth/3);
-        dotY -= dotV;
+        h = min(windowHeight*1/6, 100);
+        scaling_x = windowWidth/600;
+        scaling_y = windowHeight/600;
+        translate(windowWidth/2, windowHeight*2/3 - dotY*scaling*scaling_y);
+        if(offset == 0)
+            dotU = fixBetween(angAcc, -maxA, +maxA);
+        else
+            dotU = fixBetween(-angAcc, -maxA, +maxA);
+        dotA = fixBetween(dotA + dotU, -maxA, +maxA);
+        dotX = fixBetween(dotX + dotA, -maxX, maxX);
+        dotY -= 1;
         //bzCurve(lines, 0.3, 1);
-        drawCurve(lines, int(-(dotY+windowHeight/2/scaling)), int(-(dotY-windowHeight/scaling))); //int(max(0, -(dotY+height/2)/4)), int(-(dotY-height)/4))
+        drawCurve(lines, int(-(dotY+windowHeight/2/scaling/scaling_y)), int(-(dotY-windowHeight/scaling/scaling_y))); //int(max(0, -(dotY+height/2)/4)), int(-(dotY-height)/4))
         stroke('blue');
         fill('blue');
-        heading = atan2(dotA, 1);
-        triangle(dotX*scaling, dotY*scaling, dotX*scaling-10*sin(heading)+4*cos(heading), dotY*scaling+10*cos(heading)+4*sin(heading), dotX*scaling-10*sin(heading)-4*cos(heading), dotY*scaling+10*cos(heading)-4*sin(heading));
-        path.push({x:dotX, a:dotA});
-        act.push(dotU);
+        heading = dotA;//atan2(dotA, 1);
+        triangle(dotX*scaling*scaling_x, dotY*scaling*scaling_y, dotX*scaling*scaling_x-10*sin(heading)+4*cos(heading), dotY*scaling*scaling_y+10*cos(heading)+4*sin(heading), dotX*scaling*scaling_x-10*sin(heading)-4*cos(heading), dotY*scaling*scaling_y+10*cos(heading)-4*sin(heading));
+        if(frameNum < maxPoints) {
+            path.push({x:dotX, a:dotA});
+            act.push(angAcc);
+        }
         //drawControlBar(windowWidth/2-40, dotY*scaling);
         handleMode = isOverHandle();
-        drawControlBar(0, dotY*scaling+windowHeight*1/6);
-        drawAngSpeedBar(-windowWidth/2+110, dotY*scaling+windowHeight*1/6);
-        drawHandleBar(windowWidth/2-110, dotY*scaling+windowHeight*1/6);
+        //drawControlBar(0, dotY*scaling+windowHeight*1/5-50);
+        drawControlBar(0, dotY*scaling*scaling_y+windowHeight*1/6);
+        if(windowWidth > 6*h + 50) {
+          drawAngSpeedBar(-2*h-20, dotY*scaling*scaling_y+windowHeight*1/6);
+          drawHeadingBar(2*h+20, dotY*scaling*scaling_y+windowHeight*1/6);
+        }
         frameNum++;
-        dotU = 0;
+        //angAcc = 0;
     }
-}
-function gradient(a, b) { 
-    return (b.y-a.y)/(b.x-a.x); 
 }
 function fixBetween(x, minimum, maximum) {
     if(x < minimum)
@@ -184,22 +198,16 @@ function drawCurve(coords, start, end) {
     if(endFix > coords.length)
         endFix = coords.length;
     for(let i = startFix+1; i<endFix; i++)
-        line(coords[i-1].x*scaling, -coords[i-1].y*scaling, coords[i].x*scaling, -coords[i].y*scaling);
+        line(coords[i-1].x*scaling*scaling_x, -coords[i-1].y*scaling*scaling_y, coords[i].x*scaling*scaling_x, -coords[i].y*scaling*scaling_y);
 }
-function drawControlBar(x, y) {
+function drawHeadingBar(x, y) {
     fill('white');
+    stroke('black');
     strokeWeight(2);
     //noStroke();
     rect(x-h, y-h/2, 2*h, h);
     noFill();
     stroke('black');
-    /*line(x-h/2, y+h/5, x+h/2, y+h/5);
-    line(x-h/2, y-h/5, x-h/2, y+h/5);
-    line(x+h/2, y-h/5, x+h/2, y+h/5);
-    line(x, y-3*h/10, x, y+3*h/10);
-    stroke('blue');
-    fill('blue');
-    ellipse(x+dotA/maxA*h/2, y, 3*h/10, 3*h/10);*/
     line(x-h/2, y+h/10, x+h/2, y+h/10);
     line(x-h/2, y-h/10, x-h/2, y+h/10);
     line(x+h/2, y-h/10, x+h/2, y+h/10);
@@ -210,6 +218,7 @@ function drawControlBar(x, y) {
 }
 function drawAngSpeedBar(x, y) {
     fill('white');
+    stroke('black');
     strokeWeight(2);
     rect(x-h, y-h/2, 2*h, h);
     noFill();
@@ -222,78 +231,77 @@ function drawAngSpeedBar(x, y) {
     fill('blue');
     rect(x, y-h/20, angAcc/1*h/2, h/10);
 }
-function drawHandleBar(x, y) {
+function drawControlBar(x, y) {
     fill('white');
+    stroke('blue');
     strokeWeight(2);
     //noStroke();
     rect(x-h, y-h/2, 2*h, h);
     noFill();
     stroke('black');
-    line(x-h/2*cos(dotU), y-h/2*sin(dotU), x+h/2*cos(dotU), y+h/2*sin(dotU));
+    line(x-h/2*cos(angAcc), y-h/2*sin(angAcc), x+h/2*cos(angAcc), y+h/2*sin(angAcc));
     strokeWeight(6);
     if(handleMode == 1)
         stroke('blue');
     else
         stroke('black');
-    line(x-h/2*cos(dotU), y-h/2*sin(dotU), x-0.3*h*cos(dotU), y-0.3*h*sin(dotU));
+    line(x-h/2*cos(angAcc), y-h/2*sin(angAcc), x-0.3*h*cos(angAcc), y-0.3*h*sin(angAcc));
     if(handleMode == 2)
         stroke('blue');
     else
         stroke('black');
-    line(x+0.3*h*cos(dotU), y+0.3*h*sin(dotU), x+h/2*cos(dotU), y+h/2*sin(dotU));
+    line(x+0.3*h*cos(angAcc), y+0.3*h*sin(angAcc), x+h/2*cos(angAcc), y+h/2*sin(angAcc));
     stroke('black');
     fill('black');
     ellipse(x, y, h/25, h/25);
+  
+    cursor_img = loadImage('./cursor1.png')
+    image(cursor_img, x-0.4*h*cos(angAcc), y-0.4*h*sin(angAcc));
+}
+function handleMouseMove(e) {
+    if(isDraw) {
+      let scaledMovement = e.movementY/2048;
+      if(offset == 0)
+          angAcc += scaledMovement + moveNoise(currentSession);
+      else
+          angAcc += -scaledMovement + moveNoise(currentSession);
+      angAcc = fixBetween(angAcc, -4, +4);
+    }
 }
 function isOverHandle() {
     if(
         mouseX > windowWidth/2 - h/2*cos(angAcc) - 5 &&
         mouseX < windowWidth/2 - 0.3*h*cos(angAcc) + 5 &&
-        mouseY > windowHeight - h/2 - h/2*sin(angAcc) - 5 &&
-        mouseY < windowHeight - h/2 - 0.3*h*sin(angAcc) + 5
+        mouseY > windowHeight*5/6 - h/2*sin(angAcc) - 5 &&
+        mouseY < windowHeight*5/6 - 0.3*h*sin(angAcc) + 5
     )
         return 1;
     else if(
         mouseX > windowWidth/2 + 0.3*h*cos(angAcc) - 5 &&
         mouseX < windowWidth/2 + h/2*cos(angAcc) + 5 &&
-        mouseY > windowHeight - h/2 + 0.3*h*sin(angAcc) - 5 &&
-        mouseY < windowHeight - h/2 + h/2*sin(angAcc) + 5
+        mouseY > windowHeight*5/6 + 0.3*h*sin(angAcc) - 5 &&
+        mouseY < windowHeight*5/6 + h/2*sin(angAcc) + 5
     )
         return 2;
     return 0;
 }
-function handleMouseMove(e) {
-    let scaledMovementX = e.movementX/1024;
-    if(offset == 0)
-        angAcc += scaledMovementX + moveNoise(currentSession);
-    else
-        angAcc += -scaledMovementX + moveNoise(currentSession);
-    angAcc = fixBetween(angAcc, -4, +4);
-}
-/*function handleMouseMove(e) {
-    let scaledMovementX = e.movementX;
-    if(offset == 0)
-        dotU += scaledMovementX * angAcc + moveNoise(currentSession);
-    else
-        dotU += -scaledMovementX * angAcc + moveNoise(currentSession);
-    //dotA = fixBetween(dotA + dotU, -maxA, +maxA);
-}*/
 function handleClick() {
     startSession();
 }
 function moveNoise(session) {
     return 0;
 }
+
 function startGame() {
     cnv = createCanvas(windowWidth, windowHeight);
+    cnv.parent("container-exp");
     document.body.style.overflow = 'hidden';
-    //fullscreen(true);
     trainBlockStart();
 
 }
 // Function that ends the game appropriately after the experiment has been completed
 function endGame() {
-    cnv.hide();
-    //fullscreen(false);
+    select('#container-exp').hide()
+    document.getElementById("container-exp").onmousemove = null;
     document.body.style.overflow = 'auto';
 }
