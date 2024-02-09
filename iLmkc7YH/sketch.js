@@ -54,6 +54,7 @@ function trainBlockStart() {
     offset = 1-blockType;
     //subjTrials.type = blockType;
     currentSession = 0;
+    cursor_img = loadImage('./cursor1.png')
     sessionInfo(0);
 }
 function trainBlockNext() {
@@ -255,7 +256,7 @@ function drawControlBar(x, y) {
     fill('black');
     ellipse(x, y, h/25, h/25);
   
-    cursor_img = loadImage('./cursor1.png')
+    
     image(cursor_img, x-0.4*h*cos(angAcc), y-0.4*h*sin(angAcc));
 }
 function handleMouseMove(e) {
