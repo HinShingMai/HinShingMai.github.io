@@ -47,6 +47,7 @@ function setup() {
     maxA = PI/2;
     select('#endDiv').hide();
     select('#instrDiv').hide();
+    cursor_img = loadImage('./cursor1.png');
     startGame();
 }
 function trainBlockStart() {
@@ -54,7 +55,6 @@ function trainBlockStart() {
     offset = 1-blockType;
     //subjTrials.type = blockType;
     currentSession = 0;
-    cursor_img = loadImage('./cursor1.png')
     sessionInfo(0);
 }
 function trainBlockNext() {
@@ -257,7 +257,7 @@ function drawControlBar(x, y) {
     ellipse(x, y, h/25, h/25);
   
     
-    image(cursor_img, x-0.4*h*cos(angAcc), y-0.4*h*sin(angAcc), 16, 16);
+    image(cursor_img, x-0.4*h*cos(angAcc)-16, y-0.4*h*sin(angAcc)-16, 32, 32);
 }
 function handleMouseMove(e) {
     if(isDraw) {
