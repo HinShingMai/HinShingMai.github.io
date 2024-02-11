@@ -47,6 +47,7 @@ function setup() {
     maxA = PI/2;
     select('#endDiv').hide();
     select('#instrDiv').hide();
+    cursor_img = loadImage('./cursor1.png')
     startGame();
 }
 function trainBlockStart() {
@@ -255,8 +256,7 @@ function drawControlBar(x, y) {
     fill('black');
     ellipse(x, y, h/25, h/25);
   
-    cursor_img = loadImage('./cursor1.png')
-    image(cursor_img, x-0.4*h*cos(angAcc), y-0.4*h*sin(angAcc));
+    image(cursor_img, x-0.4*h*cos(angAcc)-16, y-0.4*h*sin(angAcc)-16, 32, 32);
 }
 function handleMouseMove(e) {
     if(isDraw) {
