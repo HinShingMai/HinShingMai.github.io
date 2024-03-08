@@ -96,7 +96,7 @@ function startSession(type) {
         maxPoints = 1000; //1000
     else if(type == 1)
         maxPoints = 10000; //10000
-    if(blockType < 2)
+    if(currentSession == 2)
         lines = sinuousCurve(maxPoints);
     else
         lines = straightLine(maxPoints);
@@ -385,7 +385,8 @@ function handleClick() {
 function moveNoise(mode) {
     // Standard Normal variate using Box-Muller transform.
     const mean = 0;
-    const std = 0.5;
+    //const std = 0.5;
+    const std = currentSession==2 ? 0.5 : 2; 
     const u = 1 - Math.random(); // Converting [0,1) to (0,1]
     const v = Math.random();
     const z = Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );

@@ -25,6 +25,8 @@ var isDraw;
 var dis;
 var ang;
 var act;
+var blockErr = [];
+var blockNam = [];
 var h;
 var maxA;
 var maxPoints;
@@ -60,10 +62,9 @@ function trainBlockStart() {
     sessionInfo(0);
 }
 function sessionNext() {
-    //subjTrials.blocks.push({session: [currentTrainBlock, currentSession], mod:blockType, dis:dis, ang:ang, act:act, gnd:lines});
-    //recordTrialSession(trialcollection, {session: [currentTrainBlock, currentSession], mod:blockType, dis:dis, ang:ang, act:act, gnd:lines})
     document.exitPointerLock();
     currentSession += 1;
+    blockNam.push(""+currentTrainBlock+"s"+currentSession+"b"+(currentSession<3?"t":"T")+(offset==0?"n":"r"));
     if(currentSession<2) {
         offset = 1-offset;
         sessionInfo(0);
@@ -76,11 +77,6 @@ function sessionNext() {
         sessionInfo(2);
 }
 function startSession(type) {
-    // Test
-    //e = window.event;
-    //mouseXOffset = e.clientX;
-    //mouseYOffset = e.clientY;
-    
     dotX = 0;
     dotY = 0;
     dotA = 0;
@@ -120,40 +116,55 @@ function sessionInfo(type) {
     let htmlDiv = select('#endDiv');
     let instr = select('#endInstr');
     let plot = select('#plot');
+    var mse;
+    htmlDiv.show();
     if(currentSession > 0) {
-        console.log("Average error: " + avgError(dis, lines));
+        mse = avgError(dis, lines);
+        blockErr.push(mse);
+        //console.log("Average error: " + avgError(dis, lines));
         // Define Data
         const idx = Array.from(Array(maxPoints).keys());
         let data = [
-          {x: idx, y: lines, mode:"lines", line: {color: 'black', width: 3}, name: "Path"},
-          {x: idx, y: dis, mode:"lines", line: {color: 'blue', width: 3}, name: "You"},
+            {x: blockNam, y: blockErr, type: 'scatter', line: {color: 'red', width: 3}, name: 'Error'},
+            {x: idx, y: lines, xaxis: 'x2', yaxis: 'y2', type: 'scatter', mode: 'lines', line: {color: 'black', width: 3}, name: 'Path'},
+            {x: idx, y: dis, xaxis: 'x2', yaxis: 'y2', type: 'scatter', mode: 'lines', line: {color: 'blue', width: 3}, name: 'You'},
         ];
+        // layout
+        var layout = {
+            title: 'Average Mean Square Error and Trajectory',
+            yaxis: {rangemode: "tozero"},
+            grid: {rows: 1, columns: 2, pattern: 'independent'},
+        };
         // Display using Plotly
-        Plotly.newPlot("plot", data, {title: "Trajectory"}, {responsive: true});
         plot.show();
-    } else
+        Plotly.newPlot("plot", data, layout, {responsive: true});
+    } else {
+        mse = -1.0;
         plot.hide();
+    }
+    mse = mse.toFixed(3);
     select('#container-exp').hide()
     document.getElementById("container-exp").onmousemove = null;
     let button = document.getElementById("startBt");
     if(type == 0) {
-        instr.html(`<br><br>Session ${currentSession}/${sessions} of Block ${currentTrainBlock+1}/${totalTrainBlocks} completed.<br>The next session is a ${textDesc[offset]}.<br>Click the Continue button to proceed.`);
+        if(currentSession == 0)
+            instr.html(`<br><br>Session ${currentSession}/${sessions} of Block ${currentTrainBlock+1}/${totalTrainBlocks} completed.<br>The next session is a ${textDesc[offset]}.<br>Click the Continue button to proceed.`);
+        else
+            instr.html(`<br><br>Session ${currentSession}/${sessions} of Block ${currentTrainBlock+1}/${totalTrainBlocks} completed.<br>Mean Square Error: ${mse}<br>The next session is a ${textDesc[offset]}.<br>Click the Continue button to proceed.`);
         button.onclick = ()=>{select('#endDiv').hide();startSession(type);};
     } else if(type == 1) {
-            instr.html(`<br><br>Session ${currentSession}/${sessions} of Block ${currentTrainBlock+1}/${totalTrainBlocks} completed.<br>The next session is a ${textDesc[2+offset]}.<br>Click the Continue button to proceed.`);
+            instr.html(`<br><br>Session ${currentSession}/${sessions} of Block ${currentTrainBlock+1}/${totalTrainBlocks} completed.<br>Mean Square Error: ${mse}<br>The next session is a ${textDesc[2+offset]}.<br>Click the Continue button to proceed.`);
             button.onclick = ()=>{select('#endDiv').hide();startSession(type);};
     } 
     else { 
         if(currentTrainBlock+1 < totalTrainBlocks){
-            instr.html(`<br><br>Session ${currentSession}/${sessions} of Block ${currentTrainBlock+1}/${totalTrainBlocks} completed.<br>Click the Continue button to proceed to next training block.`);
+            instr.html(`<br><br>Session ${currentSession}/${sessions} of Block ${currentTrainBlock+1}/${totalTrainBlocks} completed.<br>Mean Square Error: ${mse}<br>Click the Continue button to proceed to next training block.`);
             button.onclick = ()=>{select('#endDiv').hide(); currentTrainBlock++; trainBlockStart();};
         } else{
-            instr.html(`<br><br>Session ${currentSession}/${sessions} of Block ${currentTrainBlock+1}/${totalTrainBlocks} completed.<br>Click the Continue button to proceed.`);
+            instr.html(`<br><br>Session ${currentSession}/${sessions} of Block ${currentTrainBlock+1}/${totalTrainBlocks} completed.<br>Mean Square Error: ${mse}<br>Click the Continue button to proceed.`);
             button.onclick = ()=>{select('#endDiv').hide(); currentTrainBlock++; endGame();};//select('#endDiv').hide();
         }
     }
-    htmlDiv.show();
-    
 }
 function draw() {
     if(isDraw) {
@@ -174,8 +185,6 @@ function draw() {
             dotU = fixBetween(angAcc, -maxA, +maxA);
         else
             dotU = fixBetween(-angAcc, -maxA, +maxA);
-        //dotA = fixBetween(dotA + dotV[0]*dotU + moveNoise(blockType), -maxA*dotV[0], +maxA*dotV[0]);
-        //dotX = fixBetween(dotX + dotA, -maxX, maxX);
         dotA = fixBetween(dotA + dotU + moveNoise(blockType), -maxA, +maxA);
         dotX = fixBetween(dotX + dotV[0]*dotA, -maxX, maxX);
         dotY -= dotV[1];
@@ -188,7 +197,6 @@ function draw() {
             error += pow(dotX - lines[frameNum], 2);
         }
         drawBike(offset == 0);
-        //translate(windowWidth/2, 0)
         drawErrorPanel(offset == 0);
         frameNum++;
     }
@@ -279,7 +287,7 @@ function drawErrorPanel(mode) {
         susE = fixBetween(susE, 0, 120);
         text("Error: " + curE.toFixed(2), x-h*3/4, y-y1+h/4)
         if(goodjob > 0) {
-            text("Error: " + curE.toFixed(2) + " Good Job!", dotX*scaling*scaling_x + 60, y);
+            text("Error: " + curE.toFixed(2), dotX*scaling*scaling_x + 60, y);
             if(susE < 60) {
                 goodjob = 0;
                 susE = 0;
