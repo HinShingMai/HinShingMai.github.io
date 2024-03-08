@@ -328,7 +328,7 @@ function drawBike(mode) {
 function handleMouseMove(e) {
     if(isDraw) {
       var scaledMovement;
-      scaledMovement = e.movementX/20000;
+      scaledMovement = e.movementX/10000;
       angAcc += scaledMovement;
       angAcc = fixBetween(angAcc, -maxA/5, +maxA/5);
     }

@@ -369,9 +369,9 @@ function handleMouseMove(e) {
       //let scaledMovement = e.movementY/4096; // 4096
       var scaledMovement;
       if(offset == 0)
-        scaledMovement = e.movementX/20000;
+        scaledMovement = e.movementX/10000;
       else
-        scaledMovement = e.movementY/20000;
+        scaledMovement = e.movementY/10000;
       angAcc += scaledMovement;
       //let scaledMovement = (e.clientY-mouseYOffset)/4096;
       //angAcc = scaledMovement + moveNoise(currentSession);
