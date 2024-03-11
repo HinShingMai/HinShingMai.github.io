@@ -386,7 +386,7 @@ function moveNoise(mode) {
     // Standard Normal variate using Box-Muller transform.
     const mean = 0;
     //const std = 0.5;
-    const std = currentSession==2 ? 0.5 : 2; 
+    const std = currentSession==2 ? 0.5 : 0.5; 
     const u = 1 - Math.random(); // Converting [0,1) to (0,1]
     const v = Math.random();
     const z = Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );

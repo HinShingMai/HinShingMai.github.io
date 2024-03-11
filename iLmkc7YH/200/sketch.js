@@ -48,6 +48,10 @@ var textDesc = [
 function setup() {
     isDraw = false;
     maxA = PI/2;
+    //select('#endDiv').hide();
+    //select('#instrDiv').hide();
+    //cursor_img = loadImage('./cursor1.png');
+    //startGame();
 }
 function trainBlockStart() {
     blockType = trainBlocks[currentTrainBlock];
@@ -56,6 +60,8 @@ function trainBlockStart() {
     sessionInfo(0);
 }
 function sessionNext() {
+    //subjTrials.blocks.push({session: [currentTrainBlock, currentSession], mod:blockType, dis:dis, ang:ang, act:act, gnd:lines});
+    //recordTrialSession(trialcollection, {session: [currentTrainBlock, currentSession], mod:blockType, dis:dis, ang:ang, act:act, gnd:lines})
     document.exitPointerLock();
     currentSession += 1;
     if(currentSession<2) {
@@ -70,6 +76,11 @@ function sessionNext() {
         sessionInfo(2);
 }
 function startSession(type) {
+    // Test
+    //e = window.event;
+    //mouseXOffset = e.clientX;
+    //mouseYOffset = e.clientY;
+    
     dotX = 0;
     dotY = 0;
     dotA = 0;
@@ -79,8 +90,8 @@ function startSession(type) {
     maxX = width_x*0.625; //15
     isDraw = true;
     select('#container-exp').show()
-    document.getElementById("container-exp").onmousemove = handleMouseMove;
-    document.getElementById("container-exp").requestPointerLock();
+    //document.getElementById("container-exp").onmousemove = handleMouseMove;
+    //document.getElementById("container-exp").requestPointerLock();
     dis = []; 
     ang = [];
     act = [];
@@ -94,7 +105,7 @@ function startSession(type) {
     else
         lines = straightLine(maxPoints);
     clear();
-    timeout = maxPoints+30;
+    timeout = maxPoints+60;
     frameNum = 0;
     error = 0.0;
     susE = 0;
@@ -155,36 +166,32 @@ function draw() {
         h = min(windowHeight*1/6, 100);
         scaling_x = max(windowWidth, 1200)/60;
         scaling_y = windowHeight/600;
-        if(offset == 0)
-            translate(windowWidth/2, windowHeight*2/3 - dotY*scaling*scaling_y);
-        else
-            translate(windowWidth/3 + dotY*scaling*scaling_y, windowHeight/2);
+        translate(windowWidth/2, windowHeight*2/3 - dotY*scaling*scaling_y);
         if(offset == 0)
             dotU = fixBetween(angAcc, -maxA, +maxA);
         else
             dotU = fixBetween(-angAcc, -maxA, +maxA);
         //dotA = fixBetween(dotA + dotV[0]*dotU + moveNoise(blockType), -maxA*dotV[0], +maxA*dotV[0]);
         //dotX = fixBetween(dotX + dotA, -maxX, maxX);
-        dotX = fixBetween(dotX + dotV[0]*sin(dotA), -maxX, maxX);
-        dotY -= dotV[1]*cos(dotA)
-        dotA = fixBetween(dotA + dotU + 0*moveNoise(blockType), -maxA, +maxA);
-        //dotX = fixBetween(dotX + dotV[0]*dotA, -maxX, maxX);
-        //dotY -= dotV[1];
-        
-        if(offset == 0)
-            drawCurve(lines, int(-(dotY+windowHeight/2/scaling/scaling_y)), int(-(dotY-windowHeight/scaling/scaling_y)), offset == 0); //int(max(0, -(dotY+height/2)/4)), int(-(dotY-height)/4))
-        else
-            drawCurve(lines, int(-(dotY+windowWidth/2/scaling/scaling_y)), int(-(dotY-windowWidth/scaling/scaling_y)), offset == 0);
+        dotA = fixBetween(dotA + dotU + moveNoise(blockType), -maxA, +maxA);
+        dotX = fixBetween(dotX + dotV[0]*dotA, -maxX, maxX);
+        dotY -= dotV[1];
+        drawCurve(lines, int(-(dotY+windowHeight/2/scaling/scaling_y)), int(-(dotY-windowHeight/scaling/scaling_y))); //int(max(0, -(dotY+height/2)/4)), int(-(dotY-height)/4))
         heading = dotA;//atan2(dotA, 1);
+        //triangle(dotX*scaling*scaling_x, dotY*scaling*scaling_y, dotX*scaling*scaling_x-10*sin(heading)+4*cos(heading), dotY*scaling*scaling_y+10*cos(heading)+4*sin(heading), dotX*scaling*scaling_x-10*sin(heading)-4*cos(heading), dotY*scaling*scaling_y+10*cos(heading)-4*sin(heading));
         if(frameNum < maxPoints) {
             dis.push(dotX);
             ang.push(dotA);
             act.push(angAcc);
             error += pow(dotX - lines[frameNum], 2);
         }
-        drawBike(offset == 0);
-        //translate(windowWidth/2, 0)
-        drawErrorPanel(offset == 0);
+        drawBike();
+        //drawControlBar(0, dotY*scaling*scaling_y+windowHeight*1/6);
+        /*if(windowWidth > 6*h + 50) {
+          drawAngSpeedBar(-2*h-20, dotY*scaling*scaling_y+windowHeight*1/6);
+          drawHeadingBar(2*h+20, dotY*scaling*scaling_y+windowHeight*1/6);
+        }*/
+        drawErrorPanel(windowWidth/2-h-60, dotY*scaling*scaling_y-windowHeight*2/3+60);
         frameNum++;
     }
 }
@@ -217,7 +224,7 @@ function straightLine(len) {
     }
     return points;
 }
-function drawCurve(coords, start, end, mode) {
+function drawCurve(coords, start, end) {
     noFill();
     stroke('black');
     strokeWeight(6);
@@ -227,43 +234,53 @@ function drawCurve(coords, start, end, mode) {
     let endFix = end;
     if(endFix > coords.length)
         endFix = coords.length;
-    if(mode) {
-        for(let i = startFix+1; i<endFix; i++)
-            line(coords[i-1]*scaling*scaling_x, -(i-1)*scaling*scaling_y, coords[i]*scaling*scaling_x, -i*scaling*scaling_y);
-    } else {
-        for(let i = startFix+1; i<endFix; i++)
-            line((i-1)*scaling*scaling_y, coords[i-1]*scaling*scaling_x, i*scaling*scaling_y, coords[i]*scaling*scaling_x);
-            //line(coords[i-1]*scaling*scaling_x, (i-1)*scaling*scaling_y, coords[i]*scaling*scaling_x, i*scaling*scaling_y);
-
-    }
+    for(let i = startFix+1; i<endFix; i++)
+        line(coords[i-1]*scaling*scaling_x, -(i-1)*scaling*scaling_y, coords[i]*scaling*scaling_x, -i*scaling*scaling_y);
+        //line(coords[i-1].x*scaling*scaling_x, -coords[i-1].y*scaling*scaling_y, coords[i].x*scaling*scaling_x, -coords[i].y*scaling*scaling_y);
 }
-function drawErrorPanel(mode) {
+function drawHeadingBar(x, y) {
+    fill('white');
+    stroke('black');
+    strokeWeight(2);
+    rect(x-h, y-h/2, 2*h, h);
+    noFill();
+    stroke('black');
+    line(x-h/2, y+h/10, x+h/2, y+h/10);
+    line(x-h/2, y-h/10, x-h/2, y+h/10);
+    line(x+h/2, y-h/10, x+h/2, y+h/10);
+    line(x, y-3*h/20, x, y+3*h/20);
+    stroke('blue');
+    fill('blue');
+    ellipse(x+dotA/maxA*h/2, y, 3*h/20, 3*h/20);
+}
+function drawAngSpeedBar(x, y) {
+    fill('white');
+    stroke('black');
+    strokeWeight(2);
+    rect(x-h, y-h/2, 2*h, h);
+    noFill();
+    stroke('black');
+    line(x-h/2, y, x+h/2, y);
+    line(x-h/2, y-h/10, x-h/2, y+h/10);
+    line(x+h/2, y-h/10, x+h/2, y+h/10);
+    line(x, y-3*h/20, x, y+3*h/20);
+    stroke('blue');
+    fill('blue');
+    rect(x, y-h/20, fixBetween(dotU/maxA*8*h/2, -h/2, h/2), h/10);
+}
+function drawErrorPanel(x, y) {
     if(frameNum%10 == 0)
         fps = int(getFrameRate());
     fill('white');
     stroke('black');
-    strokeWeight(2); // drawErrorPanel(windowWidth/2-h-60, dotY*scaling*scaling_y-windowHeight*2/3+60);
-    var x, y, y1;
-    if(mode) {
-        //x = windowWidth/2-h-60;
-        //y = windowHeight*2/3+60;
-        x = dotX*scaling*scaling_x+60;
-        y = dotY*scaling*scaling_y;
-        x1 = windowWidth/2-h-60;
-        y1 = dotY*scaling*scaling_y-windowHeight*2/3+60;
-    } else {
-        x = -dotY*scaling*scaling_y-20;
-        y = dotX*scaling*scaling_x+60;
-        x1 = -dotY*scaling*scaling_y+windowWidth*2/3-h-60;
-        y1 = -windowHeight/2+60;
-    }
-    rect(x1-h, y1-h/2, 2*h, h);
+    strokeWeight(2);
+    rect(x-h, y-h/2, 2*h, h);
     noFill();
     textSize(h*3/20);
     strokeWeight(1);
     let avgE = error/min(frameNum+1, maxPoints);
-    text("FPS: " + fps, x1-h*3/4, y1-h/4);
-    text("Avg Error: " + avgE.toFixed(2), x1-h*3/4, y1);
+    text("FPS: " + fps, x-h*3/4, y-h/4);
+    text("Avg Error: " + avgE.toFixed(2), x-h*3/4, y);
     if(frameNum < maxPoints) {
         let curE = pow(dotX - lines[frameNum], 2);
         if(curE < avgE*0.8) {
@@ -275,19 +292,24 @@ function drawErrorPanel(mode) {
             susE -= 1;
         }
         susE = fixBetween(susE, 0, 120);
-        text("Error: " + curE.toFixed(2), x1-h*3/4, y1+h/4)
+        text("Error: " + curE.toFixed(2), x-h*3/4, y+h/4)
         if(goodjob > 0) {
-            text("Error: " + curE.toFixed(2) + " Good Job!", x, y);
+            text("Error: " + curE.toFixed(2) + " Good Job!", dotX*scaling*scaling_x + 60, dotY*scaling*scaling_y);
+            /*if(frameNum%20 == 0) {
+                confetti({ startVelocity: 30, spread: 360,  zIndex: 0, particleCount: 20, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
+                confetti({ startVelocity: 30, spread: 360,  zIndex: 0, particleCount: 20, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
+            }*/
             if(susE < 60) {
                 goodjob = 0;
                 susE = 0;
             }
         }
         else {
-            text("Error: " + curE.toFixed(2), x, y);
+            text("Error: " + curE.toFixed(2), dotX*scaling*scaling_x + 60, dotY*scaling*scaling_y);
             if(susE > 60) {
                 goodjob = 1;
                 susE = 120;
+                //confetti({particleCount: 100, spread: 70, origin: { y: 0.6 } });
             }
         }
     }
@@ -295,7 +317,25 @@ function drawErrorPanel(mode) {
 function randomInRange(min, max) {
   return Math.random() * (max - min) + min;
 }
-function drawBike(mode) {
+function drawControlBar(x, y) {
+    let ang = angAcc * 5;
+    fill('white');
+    //stroke('blue');
+    strokeWeight(2);
+    rect(x-h, y-h/2, 2*h, h);
+    noFill();
+    stroke('black');
+    line(x-h/2*cos(ang), y-h/2*sin(ang), x+h/2*cos(ang), y+h/2*sin(ang));
+    strokeWeight(6);
+    line(x-h/2*cos(ang), y-h/2*sin(ang), x-0.3*h*cos(ang), y-0.3*h*sin(ang));
+    line(x+0.3*h*cos(ang), y+0.3*h*sin(ang), x+h/2*cos(ang), y+h/2*sin(ang));
+    stroke('black');
+    fill('black');
+    ellipse(x, y, h/25, h/25);
+  
+    image(cursor_img, x+0.4*h*cos(ang)-16, y+0.4*h*sin(ang)-16, 32, 32);
+}
+function drawBike() {
     if(offset == 0) {
         stroke('blue');
         fill('blue');
@@ -307,19 +347,25 @@ function drawBike(mode) {
     let heading = dotA;
     let x = dotX*scaling*scaling_x;
     let y = dotY*scaling*scaling_y;
-    if(mode) {
-        line(x, y, x-40*sin(heading), y+40*cos(heading));
-        triangle(x, y, x-10*sin(heading)+4*cos(heading), y+10*cos(heading)+4*sin(heading), x-10*sin(heading)-4*cos(heading), y+10*cos(heading)-4*sin(heading));
-    } else {
-        line(-y, x, -y-40*cos(heading), x-40*sin(heading));
-        triangle(-y, x, -y-10*cos(heading)-4*sin(heading), x-10*sin(heading)+4*cos(heading), -y-10*cos(heading)+4*sin(heading), x-10*sin(heading)-4*cos(heading));
-    }
+    line(x, y, x-40*sin(heading), y+40*cos(heading));
+    //line(x-40*cos(heading+angAcc*5), y-40*sin(heading+angAcc*5), x+40*cos(heading+angAcc*5), y+40*sin(heading+angAcc*5));
+    /*line(x-40*cos(angAcc*5), y-40*sin(angAcc*5), x+40*cos(angAcc*5), y+40*sin(angAcc*5));
+    strokeWeight(4);
+    //line(x-40*cos(heading+angAcc*5), y-40*sin(heading+angAcc*5), x-20*cos(heading+angAcc*5), y-20*sin(heading+angAcc*5));
+    //line(x+20*cos(heading+angAcc*5), y+20*sin(heading+angAcc*5), x+40*cos(heading+angAcc*5), y+40*sin(heading+angAcc*5));
+    line(x-40*cos(angAcc*5), y-40*sin(angAcc*5), x-20*cos(angAcc*5), y-20*sin(angAcc*5));
+    line(x+20*cos(angAcc*5), y+20*sin(angAcc*5), x+40*cos(angAcc*5), y+40*sin(angAcc*5));*/
+    triangle(x, y, x-10*sin(heading)+4*cos(heading), y+10*cos(heading)+4*sin(heading), x-10*sin(heading)-4*cos(heading), y+10*cos(heading)-4*sin(heading));
 }
 function handleMouseMove(e) {
     if(isDraw) {
+      //let scaledMovement = e.movementY/4096; // 4096
       var scaledMovement;
       scaledMovement = e.movementX/20000;
       angAcc += scaledMovement;
+      //let scaledMovement = (e.clientY-mouseYOffset)/4096;
+      //angAcc = scaledMovement + moveNoise(currentSession);
+      //console.log(angAcc);
       angAcc = fixBetween(angAcc, -maxA/5, +maxA/5);
     }
 }
@@ -336,6 +382,34 @@ function moveNoise(mode) {
     // Transform to the desired mean and standard deviation:
     noiseM = z * std + mean;
     return noiseM*0.1;
+    /*if(mode < 2)
+        //return 0;
+    //else 
+    if(true) {
+        if(frameNum %1 == 0) {
+            // Standard Normal variate using Box-Muller transform.
+            const mean = 0;
+            const std = 0.5;
+            const u = 1 - Math.random(); // Converting [0,1) to (0,1]
+            const v = Math.random();
+            const z = Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
+            // Transform to the desired mean and standard deviation:
+            noiseM = z * std + mean;
+            return noiseM*0.1;
+        } else {
+            return noiseM*0.1;
+        }
+        // Standard Normal variate using Box-Muller transform. mod1
+            const mean = 0;
+            const std = 0.1;
+            const u = 1 - Math.random(); // Converting [0,1) to (0,1]
+            const v = Math.random();
+            const z = Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
+            // Transform to the desired mean and standard deviation:
+            noise = z * std + mean;
+            return noise;
+    }
+    return 0;*/
 }
 function avgError(arr1, arr2) {
     // mean square error
@@ -355,6 +429,12 @@ function startGame() {
     fullscreen(true);
     select('#instrDiv').hide();
     totalTrainBlocks = trainBlocks.length;
+    /*fetch('./data.json').then((res) => {
+        if (!res.ok) {throw new Error (`HTTP error! Status: ${res.status}`);}
+        return res.json();
+        }).then((data) => console.log(data)).catch((error) => console.error("Unable to fetch data:", error));*/
+    const data = require('./data.json');
+    console.log(data);
     trainBlockStart();
 }
 // Function that ends the game appropriately after the experiment has been completed
