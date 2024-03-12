@@ -430,18 +430,18 @@ function startGame() {
     select('#instrDiv').hide();
     totalTrainBlocks = trainBlocks.length;
     var sample;
-    /*fetch('./data.json').then((res) => {
+    fetch('./data.json').then((res) => {
         if (!res.ok) {throw new Error (`HTTP error! Status: ${res.status}`);}
         return res.json();
-        }).then((data) => {sample=data; console.log(data)}).catch((error) => console.error("Unable to fetch data:", error));
-    console.log('1');*/
-    const response = await fetch('./data.json');
+        }).then((data) => {sample=data; console.log(data); console.log(sample.users[0].site); trainBlockStart();}).catch((error) => console.error("Unable to fetch data:", error));
+    console.log('1');
+    /*const response = await fetch('./data.json');
     sample = await response.json();
+    console.log(sample);
     console.log(sample.users[0].site);
-    console.log(sample.users[0].user);
+    console.log(sample.users[0].user);*/
     //const data = require('./data.json');
     //console.log(sample);
-    trainBlockStart();
 }
 // Function that ends the game appropriately after the experiment has been completed
 function endGame() {
