@@ -151,7 +151,7 @@ function draw() {
         }
         h = min(windowHeight*1/6, 100);
         scaling_x = max(windowWidth, 1200)/60;
-        scaling_y = windowHeight/600;
+        scaling_y = windowHeight/300;
         translate(windowWidth/2, windowHeight*2/3 - dotY*scaling*scaling_y);
         if(frameNum < sample.length)
             angAcc = sample[frameNum];
@@ -329,7 +329,7 @@ function drawBike() {
         fill('red');
     }
     strokeWeight(2);
-    let heading = dotA*4;
+    let heading = dotA/0.3;
     let x = dotX*scaling*scaling_x;
     let y = dotY*scaling*scaling_y;
     line(x, y, x-40*sin(heading), y+40*cos(heading));

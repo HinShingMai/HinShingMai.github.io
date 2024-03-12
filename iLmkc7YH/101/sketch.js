@@ -8,7 +8,7 @@ let frameNum = 0; // Number of frames in the current session
 var timeout;
 var dotX;
 var dotY;
-var dotV = [0.3, 1.00];
+var dotV = [0.15, 1.00];
 var dotA;
 var maxX;
 var width_x = 24;
@@ -165,7 +165,7 @@ function draw() {
         }
         h = min(windowHeight*1/6, 100);
         scaling_x = max(windowWidth, 1200)/60;
-        scaling_y = windowHeight/600*2;
+        scaling_y = windowHeight/600;
         translate(windowWidth/2, windowHeight*2/3 - dotY*scaling*scaling_y);
         if(offset == 0)
             dotU = fixBetween(angAcc, -maxA, +maxA);
@@ -212,7 +212,7 @@ function sinuousCurve(len) {
         }
         //points.push({x: X, y: i});
         points.push(X);
-        start += 0.02; // 0.02
+        start += 0.01; // 0.02
     }
     return points;
 }
