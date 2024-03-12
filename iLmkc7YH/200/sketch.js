@@ -433,9 +433,9 @@ function startGame() {
     fetch('./data.json').then((res) => {
         if (!res.ok) {throw new Error (`HTTP error! Status: ${res.status}`);}
         return res.json();
-        }).then((data) => sample=data).catch((error) => console.error("Unable to fetch data:", error));
+        }).then((data) => {sample=data; console.log(data)}).catch((error) => console.error("Unable to fetch data:", error));
     //const data = require('./data.json');
-    console.log(sample);
+    //console.log(sample);
     trainBlockStart();
 }
 // Function that ends the game appropriately after the experiment has been completed
