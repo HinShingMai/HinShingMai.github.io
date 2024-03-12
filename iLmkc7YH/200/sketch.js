@@ -434,6 +434,7 @@ function startGame() {
         if (!res.ok) {throw new Error (`HTTP error! Status: ${res.status}`);}
         return res.json();
         }).then((data) => {sample=data; console.log(data)}).catch((error) => console.error("Unable to fetch data:", error));
+    console.log('1');
     //const data = require('./data.json');
     //console.log(sample);
     trainBlockStart();
