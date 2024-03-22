@@ -40,6 +40,9 @@ var path;
 var pathWidth = 15;
 var vDist;
 var pIdx;
+var trace;
+var traceBuffer;
+var traceLen = 20;
 var subjTrials = {
     fullname: null,
     blocks : []
@@ -112,6 +115,8 @@ function startSession(type) {
     goodjob = 0;
     noiseM = 0.0;
     pIdx = [0, 0];
+    trace = [];
+    traceBuffer = null;
     loop();
 }
 function sessionInfo(type) {
@@ -179,10 +184,19 @@ function draw() {
             return;
         }
         if(offset == 0)
-            dotU = fixBetween(angAcc, -maxA, +maxA);
+            //dotU = fixBetween(angAcc, -maxA, +maxA);
+            dotU = angAcc; //fixBetween(angAcc, -maxA, +maxA);
         else
-            dotU = fixBetween(-angAcc, -maxA, +maxA);
-        dotA = fixBetween(dotA + dotU + moveNoise(blockType), -maxA, +maxA);
+            //dotU = fixBetween(-angAcc, -maxA, +maxA);
+            dotU = -angAcc; //fixBetween(-angAcc, -maxA, +maxA);
+        dotA = dotA + dotU + moveNoise(blockType); //fixBetween(dotA + dotU + moveNoise(blockType), -maxA, +maxA);
+        if(dotA < -maxA) {
+            dotA = -maxA;
+            angAcc = 0.0;
+        } else if(dotA > maxA) {
+            dotA = maxA;
+            angAcc = 0.0;
+        }
         dotX = fixBetween(dotX + dotV[0]*sin(dotA), -maxX, maxX);
         dotY -= dotV[1]*cos(dotA);
         translate(windowWidth/2, windowHeight*2/3 - dotY*scaling*scaling_y);
@@ -195,7 +209,18 @@ function draw() {
             act.push(angAcc);
             frameNum++;
         }
+        if(frameNum%5 == 0) {
+            if(-dotY <= maxPoints) {
+                if(traceBuffer != null)
+                    trace.push(traceBuffer);
+                if(trace.length > traceLen)
+                    trace.shift();
+                traceBuffer = {x: dotX, y: dotY};
+            } else
+                trace.shift();
+        }
         drawBike();
+        drawTrace();
         drawAngSpeedBar(0, dotY*scaling*scaling_y+windowHeight*1/6);
         drawErrorPanel(windowWidth/2-h-60, dotY*scaling*scaling_y-windowHeight*2/3+60);
     }
@@ -415,6 +440,22 @@ function drawBike() {
     let y = dotY*scaling*scaling_y;
     line(x, y, x-40*sin(heading), y+40*cos(heading));
     triangle(x, y, x-10*sin(heading)+4*cos(heading), y+10*cos(heading)+4*sin(heading), x-10*sin(heading)-4*cos(heading), y+10*cos(heading)-4*sin(heading));
+}
+function drawTrace() {
+    var baseColor;
+    if(offset == 0)
+        baseColor = color('blue');
+    else
+        baseColor = color('red');
+    var transparency = 0;
+    var increment = 255/traceLen;
+    for(let i in trace) {
+        baseColor.setAlpha(transparency);
+        stroke(baseColor);
+        fill(baseColor);
+        ellipse(trace[i].x*scaling*scaling_x, trace[i].y*scaling*scaling_y, 2, 2);
+        transparency += increment;
+    }
 }
 function handleMouseMove(e) {
     if(isDraw) {
