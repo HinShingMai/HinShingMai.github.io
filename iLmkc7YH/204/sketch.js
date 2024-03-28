@@ -546,9 +546,9 @@ function handleClick() {
     startSession();
 }
 function moveNoise(mode) {
-    return 0;
+    //return 0;
     const mean = 0;
-    const std = 0.1;
+    const std = 0.05;
     return randomGaussian(mean, std);
 }
 function avgError(arr1, arr2) {
