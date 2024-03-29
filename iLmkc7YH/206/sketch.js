@@ -54,7 +54,7 @@ var perturbation;
 var perturbDir;
 var perturbCoord;
 var perturbCount = 4;
-var perturbDist = 40;
+var perturbDist = 80;
 var nextPerturb;
 var subjTrials = {
     fullname: null,
