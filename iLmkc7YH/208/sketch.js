@@ -151,7 +151,7 @@ function startSession(type) {
         perturbCoord = [];
         perturbLen = [];
         for(let i=1; i<perturbCount; i++) {
-            perturbLen.push((perturbation-perturbDist) * Math.random() + perturbDist);
+            perturbLen.push((perturbation-perturbDist) * (Math.random()/2+0.5) + perturbDist);
             //perturbLen.push(perturbation/2);
             perturbCoord.push(perturbation*i + 1);
         }
@@ -556,8 +556,8 @@ function drawBike() {
     let y = dotY*scaling*scaling_y;
     //line(x, y, x-40*sin(heading), y+40*cos(heading));
     //triangle(x, y, x-10*sin(heading)+4*cos(heading), y+10*cos(heading)+4*sin(heading), x-10*sin(heading)-4*cos(heading), y+10*cos(heading)-4*sin(heading));
-    let A = angAcc*20;
-    let d = angAcc*80*40/PI;
+    let A = dotU*20;
+    let d = dotU*80*40/PI;
     triangle(x+10*sin(heading+A), y-10*cos(heading+A), x+4*cos(heading+A), y+4*sin(heading+A), x-4*cos(heading+A), y-4*sin(heading+A));
     noFill();
     curve(x+d*cos(heading),y+d*sin(heading), x, y, x-30*sin(heading), y+30*cos(heading), x-30*sin(heading)+d*cos(heading), y+30*cos(heading)+d*sin(heading));
