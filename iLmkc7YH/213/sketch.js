@@ -339,7 +339,7 @@ function draw() {
         drawTrace();
         error += pathError;
         //drawAngSpeedBar(0, dotY*scaling*scaling_y+windowHeight*1/6);
-        drawErrorPanel(windowWidth/2-h-60, dotY*scaling*scaling_y-windowHeight*2/3+60);
+        //drawErrorPanel(windowWidth/2-h-60, dotY*scaling*scaling_y-windowHeight*2/3+60);
     }
 }
 function fixBetween(x, minimum, maximum) {

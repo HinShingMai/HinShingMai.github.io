@@ -1,6 +1,6 @@
 let cnv;
 let currentTrainBlock = 0;
-let trainBlocks = [4, 7, 7, 7];
+let trainBlocks = [5, 7, 7, 7];
 let totalTrainBlocks;
 let max_amplitudes = [1/2, 1/4, 1/8, 1/16, 1/32, 1/64, 1/128];
 let frequency = [0.1,0.25,0.55,0.85,1.15,1.55,2.05];
