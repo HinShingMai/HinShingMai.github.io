@@ -4,7 +4,7 @@ let trainBlocks = [6, 4, 4];
 let totalTrainBlocks;
 //let max_amplitudes = [1/2, 1/4, 1/8, 1/16, 1/32, 1/64, 1/128];
 //let frequency = [0.1,0.25,0.55,0.85,1.15,1.55,2.05];
-let max_amplitudes = [[1/2,1/4,-1/8,1/16,1/32,1/64,1/128,1/256],[1/4,-1/8,1/16,1/32]];
+let max_amplitudes = [[1/2,1/4,-1/8,1/16,1/32,1/64,1/128,1/256],[1/5,-1/10,1/20,1/40]];
 let frequency = [[0.05,0.1,0.25,0.55,0.85,1.15,1.55,2.05],[0.2,0.4,1.0,1.4]];
 let frameNum = 0; // Number of frames in the current session
 var dotX;
@@ -63,6 +63,7 @@ var perturbing;
 var straightLen = 60;
 var blanknum;
 var blank;
+var pOffsets;
 var block = {
     xh: null,
     x: null,
@@ -205,7 +206,9 @@ function sessionInfo(type, nextOffset) {
             n: nse,
             per: perturbDir,
             num: sessionTotal,
-            type: sessionsType[currentSession-1]
+            type: sessionsType[currentSession-1],
+            hori: blank,
+            offs: pOffsets
         }
         //recordTrialSession(trialcollection, blockData);
         console.log(blockData)
@@ -314,7 +317,6 @@ function draw() {
             let high = int(maxX*blank[blanknum]-dotY);
             let low = int(-dotY-maxX/2*blank[blanknum]);
             let plen = 500+straightLen*2;
-            //console.log(low+" "+(-dotY+dotY%plen)+" ... "+high+" "+(-dotY+dotY%plen+plen));
             drawCurve(lines, max(low,blanknum*plen), min(high,blanknum*plen+plen));
         } else
             drawCurve(lines, int(-dotY-maxX/2*blank[blanknum]), int(maxX*blank[blanknum]-dotY));
@@ -408,7 +410,6 @@ function sinuousCurve(len, random) {
     var ampl;
     var freq;
     var repeat;
-    console.log("sessionType"+sessionsType[currentSession])
     if(sessionsType[currentSession]%4 > 1) { //is train
         ampl = max_amplitudes[0];
         freq = frequency[0];
@@ -442,18 +443,21 @@ function sinuousCurve(len, random) {
         points.push(X);
     }*/
     if(repeat > 0) {
-        var paths = []
+        var paths = [];
+        pOffsets = [];
         for(let i=0; i<repeat; i++) {
-            var path = arrayRotate(points.slice(0), Math.random()*points.length);
+            let offset = int(Math.random()*points.length);
+            pOffsets.push(offset);
+            var path = arrayRotate(points.slice(0), offset);
             //path.unshift(Array(straightLen).fill(path[0]));
             //path.push(Array(straightLen).fill(path[path.length-1]));
             paths = paths.concat(Array(straightLen).fill(path[0]).concat(path,Array(straightLen).fill(path[path.length-1])));
         }
-        //console.log(paths)
         return paths;
     } else {
         //points.unshift(Array(straightLen).fill(points[0]));
         //points.push(Array(straightLen).fill(X));
+        pOffsets = [0];
         return Array(straightLen).fill(points[0]).concat(points,Array(straightLen).fill(X));
     }
 }
@@ -639,7 +643,6 @@ function windowResized() {
     h = min(windowHeight*1/6, 100);
     let sx = windowWidth/width_x*0.8;
     let sy = windowHeight/width_x/0.75*0.8;
-    console.log(sx+" "+sy);
     scaling_x = sx < sy? sx:sy;
     scaling_y = scaling_x;
 }
