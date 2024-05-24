@@ -1,11 +1,9 @@
 let cnv;
 let currentTrainBlock = 0;
-let trainBlocks = [6, 4, 4];
+let trainBlocks = [6, 4, 4, 4, 4, -1, 7, 5, 5, 5, 5];
 let totalTrainBlocks;
-//let max_amplitudes = [1/2, 1/4, 1/8, 1/16, 1/32, 1/64, 1/128];
-//let frequency = [0.1,0.25,0.55,0.85,1.15,1.55,2.05];
-let max_amplitudes = [[1/2,1/4,-1/8,1/16,1/32,1/64,1/128,1/256],[1/5,-1/10,1/20,1/40]];
-let frequency = [[0.05,0.1,0.25,0.55,0.85,1.15,1.55,2.05],[0.2,0.4,1.0,1.4]];
+let max_amplitudes = [[1/2,-1/4,-1/8,1/32,1/16,-1/128,-1/64,1/128],[1/5,-1/10,-1/20,1/80,1/40]];
+let frequency = [[0.05,0.1,0.25,0.55,0.85,1.15,1.55,2.05],[0.2,0.4,1.0,1.4,2.2]];
 let frameNum = 0; // Number of frames in the current session
 var dotX;
 var dotY;
@@ -48,7 +46,7 @@ var vDist;
 var pIdx;
 var trace;
 var traceBuffer;
-var traceLen = 20;
+var traceLen = 10;
 var inactivity;
 var sessionsType;
 var sessionTotal;
@@ -64,35 +62,33 @@ var straightLen = 60;
 var blanknum;
 var blank;
 var pOffsets;
-var block = {
-    xh: null,
-    x: null,
-    y: null,
-    a: null,
-    u: null,
-    n: null
-}
+var highscore;
+var timer;
+var timerCount;
 var textDesc = [
     "short straight line testing session of normal control with perturbation",
     "short straight line testing session of reverse control with perturbation",
     "straight line training session of normal control with perturbation",
     "straight line training session of reverse control with perturbation",
-    "short testing session of normal control",
-    "short testing session of reverse control",
+    "combined testing session of normal control",
+    "combined testing session of reverse control",
     "training session for practising normal control",
     "training session for practising reverse control"
 ]
 function setup() {
     isDraw = false;
-    maxA = PI/2;
     //select('#endDiv').hide();
     //select('#instrDiv').hide();
     //startGame();
 }
 function trainBlockStart() {
     blockType = trainBlocks[currentTrainBlock];
+    if(blockType<0) {
+        startBreak(-blockType);
+        return;
+    }
     let type = blockType%4;
-    if(type/2 < 1) {
+    if(type < 2) {
         if(type == 0) {
             sessionsType = [6, 4];
         } else if(type == 1) {
@@ -140,10 +136,13 @@ function startSession(type) {
     if(type == 0) {
         maxPoints = 500; //2000
         blanknum = 0;
-        blank = shuffle([0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]);
+        if(trainBlocks[currentTrainBlock]%4<2)
+            blank = shuffle([1/30,1/15,0.1,2/15,0.2,4/15,0.4,8/15,11/15,1.0]);
+        else
+            blank = reverse([1/30,1/15,0.1,2/15,0.2,4/15,0.4,8/15,11/15,1.0]);
     }
     else if(type == 1) {
-        maxPoints = 4000; //10000
+        maxPoints = 2000; //10000
         blanknum = 0;
         blank = [1.0];
     }
@@ -212,25 +211,42 @@ function sessionInfo(type, nextOffset) {
         }
         //recordTrialSession(trialcollection, blockData);
         console.log(blockData)
-        // Define Data
-        const idx = Array.from(Array(maxPoints).keys());
-        let data = [
-            {x: blockNam, y: blockErr, type: 'scatter', mode: 'lines', line: {color: 'green', width: 3}, name: 'Error'},
-            {x: blockErrn_x, y: blockErrn, type: 'scatter', mode: 'markers', marker: {color: 'blue', size: 10}, name: 'Normal'},
-            {x: blockErrr_x, y: blockErrr, type: 'scatter', mode: 'markers', marker: {color: 'red', size: 10}, name: 'Reverse'},
-            //{x: Array.from(Array(act.length).keys()), y: act, xaxis: 'x2', yaxis: 'y2', type: 'scatter', mode: 'lines', line: {color: 'black', width: 3}, name: 'Actions'},
-            {x: idx, y: lines, xaxis: 'x2', yaxis: 'y2', type: 'scatter', mode: 'lines', line: {color: 'black', width: 3}, name: 'Path'},
-            {x: vDist, y: dis, xaxis: 'x2', yaxis: 'y2', type: 'scatter', mode: 'lines', line: {color: 'blue', width: 3}, name: 'You'},
-        ];
-        // layout
-        var layout = {
-            title: 'Average Mean Square Error and Trajectory',
-            yaxis: {rangemode: "tozero"},
-            grid: {rows: 1, columns: 2, pattern: 'independent'},
-        };
-        // Display using Plotly
-        plot.show();
-        Plotly.newPlot("plot", data, layout, {responsive: true});
+        if(isTrain) {
+            // Define Data
+            const idx = Array.from(Array(maxPoints).keys());
+            let data = [
+                {x: blockNam, y: blockErr, type: 'scatter', mode: 'lines', line: {color: 'green', width: 3}, name: 'Error'},
+                {x: blockErrn_x, y: blockErrn, type: 'scatter', mode: 'markers', marker: {color: 'blue', size: 10}, name: 'Normal'},
+                {x: blockErrr_x, y: blockErrr, type: 'scatter', mode: 'markers', marker: {color: 'red', size: 10}, name: 'Reverse'},
+                //{x: Array.from(Array(act.length).keys()), y: act, xaxis: 'x2', yaxis: 'y2', type: 'scatter', mode: 'lines', line: {color: 'black', width: 3}, name: 'Actions'},
+                {x: idx, y: lines, xaxis: 'x2', yaxis: 'y2', type: 'scatter', mode: 'lines', line: {color: 'black', width: 3}, name: 'Path'},
+                {x: vDist, y: dis, xaxis: 'x2', yaxis: 'y2', type: 'scatter', mode: 'lines', line: {color: 'blue', width: 3}, name: 'You'},
+            ];
+            // layout
+            var layout = {
+                title: 'Average Mean Square Error and Trajectory',
+                yaxis: {rangemode: "tozero"},
+                grid: {rows: 1, columns: 2, pattern: 'independent'},
+            };
+            // Display using Plotly
+            plot.show();
+            plot.html("");
+            Plotly.newPlot("plot", data, layout, {responsive: true});
+        } else {
+            let msg;
+            if(highscore<0) {
+                highscore = mse;
+                msg = "<br><br>Best performance error:"+highscore;
+            } 
+            else if(mse<highscore) {
+                highscore = mse;
+                msg = `<br><br>Congratulations! Your score improved better! Keep it up!<br><br>Best performance error: ${highscore}`;
+            } else {
+                msg = `<br><br>Your score was worse this time! Try to beat your score!<br><br>Best performance error: ${highscore}`;
+            }
+            plot.show();
+            plot.html(msg);
+        }
     } else {
         mse = -1.0;
         plot.hide();
@@ -261,11 +277,11 @@ function draw() {
     if(isDraw) {
         clear();
         background('white');
-        if(-dotY > maxPoints+straightLen*2) {
+        if(-dotY > maxPoints+straightLen) {
             if(blanknum < blank.length-1) {
                 blanknum++;
                 //dotY = 0.0
-                maxPoints += 500+straightLen*2;
+                maxPoints += 500+straightLen;
                 dotX = lines[-dotY];
                 dotA = 0.0;
                 angAcc = 0.0;
@@ -316,13 +332,13 @@ function draw() {
         if(blank.length>1) {
             let high = int(maxX*blank[blanknum]-dotY);
             let low = int(-dotY-maxX/2*blank[blanknum]);
-            let plen = 500+straightLen*2;
-            drawCurve(lines, max(low,blanknum*plen), min(high,blanknum*plen+plen));
+            let plen = 500+straightLen;
+            drawCurve(lines, max(low,blanknum*plen), min(high,blanknum*plen+plen), blank[blanknum]<0.9);
         } else
-            drawCurve(lines, int(-dotY-maxX/2*blank[blanknum]), int(maxX*blank[blanknum]-dotY));
+            drawCurve(lines, int(-dotY-maxX/2*blank[blanknum]), int(maxX*blank[blanknum]-dotY), blank[blanknum]<0.9);
         heading = dotA;
         var pathError = 0;
-        if(-dotY <= maxPoints+straightLen*2) {
+        if(-dotY <= maxPoints+straightLen) {
             dis.push(dotX);
             vDist.push(-dotY);
             ang.push(dotA);
@@ -356,6 +372,11 @@ function draw() {
         drawBike();
         drawTrace();
         error += pathError;
+        strokeWeight(1);
+        textAlign(CENTER);
+        textSize(16);
+        let msg = sessionsType[currentSession]%4>1?"Train: time to learn how to do the task!":"Test; now it is time to see if you have improved!"
+        text(msg, 0, (dotY-maxX)*scaling*scaling_y+20);
         //drawErrorPanel(windowWidth/2-h-60, dotY*scaling*scaling_y-windowHeight*2/3+60);
     }
 }
@@ -451,14 +472,14 @@ function sinuousCurve(len, random) {
             var path = arrayRotate(points.slice(0), offset);
             //path.unshift(Array(straightLen).fill(path[0]));
             //path.push(Array(straightLen).fill(path[path.length-1]));
-            paths = paths.concat(Array(straightLen).fill(path[0]).concat(path,Array(straightLen).fill(path[path.length-1])));
+            paths = paths.concat(Array(straightLen).fill(path[0]).concat(path));
         }
         return paths;
     } else {
         //points.unshift(Array(straightLen).fill(points[0]));
         //points.push(Array(straightLen).fill(X));
         pOffsets = [0];
-        return Array(straightLen).fill(points[0]).concat(points,Array(straightLen).fill(X));
+        return Array(straightLen).fill(points[0]).concat(points);
     }
 }
 function arrayRotate(arr, count) {
@@ -475,7 +496,7 @@ function straightLine(len) {
     }
     return points;
 }
-function drawCurve(coords, start, end) {
+function drawCurve(coords, start, end, cover=false) {
     noFill();
     let startFix = start;
     if(startFix < 0)
@@ -487,6 +508,14 @@ function drawCurve(coords, start, end) {
     strokeWeight(6);
     for(let i = startFix+1; i<endFix; i++) {
         line(coords[i-1]*scaling*scaling_x, -(i-1)*scaling*scaling_y, coords[i]*scaling*scaling_x, -i*scaling*scaling_y);
+    }
+    if(cover) {
+        fill('grey');
+        strokeWeight(2);
+        rect(-maxX*scaling*scaling_x, -(maxX-dotY)*scaling*scaling_y, 2*maxX*scaling*scaling_x, maxX*(1-blank[blanknum])*scaling*scaling_y);
+        if(blank[blanknum]<0.8) {
+            rect(-maxX*scaling*scaling_x, (maxX/2+dotY)*scaling*scaling_y, 2*maxX*scaling*scaling_x, maxX*(blank[blanknum]-1)/2*scaling*scaling_y);
+        }
     }
 }
 function drawErrorPanel(x, y) {
@@ -588,6 +617,30 @@ function resume() {
     clear();
     loop();
 }
+function startBreak(len) {
+    let htmlDiv = select('#endDiv');
+    let instr = select('#endInstr');
+    //let btn = select('#startBt');
+    htmlDiv.show();
+    timerCount = 60;
+    instr.html(`<br><br>Let's take a ${len} minute break.<br><br>${timerCount}`);
+    //document.getElementById("startBt").setAttribute("disabled", true);
+    select('#startBt').hide();
+    timer = setInterval(countDown, 100);
+    
+}
+function countDown() {
+    if(--timerCount>0) {
+        select('#endInstr').html(`<br><br>Let's take a ${-trainBlocks[currentTrainBlock]} minute break.<br><br>${timerCount}`);
+    } else {
+        let btn = document.getElementById("startBt");
+        clearInterval(timer);
+        select('#endInstr').html(`<br><br>Now we will play a reversed version of the game!<br><br>at each test, you will be tested on both normal and reversed`);
+        btn.style.display = 'block';
+        //btn.removeAttribute("disabled");
+        btn.onclick = ()=>{select('#endDiv').hide(); currentTrainBlock++; trainBlockStart();};
+    }
+}
 function handleMouseMove(e) {
     if(isDraw) {
         var scaledMovement;
@@ -601,7 +654,7 @@ function handleClick() {
     startSession();
 }
 function moveNoise(mode) {
-    if(mode<4)
+    if(true)
         return 0;
     const mean = 0;
     const std = 0.05;
@@ -629,6 +682,8 @@ function startGame() {
     select('#instrDiv').hide();
     totalTrainBlocks = trainBlocks.length;
     sessionTotal = 0;
+    maxA = PI/2;
+    highscore = -1;
     trainBlockStart();
 }
 // Function that ends the game appropriately after the experiment has been completed
