@@ -244,17 +244,19 @@ function sessionInfo(type) {
     select('#container-exp').hide()
     document.getElementById("container-exp").onmousemove = null;
     let button = document.getElementById("startBt");
-    offset = sessionsType[currentSession]%2;
-    testTrain = sessionsType[currentSession]%4 > 1? 1: 0;
-    if(currentSession == 0) {
-        let color = sessionsType[currentSession]%2==0? "blue":"red";
-        let desc = testTrain==0? "Test: now it is time to see if you have improved!":"Train: time to learn how to do the task!";
-        instr.html(`<br><br><span style="color:${color};">${desc}</span><br><br>Session ${currentSession}/${sessions} of Block ${currentTrainBlock+1}/${totalTrainBlocks} completed.<br>Click the Continue button to proceed.`);
-        button.onclick = ()=>{plot.hide();select('#endDiv').hide();startSession(testTrain);};
-    } else if(currentSession < sessions) {
-        let color = sessionsType[currentSession]%2==0? "blue":"red";
-        let desc = testTrain==0? "Test: now it is time to see if you have improved!":"Train: time to learn how to do the task!";
-        instr.html(`<br><br><span style="color:${color};">${desc}</span><br><br>Session ${currentSession}/${sessions} of Block ${currentTrainBlock+1}/${totalTrainBlocks} completed.<br>Mean Square Error: ${mse}<br>Click the Continue button to proceed.`);
+    if(currentSession < sessions) {
+        offset = sessionsType[currentSession]%2;
+        testTrain = sessionsType[currentSession]%4 > 1? 1: 0;
+        let color = offset==0? "blue":"red";
+        let desc;
+        if(testTrain==0)
+            desc = highscore[offset]<0? "Test: try to follow the black path as closely as posible":"Test: now it is time to see if you have improved!";
+        else
+            desc = "Train: time to learn how to do the task!";
+        if(currentSession == 0)
+            instr.html(`<br><br><span style="color:${color};">${desc}</span><br><br>Session ${currentSession}/${sessions} of Block ${currentTrainBlock+1}/${totalTrainBlocks} completed.<br>Click the Continue button to proceed.`);
+        else
+            instr.html(`<br><br><span style="color:${color};">${desc}</span><br><br>Session ${currentSession}/${sessions} of Block ${currentTrainBlock+1}/${totalTrainBlocks} completed.<br>Mean Square Error: ${mse}<br>Click the Continue button to proceed.`);
         button.onclick = ()=>{plot.hide();select('#endDiv').hide();startSession(testTrain);};
     } else { 
         if(currentTrainBlock+1 < totalTrainBlocks){
