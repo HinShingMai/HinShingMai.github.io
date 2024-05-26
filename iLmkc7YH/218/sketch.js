@@ -65,16 +65,6 @@ var pOffsets;
 var highscore;
 var timer;
 var timerCount;
-var textDesc = [
-    "short straight line testing session of normal control with perturbation",
-    "short straight line testing session of reverse control with perturbation",
-    "straight line training session of normal control with perturbation",
-    "straight line training session of reverse control with perturbation",
-    "combined testing session of normal control",
-    "combined testing session of reverse control",
-    "training session for practising normal control",
-    "training session for practising reverse control"
-]
 function setup() {
     isDraw = false;
     //select('#endDiv').hide();
@@ -102,7 +92,6 @@ function trainBlockStart() {
         }
     }
     sessions = sessionsType.length;
-    offset = 0;
     currentSession = 0;
     sessionInfo(0, 0);
 }
@@ -111,11 +100,11 @@ function sessionNext() {
     currentSession += 1;
     sessionTotal += 1;
     if(currentSession<2)
-        sessionInfo(0, 1-offset);
+        sessionInfo(0);
     else if(currentSession == 2)
-        sessionInfo(1, blockType%2);
+        sessionInfo(1);
     else
-        sessionInfo(2, offset);
+        sessionInfo(2);
 }
 function startSession(type) {
     dotY = 0;
@@ -136,10 +125,10 @@ function startSession(type) {
     if(type == 0) {
         maxPoints = 500; //2000
         blanknum = 0;
-        if(trainBlocks[currentTrainBlock]%4<2)
-            blank = shuffle([1/30,1/15,0.1,2/15,0.2,4/15,0.4,8/15,11/15,1.0]);
+        if(highscore[offset]<0)
+            blank = [1/30,1/15,0.1,2/15,0.2,4/15,0.4,8/15,11/15,1.0];
         else
-            blank = reverse([1/30,1/15,0.1,2/15,0.2,4/15,0.4,8/15,11/15,1.0]);
+            blank = shuffle([1/30,1/15,0.1,2/15,0.2,4/15,0.4,8/15,11/15,1.0]);
     }
     else if(type == 1) {
         maxPoints = 2000; //10000
@@ -174,7 +163,7 @@ function startSession(type) {
     nextPerturb = 0;
     loop();
 }
-function sessionInfo(type, nextOffset) {
+function sessionInfo(type) {
     noLoop();
     clear();
     isdraw = false;
@@ -234,15 +223,15 @@ function sessionInfo(type, nextOffset) {
             Plotly.newPlot("plot", data, layout, {responsive: true});
         } else {
             let msg;
-            if(highscore<0) {
-                highscore = mse;
-                msg = "<br><br>Best performance error:"+highscore;
+            if(highscore[offset]<0) {
+                highscore[offset] = mse;
+                msg = `<br><br>Best performance error: ${highscore[offset].toFixed(3)}`;
             } 
-            else if(mse<highscore) {
-                highscore = mse;
-                msg = `<br><br>Congratulations! Your score improved better! Keep it up!<br><br>Best performance error: ${highscore}`;
+            else if(mse<highscore[offset]) {
+                highscore[offset] = mse;
+                msg = `<br><br>Congratulations! Your score improved better! Keep it up!<br><br>Best performance error: ${highscore[offset].toFixed(3)}`;
             } else {
-                msg = `<br><br>Your score was worse this time! Try to beat your score!<br><br>Best performance error: ${highscore}`;
+                msg = `<br><br>Your score was worse this time! Try to beat your score!<br><br>Best performance error: ${highscore[offset].toFixed(3)}`;
             }
             plot.show();
             plot.html(msg);
@@ -258,10 +247,14 @@ function sessionInfo(type, nextOffset) {
     offset = sessionsType[currentSession]%2;
     testTrain = sessionsType[currentSession]%4 > 1? 1: 0;
     if(currentSession == 0) {
-        instr.html(`<br><br>Session ${currentSession}/${sessions} of Block ${currentTrainBlock+1}/${totalTrainBlocks} completed.<br>The next session is a ${textDesc[sessionsType[currentSession]]}.<br>Click the Continue button to proceed.`);
+        let color = sessionsType[currentSession]%2==0? "blue":"red";
+        let desc = testTrain==0? "Test: now it is time to see if you have improved!":"Train: time to learn how to do the task!";
+        instr.html(`<br><br><span style="color:${color};">${desc}</span><br><br>Session ${currentSession}/${sessions} of Block ${currentTrainBlock+1}/${totalTrainBlocks} completed.<br>Click the Continue button to proceed.`);
         button.onclick = ()=>{plot.hide();select('#endDiv').hide();startSession(testTrain);};
     } else if(currentSession < sessions) {
-        instr.html(`<br><br>Session ${currentSession}/${sessions} of Block ${currentTrainBlock+1}/${totalTrainBlocks} completed.<br>Mean Square Error: ${mse}<br>The next session is a ${textDesc[sessionsType[currentSession]]}.<br>Click the Continue button to proceed.`);
+        let color = sessionsType[currentSession]%2==0? "blue":"red";
+        let desc = testTrain==0? "Test: now it is time to see if you have improved!":"Train: time to learn how to do the task!";
+        instr.html(`<br><br><span style="color:${color};">${desc}</span><br><br>Session ${currentSession}/${sessions} of Block ${currentTrainBlock+1}/${totalTrainBlocks} completed.<br>Mean Square Error: ${mse}<br>Click the Continue button to proceed.`);
         button.onclick = ()=>{plot.hide();select('#endDiv').hide();startSession(testTrain);};
     } else { 
         if(currentTrainBlock+1 < totalTrainBlocks){
@@ -372,11 +365,6 @@ function draw() {
         drawBike();
         drawTrace();
         error += pathError;
-        strokeWeight(1);
-        textAlign(CENTER);
-        textSize(16);
-        let msg = sessionsType[currentSession]%4>1?"Train: time to learn how to do the task!":"Test; now it is time to see if you have improved!"
-        text(msg, 0, (dotY-maxX)*scaling*scaling_y+20);
         //drawErrorPanel(windowWidth/2-h-60, dotY*scaling*scaling_y-windowHeight*2/3+60);
     }
 }
@@ -605,7 +593,7 @@ function pause() {
     select('#container-exp').hide()
     document.getElementById("container-exp").onmousemove = null;
     let button = document.getElementById("startBt");
-    instr.html(`<br><br>Are you still there?<br><br>The experiment has been paused because we cannot detect any cursor activity for a few seconds.<br>Click the Continue button when you are ready to resume.`);
+    instr.html(`<br><br>Are you still there?<br><br>The experiment has been paused because we cannot detect any cursor activity for a few seconds.<br><br>Click the Continue button when you are ready to resume.`);
     button.onclick = ()=>{select('#endDiv').hide();resume();};
 }
 function resume() {
@@ -683,7 +671,7 @@ function startGame() {
     totalTrainBlocks = trainBlocks.length;
     sessionTotal = 0;
     maxA = PI/2;
-    highscore = -1;
+    highscore = [-1,-1];
     trainBlockStart();
 }
 // Function that ends the game appropriately after the experiment has been completed
