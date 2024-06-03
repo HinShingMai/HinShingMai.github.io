@@ -1,6 +1,6 @@
 let cnv;
 let currentTrainBlock = 0;
-let trainBlocks = [6, 4, 4, 4, 4, -1, 7, 5, 5, 5, 5];
+let trainBlocks = [6, 4, 5];
 let totalTrainBlocks;
 //let max_amplitudes = [[1/2,-1/4,-1/8,1/32,1/16,-1/128,-1/64,1/128],[1/5,-1/10,-1/20,1/80,1/40]];
 //let frequency = [[0.05,0.1,0.25,0.55,0.85,1.15,1.55,2.05],[0.2,0.4,1.0,1.4,2.2]];
@@ -140,7 +140,7 @@ function startSession(type) {
     else if(type == 1) {
         maxPoints = 2000; //10000
         blanknum = 0;
-        blank = [1,1,1,1,1];
+        blank = [1,1];
     }
     if(sessionsType[currentSession]>3) {
         lines = sinuousCurve(maxPoints, type!=0);
@@ -312,10 +312,10 @@ function draw() {
         dotX  = dotX + dotV[0]*sin(dotA);
         if(dotX < -maxX) {
             dotX = -maxX;
-            angAcc = max(angAcc, 0);
+            //angAcc = max(angAcc, 0);
         } else if(dotX > maxX) {
             dotX = maxX;
-            angAcc = min(angAcc, 0);
+            //angAcc = min(angAcc, 0);
         }
         if(perturbation>0) {
             if(perturbing > 0) {
@@ -584,7 +584,7 @@ function drawBike() {
         stroke('red');
         fill('red');
     }
-    strokeWeight(2);
+    strokeWeight(3);
     let heading = dotA;
     let x = dotX*scaling*scaling_x;
     let y = dotY*scaling*scaling_y;
