@@ -354,11 +354,11 @@ function draw() {
         if(dotX < -maxX) { // mirrors motion when hitting edge
             dotX = -maxX;
             //angAcc = offset == 0?abs(angAcc):-abs(angAcc);
-            dotA = abs(dotA);
+            //dotA = abs(dotA);
         } else if(dotX > maxX) {
             dotX = maxX;
             //angAcc = offset == 0?-abs(angAcc):abs(angAcc);
-            dotA = -abs(dotA);
+            //dotA = -abs(dotA);
         }
         /*if(perturbation>0) { // handle perturbation
             if(perturbing > 0) {
