@@ -1,7 +1,7 @@
 let cnv;
 let dpi;
 let currentTrainBlock = 0;
-let trainBlocks = [6, 4, 4];
+let trainBlocks = [4, 4];
 /*
 -n: n-minutes break
 4: normal training block
@@ -194,7 +194,7 @@ function startSession(type) { // type: 0=test, 1=train
     loop();
 }
 function sessionInfo(type) {
-    /*let htmlDiv = select('#endDiv');
+    let htmlDiv = select('#endDiv');
     let instr = select('#endInstr');
     let plot = select('#plot');
     var mse;
@@ -265,93 +265,6 @@ function sessionInfo(type) {
                 msg = `<br><br>Congratulations! Your score improved better! Keep it up!<br><br>Best performance error: ${highscore[offset].toFixed()}`;
             } else {
                 msg = `<br><br>Your score was worse this time! Try to beat your score!<br><br>Best performance error: ${highscore[offset].toFixed()}`;
-            }
-            plot.show();
-            plot.html(msg);
-        }
-    } else {
-        mse = -1.0;
-        plot.hide();
-    }*/
-    
-    let htmlDiv = select('#endDiv');
-    let instr = select('#endInstr');
-    let plot = select('#plot');
-    var mse;
-    htmlDiv.show();
-    if(currentSession > 0) { // handles data
-        mse = error/dis.length;
-        blockErr.push(mse);
-        let isTrain = sessionsType[currentSession-1]%4 > 1;
-        blockNam.push((isTrain?"Train":"Test")+sessionComplete);
-        if(offset == 0) {
-            blockErrn.push(mse);
-            blockErrn_x.push((isTrain?"Train":"Test")+sessionComplete);
-        } else {
-            blockErrr.push(mse);
-            blockErrr_x.push((isTrain?"Train":"Test")+sessionComplete);
-        }
-        // Record data
-        let avgfps = fps/dis.length;
-        let blockData = {
-            xh: lines,
-            x: dis,
-            y: vDist,
-            a: ang,
-            u: act,
-            n: nse,
-            per: perturbDir,
-            num: sessionComplete,
-            type: sessionsType[currentSession-1],
-            hori: blank,
-            offs: pOffsets,
-            id: null,
-            fps: fps/dis.length,
-            version: ver,
-            scale: scaling
-        }
-        console.log(blockData)
-        //recordTrialSession(trialcollection, blockData);
-        //subject.progress++;
-        if(sessionComplete<2&&avgfps<50) { // Screen out participants
-            forceQuit();
-        }
-        if(isTrain) {
-            // Define Data for plotting
-            const idx = Array.from(Array((maxPoints+straightLen)*(blank.length)).keys());
-            let data = [
-                {x: blockNam, y: blockErr, type: 'scatter', mode: 'lines', line: {color: 'green', width: 3}, name: 'Error'},
-                {x: blockErrn_x, y: blockErrn, type: 'scatter', mode: 'markers', marker: {color: 'blue', size: 10}, name: 'Normal'},
-                {x: blockErrr_x, y: blockErrr, type: 'scatter', mode: 'markers', marker: {color: 'red', size: 10}, name: 'Reverse'},
-                //{x: Array.from(Array(act.length).keys()), y: act, xaxis: 'x2', yaxis: 'y2', type: 'scatter', mode: 'lines', line: {color: 'black', width: 3}, name: 'Actions'},
-                {x: idx, y: lines, xaxis: 'x2', yaxis: 'y2', type: 'scatter', mode: 'lines', line: {color: 'black', width: 3}, name: 'Path'},
-                {x: vDist, y: dis, xaxis: 'x2', yaxis: 'y2', type: 'scatter', mode: 'lines', line: {color: 'blue', width: 3}, name: 'You'},
-            ];
-            // layout
-            var layout = {
-                title: 'Average Error and Trajectory',
-                yaxis: {rangemode: "tozero"},
-                grid: {rows: 1, columns: 2, pattern: 'independent'},
-            };
-            // Display using Plotly
-            plot.show();
-            plot.html("");
-            Plotly.newPlot("plot", data, layout, {responsive: true});
-        } else {
-            let msg;
-            let color = offset==0? "blue":"red";
-            if(highscore[offset]<0) {
-                highscore[offset] = mse;
-                //msg = `<br><br>Best performance error: ${highscore[offset].toFixed()}`;
-                msg = `<br><br>Best performance error: <span style="color:${color};">${highscore[offset].toFixed()}</span>`;
-            } 
-            else if(mse<highscore[offset]) {
-                highscore[offset] = mse;
-                //msg = `<br><br>Congratulations! Your score improved better! Keep it up!<br><br>Best performance error: ${highscore[offset].toFixed()}`;
-                msg = `<br><br>Congratulations! Your score improved better! Keep it up!<br><br>Best performance error: <span style="color:${color};">${highscore[offset].toFixed()}</span>`;
-            } else {
-                //msg = `<br><br>Your score was worse this time! Try to beat your score!<br><br>Best performance error: ${highscore[offset].toFixed()}`;
-                msg = `<br><br>Your score was worse this time! Try to beat your score!<br><br>Best performance error: <span style="color:${color};">${highscore[offset].toFixed()}</span>`;
             }
             plot.show();
             plot.html(msg);
@@ -434,18 +347,20 @@ function draw() {
         dotA = dotA + dotU;
         if(dotA < -maxA) {
             dotA = -maxA;
+            angAcc = 0;
         } else if(dotA > maxA) {
             dotA = maxA;
+            angAcc = 0;
         }
         dotX  = dotX + dotA;
         if(dotX < -maxX) { // mirrors motion when hitting edge
             dotX = -maxX;
-            //angAcc = offset == 0?abs(angAcc):-abs(angAcc);
-            dotA = abs(dotA);
+            //angAcc = 0;
+            dotA = 0;
         } else if(dotX > maxX) {
             dotX = maxX;
-            //angAcc = offset == 0?-abs(angAcc):abs(angAcc);
-            dotA = -abs(dotA);
+            //angAcc = 0;
+            dotA = 0;
         }
         /*if(perturbation>0) { // handle perturbation
             if(perturbing > 0) {

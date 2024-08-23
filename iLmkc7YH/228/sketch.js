@@ -1,7 +1,8 @@
+let ver = 0.3;
 let cnv;
-let dpi;
+let dpi = -1;
 let currentTrainBlock = 0;
-let trainBlocks = [6, 4, 4];
+let trainBlocks = [6, 4];
 /*
 -n: n-minutes break
 4: normal training block
@@ -10,17 +11,16 @@ let trainBlocks = [6, 4, 4];
 7: reverse testing block
 */
 let totalTrainBlocks;
-var amplitudes_low = [[1/7,1/9,1/11,0,0,0,0],[1/12,1/18,1/22,0,0,0,0]];
-var amplitudes_hi = [[0,1/5,0,0,-1/23,1/31,-1/41],[0,1/9,0,0,-1/33,-1/39,1/51]];
-var amplitudes;
-let frequency = [[2/20,5/20,11/20,17/20,23/20,31/20,41/20],[2/6,3/6,5/6,7/6,11/6,13/6,17/6]];
+let amplitudes = [[1/2,-1/4,-1/16,1/8,1/32,1/24,-1/64,-1/32],[0,1/4,1/16,1/8,-1/16,-1/32,1/64,1/32]];
+let frequency = [[1/24,1/6,2/6,3/6,5/6,7/6,8/6,12/6],[1/24,1/6,2/6,3/6,5/6,7/6,8/6,12/6]];
 let frameNum = 0; // Number of frames in the current session
 var dotX;
 var dotY;
 //var dotV = [1.0, 1.0];
 var dotA;
-var maxX;
+var maxY;
 var width_x = 240;
+var scaling_base;
 var scaling;
 var angAcc;
 var lines;
@@ -84,10 +84,6 @@ function setup() {
 }
 function trainBlockStart() {
     blockType = trainBlocks[currentTrainBlock];
-    if(currentTrainBlock < 1)
-        amplitudes = amplitudes_low;
-    else
-        amplitudes = amplitudes_hi;
     if(blockType<0) {
         startBreak(-blockType);
         return;
@@ -104,7 +100,7 @@ function trainBlockStart() {
         if(type == 0) {
             sessionsType = [6, 4];
         } else if(type == 1) {
-            sessionsType = [7, 4, 5];
+            sessionsType = [7, 5, 4];
         }
     } else {
         if(type == 2) {
@@ -115,29 +111,24 @@ function trainBlockStart() {
     }
     sessions = sessionsType.length;
     currentSession = 0;
-    sessionInfo(0, 0);
+    sessionInfo();
 }
 function sessionNext() {
+    isdraw = false;
     document.getElementById("container-exp").onmousemove = null;
     document.exitPointerLock();
     noLoop();
     clear();
-    isdraw = false;
     currentSession++;
     sessionComplete++;
-    if(currentSession<2)
-        sessionInfo(0);
-    else if(currentSession == 2)
-        sessionInfo(1);
-    else
-        sessionInfo(2);
+    sessionInfo();
 }
-function startSession(type) { // type: 0=test, 1=train
+function startSession() {
     dotY = 0;
     dotA = 0;
     angAcc = 0;
     dotU =0;
-    maxX = width_x*0.625; //150
+    //maxY = width_x*0.625; //150
     isDraw = true;
     select('#container-exp').show()
     document.getElementById("container-exp").onmousemove = handleMouseMove;
@@ -148,21 +139,27 @@ function startSession(type) { // type: 0=test, 1=train
     vDist = [];
     nse = [];
     maxPoints = 0;
-    if(type == 0) {
-        maxPoints = 600; //2000
+    isTest = sessionsType[currentSession]%4 < 2;
+    if(isTest) {
+        maxPoints = 600;
         blanknum = 0;
+        maxY = width_x*0.625; //150
+        maxX = maxY*0.5; //75
+        scaling = scaling_base;
         if(highscore[offset]<0) // don't shuffle for the first test
-            blank = [1/30,1/15,0.1,2/15,0.2,1/3,0.5,112/150,1];
+            blank = [1/30,1/15,0.1,2/15,0.2,1/3,0.5,112/150,1]; // 9 sub-sessions
         else
             blank = shuffle([1/30,1/15,0.1,2/15,0.2,1/3,0.5,112/150,1]);
-    }
-    else if(type == 1) {
-        maxPoints = 2000; //10000
+    } else {
+        maxPoints = 2400;
         blanknum = 0;
-        blank = [1,1,1,1,1];
+        maxY = width_x*0.625; //150
+        maxX = maxY;
+        scaling = scaling_base;
+        blank = [1,1,1,1]; // 4 sub-sessions
     }
     if(sessionsType[currentSession]>3) {
-        lines = sinuousCurve(maxPoints, type);
+        lines = sinuousCurve(maxPoints, isTest);
         perturbation = -1;
         perturbDir = null;
         perturbCoord = null;
@@ -193,87 +190,7 @@ function startSession(type) { // type: 0=test, 1=train
     plen = maxPoints+straightLen;
     loop();
 }
-function sessionInfo(type) {
-    /*let htmlDiv = select('#endDiv');
-    let instr = select('#endInstr');
-    let plot = select('#plot');
-    var mse;
-    htmlDiv.show();
-    if(currentSession > 0) {
-        mse = error/dis.length;
-        blockErr.push(mse);
-        let isTrain = sessionsType[currentSession-1]%4 > 1;
-        blockNam.push((isTrain?"Train":"Test")+sessionComplete);
-        if(offset == 0) {
-            blockErrn.push(mse);
-            blockErrn_x.push((isTrain?"Train":"Test")+sessionComplete);
-        } else {
-            blockErrr.push(mse);
-            blockErrr_x.push((isTrain?"Train":"Test")+sessionComplete);
-        }
-        // Record data
-        let avgfps = fps/dis.length;
-        let blockData = {
-            xh: lines,
-            x: dis,
-            y: vDist,
-            a: ang,
-            u: act,
-            n: nse,
-            per: perturbDir,
-            num: sessionComplete,
-            type: sessionsType[currentSession-1],
-            hori: blank,
-            offs: pOffsets,
-            //id: subject.id,
-            fps: fps/dis.length
-        }
-        console.log(blockData)
-        //recordTrialSession(trialcollection, blockData);
-        if(sessionComplete<2&&avgfps<50) {
-            forceQuit();
-        }
-        if(isTrain) {
-            // Define Data for plotting
-            const idx = Array.from(Array((maxPoints+straightLen)*(blank.length)).keys());
-            let data = [
-                {x: blockNam, y: blockErr, type: 'scatter', mode: 'lines', line: {color: 'green', width: 3}, name: 'Error'},
-                {x: blockErrn_x, y: blockErrn, type: 'scatter', mode: 'markers', marker: {color: 'blue', size: 10}, name: 'Normal'},
-                {x: blockErrr_x, y: blockErrr, type: 'scatter', mode: 'markers', marker: {color: 'red', size: 10}, name: 'Reverse'},
-                //{x: Array.from(Array(act.length).keys()), y: act, xaxis: 'x2', yaxis: 'y2', type: 'scatter', mode: 'lines', line: {color: 'black', width: 3}, name: 'Actions'},
-                {x: idx, y: lines, xaxis: 'x2', yaxis: 'y2', type: 'scatter', mode: 'lines', line: {color: 'black', width: 3}, name: 'Path'},
-                {x: vDist, y: dis, xaxis: 'x2', yaxis: 'y2', type: 'scatter', mode: 'lines', line: {color: 'blue', width: 3}, name: 'You'},
-            ];
-            // layout
-            var layout = {
-                title: 'Average Error and Trajectory',
-                yaxis: {rangemode: "tozero"},
-                grid: {rows: 1, columns: 2, pattern: 'independent'},
-            };
-            // Display using Plotly
-            plot.show();
-            plot.html("");
-            Plotly.newPlot("plot", data, layout, {responsive: true});
-        } else {
-            let msg;
-            if(highscore[offset]<0) {
-                highscore[offset] = mse;
-                msg = `<br><br>Best performance error: ${highscore[offset].toFixed()}`;
-            } 
-            else if(mse<highscore[offset]) {
-                highscore[offset] = mse;
-                msg = `<br><br>Congratulations! Your score improved better! Keep it up!<br><br>Best performance error: ${highscore[offset].toFixed()}`;
-            } else {
-                msg = `<br><br>Your score was worse this time! Try to beat your score!<br><br>Best performance error: ${highscore[offset].toFixed()}`;
-            }
-            plot.show();
-            plot.html(msg);
-        }
-    } else {
-        mse = -1.0;
-        plot.hide();
-    }*/
-    
+function sessionInfo() {
     let htmlDiv = select('#endDiv');
     let instr = select('#endInstr');
     let plot = select('#plot');
@@ -363,7 +280,7 @@ function sessionInfo(type) {
     mse = mse.toFixed();
     select('#container-exp').hide()
     let button = document.getElementById("startBt");
-    if(currentSession < sessions) { // continue to proceed to next session
+    if(currentSession < sessions) { // proceed to next session
         offset = sessionsType[currentSession]%2;
         testTrain = sessionsType[currentSession]%4 > 1? 1: 0;
         let color = offset==0? "blue":"red";
@@ -376,14 +293,14 @@ function sessionInfo(type) {
             instr.html(`<br><span style="color:${color};">${desc}</span><br><br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br><br>Click the Continue button to proceed.`);
         else
             instr.html(`<br><span style="color:${color};">${desc}</span><br><br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br>Average Error: ${mse}<br>Click the Continue button to proceed.`);
-        button.onclick = ()=>{plot.hide();select('#endDiv').hide();startSession(testTrain);};
-    } else { // end of a block, continue to start of next block
-        if(currentTrainBlock+1 < totalTrainBlocks){
+        button.onclick = ()=>{plot.hide();select('#endDiv').hide();startSession();};
+    } else { // end of a block
+        if(currentTrainBlock+1 < totalTrainBlocks){ // proceed to next block
             instr.html(`<br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br>Average Error: ${mse}<br><br>Click the Continue button to proceed to next training block.`);
             button.onclick = ()=>{plot.hide();select('#endDiv').hide(); currentTrainBlock++; trainBlockStart();};
-        } else{
+        } else { // Final block, end game
             instr.html(`<br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br>Average Error: ${mse}<br><br>Click the Continue button to proceed.`);
-            button.onclick = ()=>{plot.hide();select('#endDiv').hide(); currentTrainBlock++; endGame();};//select('#endDiv').hide();
+            button.onclick = ()=>{plot.hide();select('#endDiv').hide(); currentTrainBlock++; endGame();};
         }
     }
 }
@@ -438,41 +355,24 @@ function draw() {
             dotA = maxA;
         }
         dotX  = dotX + dotA;
-        if(dotX < -maxX) { // mirrors motion when hitting edge
+        if(dotX < -maxX) { // hits edge
             dotX = -maxX;
-            //angAcc = offset == 0?abs(angAcc):-abs(angAcc);
-            dotA = abs(dotA);
+            //dotA = abs(dotA); // mirrors motion when hitting edge
         } else if(dotX > maxX) {
             dotX = maxX;
-            //angAcc = offset == 0?-abs(angAcc):abs(angAcc);
-            dotA = -abs(dotA);
+            //dotA = -abs(dotA);
         }
-        /*if(perturbation>0) { // handle perturbation
-            if(perturbing > 0) {
-                dotX += perturbDist/perturbLen*perturbDir[nextPerturb];
-                perturbing--;
-                if(perturbing == 0)
-                    nextPerturb++;
-            } else {
-                if(nextPerturb<perturbCount && -dotY>=perturbCoord[nextPerturb]) {
-                    if(perturbDir[nextPerturb] != 0)
-                        perturbing = perturbLen;
-                    else
-                        nextPerturb++;
-                }
-            }
-        }*/
         
         dotY -= 1;
         // draw
-        translate(windowWidth/2, windowHeight*2/3 - dotY*scaling);
         clear();
         background('white');
         stroke('black');
         strokeWeight(4);
         noFill();
-        rect(-maxX*scaling, -(maxX-dotY)*scaling, maxX*scaling*2, maxX*scaling*1.5);
-        let high = int(maxX*blank[blanknum]-dotY);
+        let high = int(maxY*blank[blanknum]-dotY);
+        translate(windowWidth/2, windowHeight*2/3 - dotY*scaling);
+        rect(-maxX*scaling, -(maxY-dotY)*scaling, maxX*scaling*2, maxY*scaling*1.5);
         drawCurve(lines, -dotY-1, min(high,(blanknum+1)*plen));
         drawBike();
         drawTrace();
@@ -486,7 +386,7 @@ function draw() {
         fill('black');
         textSize(12);
         strokeWeight(1);
-        text("FPS: "+frBuffer, maxX*scaling-50, -(maxX-dotY)*scaling+10);
+        text("FPS: "+frBuffer, maxY*scaling-50, -(maxY-dotY)*scaling+10);
             
         fps += fr;
         frameNum++;
@@ -504,12 +404,12 @@ function linearError() { // horizontal distance to trajectory
         return 0;
     return Math.abs(dotX-lines[-dotY]);
 }
-function sinuousCurve(len, isTest) { // generate trajectory, isTest: 0=test, 1=train
+function sinuousCurve(len, isTest) { // generate trajectory
     let start = 0;
     var ampl;
     var freq;
     var repeat;
-    if(isTest==0) {
+    if(isTest) {
         ampl = amplitudes[1];
         freq = frequency[1];
         repeat = blank.length;
@@ -518,7 +418,7 @@ function sinuousCurve(len, isTest) { // generate trajectory, isTest: 0=test, 1=t
         freq = frequency[0];
         repeat = blank.length;
     }
-    if(isTest==0) { // generate the same sub-trajectories for testing
+    if(isTest) { // generate the same sub-trajectories for testing
         var points = [];
         for(let i=0; i<len; i++) {
             X = 0;
@@ -578,10 +478,10 @@ function drawCurve(coords, start, end) {
     }
     noStroke();
     fill('lightgray')
-    rect(-maxX*scaling+2, (maxX/2+dotY)*scaling, 2*maxX*scaling-4, (2-maxX/2)*scaling);
+    rect(-maxX*scaling+2, (maxY/2+dotY)*scaling, 2*maxX*scaling-4, (2-maxY/2)*scaling);
     if(blank[blanknum]<0.9) {
         fill('grey');
-        rect(-maxX*scaling+2, (dotY-maxX)*scaling, 2*maxX*scaling-4, maxX*(1-blank[blanknum])*scaling);
+        rect(-maxX*scaling+2, (dotY-maxY)*scaling, 2*maxX*scaling-4, maxY*(1-blank[blanknum])*scaling);
     }
 }
 function drawBike() {
@@ -661,7 +561,7 @@ function countDown() { // timer countdown for break
         let btn = document.getElementById("startBt");
         clearInterval(timer);
         sessionComplete++;
-        select('#endInstr').html(`<br>Now we will introduce the Red Fish!<br><br>At each test, you will be tested on both blue and red fish.<br>The Red fish may not behave in an intuitive way at first. But if you keep on trying to follow the grey path, you will see that your performance will improve`);
+        select('#endInstr').html(`<br>Now we will introduce the <span style="color:red;">Red Fish!</span><br><br>At each test, you will be tested on both blue and red fish.<br>The Red fish may not behave in an intuitive way at first. But if you keep on trying to follow the grey path, you will see that your performance will improve`);
         btn.style.display = 'block';
         btn.onclick = ()=>{select('#endDiv').hide(); currentTrainBlock++; trainBlockStart();};
     }
@@ -675,9 +575,6 @@ function handleMouseMove(e) {
         angAcc += scaledMovement;
         angAcc = fixBetween(angAcc, -maxA/20, +maxA/20);
     }
-}
-function handleClick() {
-    startSession();
 }
 function moveNoise(mode) {
     return 0;
@@ -711,7 +608,7 @@ function startGame() {
     h = min(windowHeight*1/6, 100);
     let sx = windowWidth/width_x*0.8;
     let sy = windowHeight/width_x/0.75*0.8;
-    scaling = sx < sy? sx:sy;
+    scaling_base = sx < sy? sx:sy;
     select('#instrDiv').hide();
     totalTrainBlocks = trainBlocks.length;
     sessionComplete = 0;
@@ -732,5 +629,5 @@ function windowResized() {
     // set scaling depending on screen size
     let sx = windowWidth/width_x*0.8;
     let sy = windowHeight/width_x/0.75*0.8;
-    scaling = sx < sy? sx:sy;
+    scaling_base = sx < sy? sx:sy;
 }
