@@ -2,9 +2,10 @@ let ver = 0.3;
 let cnv;
 let dpi = -1;
 let currentTrainBlock = 0;
-let trainBlocks = [6, 4];
+let trainBlocks = [0, 6, -1, 4];
 /*
 -n: n-minutes break
+0: no path normal familiarization block
 4: normal training block
 5: reverse training block
 6: normal testing block
@@ -84,11 +85,6 @@ function setup() {
 }
 function trainBlockStart() {
     blockType = trainBlocks[currentTrainBlock];
-    if(blockType<0) {
-        startBreak(-blockType);
-        return;
-    }
-    let type = blockType%4;
     // arrange sessions in a block
     /*
         4: normal testing session
@@ -96,17 +92,25 @@ function trainBlockStart() {
         6: normal training session
         7: reverse training session
     */
-    if(type < 2) {
-        if(type == 0) {
-            sessionsType = [6, 4];
-        } else if(type == 1) {
-            sessionsType = [7, 5, 4];
-        }
+    if(blockType<0) {
+        startBreak(-blockType);
+        return;
+    } else if(blockType<2) {
+        sessionsType = [blockType];
     } else {
-        if(type == 2) {
-            sessionsType = [4];
+        let type = blockType%4;
+        if(type < 2) {
+            if(type == 0) {
+                sessionsType = [6, 4];
+            } else if(type == 1) {
+                sessionsType = [7, 5, 4];
+            }
         } else {
-            sessionsType = [5];
+            if(type == 2) {
+                sessionsType = [4];
+            } else {
+                sessionsType = [5];
+            }
         }
     }
     sessions = sessionsType.length;
@@ -139,41 +143,57 @@ function startSession() {
     vDist = [];
     nse = [];
     maxPoints = 0;
-    isTest = sessionsType[currentSession]%4 < 2;
-    if(isTest) {
-        maxPoints = 600;
-        blanknum = 0;
-        maxY = width_x*0.625; //150
-        maxX = maxY*0.5; //75
-        scaling = scaling_base;
-        if(highscore[offset]<0) // don't shuffle for the first test
-            blank = [1/30,1/15,0.1,2/15,0.2,1/3,0.5,112/150,1]; // 9 sub-sessions
-        else
-            blank = shuffle([1/30,1/15,0.1,2/15,0.2,1/3,0.5,112/150,1]);
-    } else {
+    if(sessionsType[currentSession] < 2) { // empty session
+        isTest = false;
         maxPoints = 2400;
         blanknum = 0;
         maxY = width_x*0.625; //150
         maxX = maxY;
         scaling = scaling_base;
-        blank = [1,1,1,1]; // 4 sub-sessions
-    }
-    if(sessionsType[currentSession]>3) {
-        lines = sinuousCurve(maxPoints, isTest);
+        blank = [1];
+        lines = null;
         perturbation = -1;
         perturbDir = null;
         perturbCoord = null;
-    } else { // perturbation session
-        lines = straightLine(maxPoints);
-        perturbation = Math.floor(maxPoints/perturbCount)+1;
-        perturbDir = shuffle([-1, -1, 0, 0, 1, 1]);
-        perturbCoord = [];
-        perturbing = 0;
-        for(let i=1; i<perturbCount; i++)
-            perturbCoord.push(perturbation*i + 1);
+        dotX = 0;
+    }
+    else {
+        isTest = sessionsType[currentSession]%4 < 2;
+        if(isTest) {
+            maxPoints = 600;
+            blanknum = 0;
+            maxY = width_x*0.625; //150
+            maxX = maxY*0.5; //75
+            scaling = scaling_base;
+            if(highscore[offset]<0) // don't shuffle for the first test
+                blank = [1/30,1/15,0.1,2/15,0.2,1/3,0.5,112/150,1]; // 9 sub-sessions
+            else
+                blank = shuffle([1/30,1/15,0.1,2/15,0.2,1/3,0.5,112/150,1]);
+        } else {
+            maxPoints = 2400;
+            blanknum = 0;
+            maxY = width_x*0.625; //150
+            maxX = maxY;
+            scaling = scaling_base;
+            blank = [1,1,1,1]; // 4 sub-sessions
+        }
+        if(sessionsType[currentSession]>3) {
+            lines = sinuousCurve(maxPoints, isTest);
+            perturbation = -1;
+            perturbDir = null;
+            perturbCoord = null;
+        } else { // perturbation session
+            lines = straightLine(maxPoints);
+            perturbation = Math.floor(maxPoints/perturbCount)+1;
+            perturbDir = shuffle([-1, -1, 0, 0, 1, 1]);
+            perturbCoord = [];
+            perturbing = 0;
+            for(let i=1; i<perturbCount; i++)
+                perturbCoord.push(perturbation*i + 1);
+        }
+        dotX = lines[0];
     }
     clear();
-    dotX = lines[0];
     frameNum = 0;
     error = 0.0;
     susE = 0;
@@ -196,7 +216,7 @@ function sessionInfo() {
     let plot = select('#plot');
     var mse;
     htmlDiv.show();
-    if(currentSession > 0) { // handles data
+    if(lines!=null && currentSession > 0) { // handles data
         mse = error/dis.length;
         blockErr.push(mse);
         let isTrain = sessionsType[currentSession-1]%4 > 1;
@@ -231,7 +251,7 @@ function sessionInfo() {
         //recordTrialSession(trialcollection, blockData);
         //subject.progress++;
         if(sessionComplete<2&&avgfps<50) { // Screen out participants
-            forceQuit();
+            forceQuit(1);
         }
         if(isTrain) {
             // Define Data for plotting
@@ -285,18 +305,23 @@ function sessionInfo() {
         testTrain = sessionsType[currentSession]%4 > 1? 1: 0;
         let color = offset==0? "blue":"red";
         let desc;
-        if(testTrain==0)
+        if(sessionsType[currentSession] == 0)
+            desc = "First, please take some time to familiarize yourself with the controls."
+        else if(testTrain==0)
             desc = highscore[offset]<0? "Test: try to follow the black path as closely as posible":"Test: now it is time to see if you have improved!";
         else
             desc = "Train: time to learn how to do the task!";
-        if(currentSession == 0)
+        if(mse < 0)
             instr.html(`<br><span style="color:${color};">${desc}</span><br><br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br><br>Click the Continue button to proceed.`);
         else
             instr.html(`<br><span style="color:${color};">${desc}</span><br><br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br>Average Error: ${mse}<br>Click the Continue button to proceed.`);
         button.onclick = ()=>{plot.hide();select('#endDiv').hide();startSession();};
     } else { // end of a block
         if(currentTrainBlock+1 < totalTrainBlocks){ // proceed to next block
-            instr.html(`<br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br>Average Error: ${mse}<br><br>Click the Continue button to proceed to next training block.`);
+            if(mse < 0)
+                instr.html(`<br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br><br><br>Click the Continue button to proceed to next training block.`);
+            else
+                instr.html(`<br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br>Average Error: ${mse}<br><br>Click the Continue button to proceed to next training block.`);
             button.onclick = ()=>{plot.hide();select('#endDiv').hide(); currentTrainBlock++; trainBlockStart();};
         } else { // Final block, end game
             instr.html(`<br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br>Average Error: ${mse}<br><br>Click the Continue button to proceed.`);
@@ -404,7 +429,7 @@ function fixBetween(x, minimum, maximum) {
     return x;
 }
 function linearError() { // horizontal distance to trajectory
-    if(dotY>0 || -dotY>=lines.length)
+    if(lines==null || dotY>0 || -dotY>=lines.length)
         return 0;
     return Math.abs(dotX-lines[-dotY]);
 }
@@ -468,24 +493,34 @@ function arrayRotate(arr, count) { // rotates array, ex. arrayRotate([0, 1, 2, 3
     return arr
 }
 function drawCurve(coords, start, end) {
-    noFill();
-    let startFix = start;
-    if(startFix < 0)
-        startFix = 0;
-    let endFix = end;
-    if(endFix > coords.length)
-        endFix = coords.length;
-    stroke('grey');
-    strokeWeight(6);
-    for(let i = startFix+1; i<endFix; i++) {
-        line(coords[i-1]*scaling, (1-i)*scaling, coords[i]*scaling, -i*scaling);
-    }
-    noStroke();
-    fill('lightgray')
-    rect(-maxX*scaling+2, (maxY/2+dotY)*scaling, 2*maxX*scaling-4, (2-maxY/2)*scaling);
-    if(blank[blanknum]<0.9) {
-        fill('grey');
-        rect(-maxX*scaling+2, (dotY-maxY)*scaling, 2*maxX*scaling-4, maxY*(1-blank[blanknum])*scaling);
+    if(coords!==null) {
+        noFill();
+        let startFix = start;
+        if(startFix < 0)
+            startFix = 0;
+        let endFix = end;
+        if(endFix > coords.length)
+            endFix = coords.length;
+        stroke('grey');
+        strokeWeight(6);
+        for(let i = startFix+1; i<endFix; i++)
+            line(coords[i-1]*scaling, (1-i)*scaling, coords[i]*scaling, -i*scaling);
+        noStroke();
+        fill('lightgray')
+        rect(-maxX*scaling+2, (maxY/2+dotY)*scaling, 2*maxX*scaling-4, (2-maxY/2)*scaling);
+        if(blank[blanknum]<0.9) {
+            fill('grey');
+            rect(-maxX*scaling+2, (dotY-maxY)*scaling, 2*maxX*scaling-4, maxY*(1-blank[blanknum])*scaling);
+        }
+    } else {
+        stroke('black');
+        fill('black');
+        textSize(24);
+        strokeWeight(1);
+        textAlign(CENTER);
+        var remain = Math.floor((plen*(blank.length)+dotY)/60);
+        text("Move the cursor left or right to swing the tail.\nThe larger the tail angle, the faster the fish will turn.\nThe fish will stop turning when the tail is straight.\n"+
+            "\nDo not worry if you are struggling, there will be more training sessions in the future.\nRemaining time: "+String(remain).padStart(2,'0'), 0, -(maxY*2/3-dotY)*scaling);
     }
 }
 function drawBike() {
@@ -548,26 +583,34 @@ function resume() {
     clear();
     loop();
 }
-function startBreak(len) {
+function startBreak(len) { // len-minutes break
     let htmlDiv = select('#endDiv');
     let instr = select('#endInstr');
     htmlDiv.show();
-    timerCount = 60;
-    instr.html(`<br>Let's take a ${len} minute break.<br><br>${timerCount}`);
+    timerCount = 60*len;
+    graceTime = 60; // participants have 420 seconds to click next button after break timer runs out
+    instr.html(`<br>Let's take a ${len} minute break.<br><br>${len} : 00`);
     select('#startBt').hide();
     timer = setInterval(countDown, 1000);
     
 }
 function countDown() { // timer countdown for break
     if(--timerCount>0) {
-        select('#endInstr').html(`<br>Let's take a ${-trainBlocks[currentTrainBlock]} minute break.<br><br>${timerCount}`);
-    } else {
+        select('#endInstr').html(`<br>Let's take a ${-trainBlocks[currentTrainBlock]} minute break.<br><br>${Math.floor(timerCount/60)} : ${String(timerCount%60).padStart(2,'0')}`);
+    } else if(timerCount == 0) {
         let btn = document.getElementById("startBt");
-        clearInterval(timer);
-        sessionComplete++;
-        select('#endInstr').html(`<br>Now we will introduce the <span style="color:red;">Red Fish!</span><br><br>At each test, you will be tested on both blue and red fish.<br>The Red fish may not behave in an intuitive way at first. But if you keep on trying to follow the grey path, you will see that your performance will improve`);
+        select('#endInstr').html(`<br>Now we will introduce the <span style="color:red;">Red Fish!</span><br>At each test, you will be tested on both blue and red fish.
+                                    <br>The Red fish may not behave in an intuitive way at first. But if you keep on trying to follow the grey path, you will see that your performance will improve
+                                    <br><span style="color:red;">Please click the button and proceed with the experiment before the timer runs out.</span><br><span style="color:red;">${Math.floor((graceTime+timerCount)/60)} : ${String((graceTime+timerCount)%60).padStart(2,'0')}</span>`);
         btn.style.display = 'block';
-        btn.onclick = ()=>{select('#endDiv').hide(); currentTrainBlock++; trainBlockStart();};
+        btn.onclick = ()=>{select('#endDiv').hide(); currentTrainBlock++; trainBlockStart();clearInterval(timer);sessionComplete++;};
+    } else if(graceTime+timerCount>=0){
+        select('#endInstr').html(`<br>Now we will introduce the <span style="color:red;">Red Fish!</span><br>At each test, you will be tested on both blue and red fish.
+                                    <br>The Red fish may not behave in an intuitive way at first. But if you keep on trying to follow the grey path, you will see that your performance will improve
+                                    <br><span style="color:red;">Please click the button and proceed with the experiment before the timer runs out.</span><br><span style="color:red;">${Math.floor((graceTime+timerCount)/60)} : ${String((graceTime+timerCount)%60).padStart(2,'0')}</span>`);
+    } else { // timeout
+        clearInterval(timer);
+        forceQuit(2);
     }
 }
 function handleMouseMove(e) {
@@ -588,7 +631,7 @@ function moveNoise(mode) {
 }
 function computeSessionTotal() {
     var t=0;
-    let x=[2,3,1,1,2,3,1,1];
+    let x=[1,1,1,1,2,3,1,1];
     for(let i=0;i<totalTrainBlocks;i++) {
         if(trainBlocks[i]<0)
             t++;
@@ -597,8 +640,9 @@ function computeSessionTotal() {
     }
     return t;
 }
-function forceQuit() { // force quit experiment because of low frame rate
+function forceQuit(reason) { // force quit experiment because of : 1. low frame rate 2. taken a break too long
     select('#endDiv').hide();
+    select('#failed-'+reason).show();
     remove();
     show('container-failed', 'container-exp');
     document.getElementById("container-exp").onmousemove = null;
@@ -635,3 +679,11 @@ function windowResized() {
     let sy = windowHeight/width_x/0.75*0.8;
     scaling_base = sx < sy? sx:sy;
 }
+function show(shown, hidden) {
+    document.getElementById(shown).style.display = 'block';
+    document.getElementById(hidden).style.display = 'none';
+    document.body.scrollTop = 0; // For Safari
+    document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+    return false;
+}
+function helpEnd() {}
