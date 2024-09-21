@@ -120,7 +120,7 @@ function trainBlockStart() {
     sessionInfo();
 }
 function sessionNext() {
-    isdraw = false;
+    //isdraw = false;
     document.getElementById("container-exp").onmousemove = null;
     document.exitPointerLock();
     noLoop();
@@ -344,6 +344,7 @@ function draw() {
                 angAcc = 0.0;
                 movin=false;
             } else {
+                isDraw = false;
                 sessionNext();
                 return;
             }
@@ -376,6 +377,7 @@ function draw() {
         }
             
         if(inactivity > 100) {
+            //isDraw = false;
             //pause();
         }
         // motion model
@@ -660,7 +662,7 @@ function pause() { // pause due to inactivity
     document.exitPointerLock();
     noLoop();
     clear();
-    isdraw = false;
+    //isdraw = false;
     let htmlDiv = select('#endDiv');
     let instr = select('#endInstr');
     htmlDiv.show();
@@ -738,7 +740,7 @@ function moveNoise(mode) {
 }
 function computeSessionTotal() {
     var t=0;
-    let x=[1,1,1,1,2,3,1,1];
+    let x=[1,1,1,1,1,1,1,1];
     for(let i=0;i<totalTrainBlocks;i++) {
         if(trainBlocks[i]<0)
             t++;
