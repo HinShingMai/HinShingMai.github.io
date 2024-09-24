@@ -437,14 +437,16 @@ function draw() {
         textSize(12);
         strokeWeight(1);
         text("FPS: "+frBuffer, maxY*scaling-50, -(maxY-dotY)*scaling+10);*/
-        stroke('blue');
-        fill('blue');
-        textSize(18);
-        strokeWeight(1);
-        for(let i=0;i<errors.length;i++) {
-            text(errors[i].toFixed(1)+"%",0,-(-dotY-maxY/2)*scaling-12-18*i);
+        if(lines != null) {
+            stroke('blue');
+            fill('blue');
+            textSize(18);
+            strokeWeight(1);
+            for(let i=0;i<errors.length;i++) {
+                text(errors[i].toFixed(1)+"%",0,-(-dotY-maxY/2)*scaling-12-18*i);
+            }
+            text("Percent in Path: ",0,-(-dotY-maxY/2)*scaling-18*3);
         }
-        text("Percent in Path: ",0,-(-dotY-maxY/2)*scaling-18*3);
             
         fps += fr;
         frameNum++;
@@ -643,9 +645,11 @@ function drawBike(state) { // state: true/false = inPath/outOfPath
     } else {
         stroke('red');
         fill('red');
-        textSize(18);
-        strokeWeight(1);
-        text(((error-straightLen)/maxPoints*100).toFixed(1)+"%", dotX*scaling + 60, dotY*scaling);
+        if(lines != null) {
+            textSize(18);
+            strokeWeight(1);
+            text(((error-straightLen)/maxPoints*100).toFixed(1)+"%", dotX*scaling + 60, dotY*scaling);
+        }
     }
     strokeWeight(3);
     let heading = dotA;
