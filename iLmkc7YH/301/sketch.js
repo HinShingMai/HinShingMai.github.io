@@ -2,7 +2,7 @@ let ver = 0.3;
 let cnv;
 let dpi = -1;
 let currentTrainBlock = 0;
-let trainBlocks = [0, 4];
+let trainBlocks = [0, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -10, 1, 2];
 /*
 -n: n-minutes break
 0: no path normal familiarization block
@@ -12,8 +12,8 @@ let trainBlocks = [0, 4];
 7: reverse testing block
 */
 let totalTrainBlocks;
-let amplitudes = [[1/2,-1/4,-1/16,1/8,1/32,1/24,-1/64,-1/32],[0,1/4,1/16,1/8,-1/16,-1/32,1/64,1/32]];
-let frequency = [[1/24,1/6,2/6,3/6,5/6,7/6,8/6,12/6],[1/24,1/6,2/6,3/6,5/6,7/6,8/6,12/6]];
+let amplitudes = [[1/2,-1/4,-1/16,1/8,1/32,1/24,-1/64,-1/32]];
+let frequency = [[1/24,1/6,2/6,3/6,5/6,7/6,8/6,12/6]];
 let frameNum = 0; // Number of frames in the current session
 var dotX;
 var dotY;
@@ -29,7 +29,6 @@ var lLines;
 var rLines;
 var currentSession;
 var sessions;
-var offset;
 var blockType;
 var isDraw;
 var dis;
@@ -63,14 +62,6 @@ var inactivity;
 var sessionsType;
 var sessionComplete;
 var sessionTotal;
-var perturbation;
-var perturbDir;
-var perturbCoord;
-var perturbLen = 40;
-var perturbCount = 6 + 1;
-var perturbDist = 80;
-var nextPerturb;
-var perturbing;
 var straightLen = 40;
 var blanknum;
 var blank;
@@ -103,23 +94,8 @@ function trainBlockStart() {
     if(blockType<0) {
         startBreak(-blockType);
         return;
-    } else if(blockType<2) {
-        sessionsType = [blockType];
     } else {
-        let type = blockType%4;
-        if(type < 2) {
-            if(type == 0) {
-                sessionsType = [6];
-            } else if(type == 1) {
-                sessionsType = [7, 5, 4];
-            }
-        } else {
-            if(type == 2) {
-                sessionsType = [4];
-            } else {
-                sessionsType = [5];
-            }
-        }
+        sessionsType = [blockType];
     }
     sessions = sessionsType.length;
     currentSession = 0;
@@ -151,57 +127,27 @@ function startSession() {
     vDist = [];
     nse = [];
     maxPoints = 0;
-    if(sessionsType[currentSession] < 2) { // empty session
+    if(sessionsType[currentSession] == 0) { // empty session
         isTest = false;
-        maxPoints = 7200;
+        maxPoints = 3600;
         blanknum = 0;
         maxY = width_x*0.625; //150
         maxX = maxY;
         scaling = scaling_base;
         blank = [1];
         lines = null;
-        perturbation = -1;
-        perturbDir = null;
-        perturbCoord = null;
         dotX = 0;
         randTargets(maxPoints/famTargetInterval);
         famTargetNext = 0
         famScore = 0;
-    }
-    else {
-        isTest = sessionsType[currentSession]%4 < 2;
-        if(isTest) {
-            maxPoints = 600;
-            blanknum = 0;
-            maxY = width_x*0.625; //150
-            maxX = maxY*0.5; //75
-            scaling = scaling_base;
-            if(highscore<0) // don't shuffle for the first test
-                blank = [1/30,1/15,0.1,2/15,0.2,1/3,0.5,112/150,1]; // 9 sub-sessions
-            else
-                blank = shuffle([1/30,1/15,0.1,2/15,0.2,1/3,0.5,112/150,1]);
-        } else {
-            maxPoints = 2400;
-            blanknum = 0;
-            maxY = width_x*0.625; //150
-            maxX = maxY;
-            scaling = scaling_base;
-            blank = [1,1,1]; // 4 sub-sessions
-        }
-        if(sessionsType[currentSession]>3) {
-            lines = sinuousCurve(maxPoints, isTest);
-            perturbation = -1;
-            perturbDir = null;
-            perturbCoord = null;
-        } else { // perturbation session
-            lines = straightLine(maxPoints);
-            perturbation = Math.floor(maxPoints/perturbCount)+1;
-            perturbDir = shuffle([-1, -1, 0, 0, 1, 1]);
-            perturbCoord = [];
-            perturbing = 0;
-            for(let i=1; i<perturbCount; i++)
-                perturbCoord.push(perturbation*i + 1);
-        }
+    } else {
+        maxPoints = 2400;
+        blanknum = 0;
+        maxY = width_x*0.625; //150
+        maxX = maxY;
+        scaling = scaling_base;
+        blank = [1,1,1]; // 3 sub-sessions
+        lines = sinuousCurve(maxPoints, sessionsType[currentSession]);
         dotX = lines[0];
     }
     clear();
@@ -215,7 +161,6 @@ function startSession() {
     trace = [];
     traceBuffer = null;
     inactivity = 0;
-    nextPerturb = 0;
     movin=false;
     fps = 0.0;
     frBuffer = 60.0;
@@ -250,7 +195,6 @@ function sessionInfo() {
             a: ang,
             u: act,
             n: nse,
-            per: perturbDir,
             num: sessionComplete,
             type: sessionsType[currentSession-1],
             hori: blank,
@@ -311,14 +255,11 @@ function sessionInfo() {
     timer = setTimeout(()=>{select('#endInstr-span').html("Are you still there? Please click the button now or you will be disconnected due to inactivity.");document.getElementById("endInstr-span").style.color = "red";
                             timer = setTimeout(()=>{forceQuit(2);},60000);},60000);
     if(currentSession < sessions) { // proceed to next session
-        offset = sessionsType[currentSession]%2;
         testTrain = sessionsType[currentSession]%4 > 1? 1: 0;
-        let color = offset==0? "blue":"red";
+        let color = "blue";
         let desc;
         if(sessionsType[currentSession] == 0)
             desc = "First, please take some time to familiarize yourself with the controls."
-        else if(testTrain==0)
-            desc = highscore<0? "Test: try to follow the black path as closely as posible":"Test: now it is time to see if you have improved!";
         else
             desc = "Train: time to learn how to do the task!";
         if(mse < 0)
@@ -459,11 +400,6 @@ function fixBetween(x, minimum, maximum) {
         return maximum;
     return x;
 }
-function linearError() { // horizontal distance to trajectory
-    if(lines==null || dotY>0 || -dotY>=lines.length)
-        return 0;
-    return Math.abs(dotX-lines[-dotY]);
-}
 function dist2(v, w) { return (v.x - w.x)**2 + (v.y - w.y)**2 } // squared distance from point to point
 function distToSegmentSquared(p, v, w) { // squared distance from point to line segment
     var l2 = dist2(v, w);
@@ -489,22 +425,17 @@ function distToPath() { // squared distance to path, approximate
     }
     return minDist;
 }
-function sinuousCurve(len, isTest) { // generate trajectory
+function sinuousCurve(len, mode) { // generate trajectory
     let start = 0;
     var ampl;
     var freq;
     var repeat;
-    if(isTest) {
-        ampl = amplitudes[1];
-        freq = frequency[1];
-        repeat = blank.length;
-    } else {
-        ampl = amplitudes[0];
-        freq = frequency[0];
-        repeat = blank.length;
-    }
+    ampl = amplitudes[0];
+    freq = frequency[0];
+    repeat = blank.length;
+    randomSeed(512*mode);
     var X, X2;
-    if(isTest) { // generate the same sub-trajectories for testing
+    if(mode>2) { // generate the same sub-trajectories for testing
         var points = [];
         var lPoints = [];
         var rPoints = [];
@@ -620,7 +551,8 @@ function drawCurve(coords, start, end) {
                 stroke('grey');
                 fill('grey');
             }
-            ellipse(famTargets[i][0]*scaling, -famTargets[i][1]*scaling, h/10, h/10);
+            //ellipse(famTargets[i][0]*scaling, -famTargets[i][1]*scaling, 5*scaling, 5*scaling);
+            rect((famTargets[i][0]-5)*scaling, -(famTargets[i][1]+5)*scaling, 10*scaling, 10*scaling);
         }
         stroke('black');
         fill('black');
@@ -628,7 +560,7 @@ function drawCurve(coords, start, end) {
         strokeWeight(1);
         textAlign(CENTER);
         var remain = Math.floor((plen*(blank.length)+dotY)/60);
-        text("Move the cursor left or right to swing the arrow.\nTry to touch the falling gray orbs to familiarize yourself with the controls\nScore: "+famScore+" / "+famTargets.length+"\n"+
+        text("Move the cursor left or right to swing the arrow.\nTry to touch the falling gray boxes to familiarize yourself with the controls\nScore: "+famScore+" / "+famTargets.length+"\n"+
                 "\nRemaining time: "+String(remain).padStart(2,'0'), 0, -(maxY*2/3-dotY)*scaling);
     }
 }
@@ -722,16 +654,12 @@ function breakCountDown() { // timer countdown for break
                                     <br>${Math.floor(timerCount/60)} : ${String(timerCount%60).padStart(2,'0')}`);
     } else if(timerCount == 0) {
         let btn = document.getElementById("startBt");
-        select('#endInstr').html(`<br>Now we will introduce the <span style="color:red;">Red Fish!</span><br>At each test, you will be tested on both blue and red fish.
-                                    <br>The Red fish may not behave in an intuitive way at first. But if you keep on trying to follow the grey path, you will see that your performance will improve
-                                    <br>Please click the button and proceed with the experiment.<br>`);
+        select('#endInstr').html(`<br><br><br>Please click the button and proceed with the experiment.<br>`);
         btn.style.display = 'block';
         btn.onclick = ()=>{select('#endDiv').hide(); currentTrainBlock++; clearInterval(timer);sessionComplete++; trainBlockStart();};
     } else {
         if(graceTime+timerCount==60) {
-            select('#endInstr').html(`<br>Now we will introduce the <span style="color:red;">Red Fish!</span><br>At each test, you will be tested on both blue and red fish.
-                                        <br>The Red fish may not behave in an intuitive way at first. But if you keep on trying to follow the grey path, you will see that your performance will improve
-                                        <br><span style="color:red;">Are you still there? Please click the button now or you will be disconnected due to inactivity.</span>`); // show timer : <br><span style="color:red;">${Math.floor((graceTime+timerCount)/60)} : ${String((graceTime+timerCount)%60).padStart(2,'0')}</span>
+            select('#endInstr').html(`<br><br><br><span style="color:red;">Are you still there? Please click the button now or you will be disconnected due to inactivity.</span>`); // show timer : <br><span style="color:red;">${Math.floor((graceTime+timerCount)/60)} : ${String((graceTime+timerCount)%60).padStart(2,'0')}</span>
         } else if(graceTime+timerCount==-1) { // timeout
             clearInterval(timer);
             butfunc = ()=>{select('#endDiv').hide(); currentTrainBlock++; sessionComplete++; trainBlockStart();};
@@ -743,22 +671,11 @@ function startBackTimer() { // starts inactivity background timer
     timerCount = 120;
     timer = setTimeout(inactivityTimer, 60000);
 }
-/*function handleMouseMove(e) {
-    if(movin) {
-        var scaledMovement;
-        inactivity = 0;
-        scaledMovement = e.movementX/5000;
-        //scaledMovement = e.movementX/20/dpi;
-        angAcc += scaledMovement;
-        angAcc = fixBetween(angAcc, -maxA/20, +maxA/20);
-    }
-}*/
 function handleMouseMove(e) {
     if(movin) {
         var scaledMovement;
         inactivity = 0;
         scaledMovement = e.movementX/500;
-        //scaledMovement = e.movementX/20/dpi;
         dotA += scaledMovement;
         dotA = fixBetween(dotA, -maxA, +maxA);
     }
@@ -800,7 +717,6 @@ function startGame() {
     cnv = createCanvas(windowWidth, windowHeight);
     cnv.parent("container-exp");
     document.body.style.overflow = 'hidden';
-    h = min(windowHeight*1/6, 100);
     let sx = windowWidth/width_x*0.8;
     let sy = windowHeight/width_x/0.75*0.8;
     scaling_base = sx < sy? sx:sy;
