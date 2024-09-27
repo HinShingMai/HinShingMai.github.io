@@ -336,8 +336,8 @@ function draw() {
         }
             
         if(inactivity > 120) {
-            //isDraw = false;
-            //pause();
+            isDraw = false;
+            pause();
         }
         // motion model
         if(dotA < -maxA) {
