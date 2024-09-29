@@ -2,7 +2,7 @@ let ver = 0.3;
 let cnv;
 let dpi = -1;
 let currentTrainBlock = 0;
-let trainBlocks = [0, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -10, 1, 2];
+let trainBlocks = [0, 2, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -10, 1, 2];
 /*
 -n: n-minutes break
 0: no path normal familiarization block
@@ -13,7 +13,8 @@ let trainBlocks = [0, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -10, 1, 2];
 */
 let totalTrainBlocks;
 let amplitudes = [[1/2,-1/4,-1/16,1/8,1/32,1/24,-1/64,-1/32]];
-let frequency = [[1/24,1/6,2/6,3/6,5/6,7/6,8/6,12/6]];
+let frequency = [[1/18,1/6,2/6,3/6,5/6,7/6,8/6,12/6]];
+let offsets = [[1.08225715, 5.03353099, 4.89667765, 0.67068123, 3.63514444, 3.79497995, 0.12400043, 4.6243724], [2.895396  , 2.32117067, 2.28956946, 2.8338312 , 6.02216907, 1.52168801, 0.76800114, 3.08280912]]
 let frameNum = 0; // Number of frames in the current session
 var dotX;
 var dotY;
@@ -141,12 +142,12 @@ function startSession() {
         famTargetNext = 0
         famScore = 0;
     } else {
-        maxPoints = 2400;
+        maxPoints = 1800;
         blanknum = 0;
         maxY = width_x*0.625; //150
         maxX = maxY;
         scaling = scaling_base;
-        blank = [1,1,1]; // 3 sub-sessions
+        blank = [1,1,1,1]; // 4 sub-sessions
         lines = sinuousCurve(maxPoints, sessionsType[currentSession]);
         dotX = lines[0];
     }
@@ -260,8 +261,10 @@ function sessionInfo() {
         let desc;
         if(sessionsType[currentSession] == 0)
             desc = "First, please take some time to familiarize yourself with the controls."
-        else
+        else if(sessionsType[currentSession] == 1)
             desc = "Train: time to learn how to do the task!";
+        else
+            desc = "Test: try to follow the white path as closely as posible.";
         if(mse < 0)
             instr.html(`<br><span style="color:${color};">${desc}</span><br><br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br><br><span id="endInstr-span">Click the Continue button to proceed.</span>`);
         else
@@ -318,7 +321,6 @@ function draw() {
                 else if(famTargetState[famTargetNext] == 0 && -dotY > nextTarget[1]-5 && Math.abs(dotX-nextTarget[0])<5) {
                     famTargetState[famTargetNext] = 1;
                     famScore += 1;
-                
                 }
             }
         } else {
@@ -336,8 +338,8 @@ function draw() {
         }
             
         if(inactivity > 120) {
-            isDraw = false;
-            pause();
+            //isDraw = false;
+            //pause();
         }
         // motion model
         if(dotA < -maxA) {
@@ -357,11 +359,11 @@ function draw() {
         dotY -= 1;
         // draw
         clear();
-        background('white');
-        stroke('black');
+        background('black');
+        stroke('white');
         strokeWeight(4);
         noFill();
-        let high = int(maxY*blank[blanknum]-dotY);
+        let high = int(maxY-dotY);
         translate(windowWidth/2, windowHeight*2/3 - dotY*scaling);
         rect(-maxX*scaling, -(maxY-dotY)*scaling, maxX*scaling*2, maxY*scaling*1.5);
         drawCurve(lines, -dotY-1, min(high,(blanknum+1)*plen));
@@ -386,7 +388,7 @@ function draw() {
             for(let i=0;i<errors.length;i++) {
                 text(errors[i].toFixed(1)+"%",0,-(-dotY-maxY/2)*scaling-12-18*i);
             }
-            text("Percent in Path: ",0,-(-dotY-maxY/2)*scaling-18*3);
+            text("Percent in Path: ",0,-(-dotY-maxY/2)*scaling-72);
         }
             
         fps += fr;
@@ -426,25 +428,29 @@ function distToPath() { // squared distance to path, approximate
     return minDist;
 }
 function sinuousCurve(len, mode) { // generate trajectory
-    let start = 0;
     var ampl;
     var freq;
     var repeat;
     ampl = amplitudes[0];
     freq = frequency[0];
     repeat = blank.length;
-    randomSeed(512*mode);
+    let offset = offsets[mode-1];
     var X, X2;
-    if(mode>2) { // generate the same sub-trajectories for testing
-        var points = [];
+    var paths = [];
+    lLines = [];
+    rLines = [];
+    pOffsets = {};
+    for(let k=0; k<repeat; k++) { // generate each sub-trajectory
+        let start = 0;
+        let points = [];
         var lPoints = [];
         var rPoints = [];
         for(let i=0; i<len; i++) {
             X = 0;
             X2 = 0;
             for(let j=0; j<ampl.length; j++) {
-                X += width_x/2*ampl[j]*sin(2*PI*start*freq[j]);
-                X2 += 2*PI*freq[j]*0.01*width_x/2*ampl[j]*cos(2*PI*start*freq[j]);
+                X += width_x/2*ampl[j]*sin(2*PI*start*freq[j]+offset[j]);
+                X2 += 2*PI*freq[j]*0.01*width_x/2*ampl[j]*cos(2*PI*start*freq[j]+offset[j]);
             }
             points.push(X);
             let n = sqrt(X2**2 + 1); // normalizing constant
@@ -452,54 +458,15 @@ function sinuousCurve(len, mode) { // generate trajectory
             rPoints.push({x: 1*pathWidth/n + X, y: -X2*pathWidth/n});
             start += 0.01;
         }
-        var paths = [];
-        lLines = [];
-        rLines = [];
-        pOffsets = {startpos:[]};
-        for(let i=0; i<repeat; i++) { // generate each sub-trajectory
-            let offset = int(random()*points.length);
-            pOffsets.startpos.push(offset);
-            var path = arrayRotate(points.slice(0), offset); // randomize starting position for each sub-trajectory
-            var lPath = arrayRotate(lPoints.slice(0), offset);
-            var rPath = arrayRotate(rPoints.slice(0), offset);
-            paths = paths.concat(Array(straightLen).fill(path[0]).concat(path));
-            lLines = lLines.concat(Array(straightLen).fill({x: path[0]-pathWidth, y: 0}).concat(lPath));
-            rLines = rLines.concat(Array(straightLen).fill({x: path[0]+pathWidth, y: 0}).concat(rPath));
-        }
-        return paths;
-    } else { // generate different sub-trajectories for training
-        var paths = [];
-        lLines = [];
-        rLines = [];
-        pOffsets = {};
-        for(let k=0; k<repeat; k++) { // generate each sub-trajectory
-            let points = [];
-            var lPoints = [];
-            var rPoints = [];
-            let offset = Array(ampl.length).fill().map(() => random()*2*PI);
-            for(let i=0; i<len; i++) {
-                X = 0;
-                X2 = 0;
-                for(let j=0; j<ampl.length; j++) {
-                    X += width_x/2*ampl[j]*sin(2*PI*start*freq[j]+offset[j]);
-                    X2 += 2*PI*freq[j]*0.01*width_x/2*ampl[j]*cos(2*PI*start*freq[j]+offset[j]);
-                }
-                points.push(X);
-                let n = sqrt(X2**2 + 1); // normalizing constant
-                lPoints.push({x: -1*pathWidth/n + X, y: X2*pathWidth/n});
-                rPoints.push({x: 1*pathWidth/n + X, y: -X2*pathWidth/n});
-                start += 0.01;
-            }
-            pOffsets[k.toString()] = offset;
-            var path = points.slice(0);
-            var lPath = lPoints.slice(0);
-            var rPath = rPoints.slice(0);
-            paths = paths.concat(Array(straightLen).fill(path[0]).concat(path));
-            lLines = lLines.concat(Array(straightLen).fill({x: path[0]-pathWidth, y: 0}).concat(lPath));
-            rLines = rLines.concat(Array(straightLen).fill({x: path[0]+pathWidth, y: 0}).concat(rPath));
-        }
-        return paths;
+        pOffsets[k.toString()] = offset;
+        var path = points.slice(0);
+        var lPath = lPoints.slice(0);
+        var rPath = rPoints.slice(0);
+        paths = paths.concat(Array(straightLen).fill(path[0]).concat(path));
+        lLines = lLines.concat(Array(straightLen).fill({x: path[0]-pathWidth, y: 0}).concat(lPath));
+        rLines = rLines.concat(Array(straightLen).fill({x: path[0]+pathWidth, y: 0}).concat(rPath));
     }
+    return paths;
 }
 function randTargets(num) {
     //famTargets = Array(ampl.length).fill().map(() => (random()-0.5)*width_x);
@@ -522,11 +489,11 @@ function drawCurve(coords, start, end) {
         let endFix = end;
         if(endFix > coords.length)
             endFix = coords.length;
-        stroke('grey');
+        stroke('white');
         strokeWeight(6);
         for(let i = startFix+1; i<endFix; i++)
             line(coords[i-1]*scaling, (1-i)*scaling, coords[i]*scaling, -i*scaling);
-        stroke('lightgrey');
+        stroke('gray');
         strokeWeight(4);
         startFix2 = max(startFix-pathWidth,(blanknum)*plen);
         endFix2 = min(endFix+pathWidth,(blanknum+1)*plen);
@@ -535,12 +502,8 @@ function drawCurve(coords, start, end) {
             line(rLines[i-1].x*scaling, -(i-1+rLines[i-1].y)*scaling, rLines[i].x*scaling, -(i+rLines[i].y)*scaling);
         }
         noStroke();
-        fill('lightgray')
+        fill('gray')
         rect(-maxX*scaling+2, (maxY/2+dotY)*scaling, 2*maxX*scaling-4, (2-maxY/2)*scaling);
-        if(blank[blanknum]<0.9) {
-            fill('grey');
-            rect(-maxX*scaling+2, (dotY-maxY)*scaling, 2*maxX*scaling-4, maxY*(1-blank[blanknum])*scaling);
-        }
     } else {
         for(let i=0;i<famTargets.length;i++) {
             if(famTargetState[i]==1) {
@@ -548,14 +511,14 @@ function drawCurve(coords, start, end) {
                 fill('red');
             }
             else {
-                stroke('grey');
-                fill('grey');
+                stroke('lightgray');
+                fill('lightgray');
             }
             //ellipse(famTargets[i][0]*scaling, -famTargets[i][1]*scaling, 5*scaling, 5*scaling);
             rect((famTargets[i][0]-5)*scaling, -(famTargets[i][1]+5)*scaling, 10*scaling, 10*scaling);
         }
-        stroke('black');
-        fill('black');
+        stroke('white');
+        fill('white');
         textSize(24);
         strokeWeight(1);
         textAlign(CENTER);
@@ -566,8 +529,8 @@ function drawCurve(coords, start, end) {
 }
 function drawBike(state) { // state: true/false = inPath/outOfPath
     if(!movin) {
-        stroke('grey');
-        fill('grey');
+        stroke('lightgray');
+        fill('lightgray');
     } else if(state) {
         stroke('blue');
         fill('blue');
