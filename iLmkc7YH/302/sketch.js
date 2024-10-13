@@ -1,4 +1,4 @@
-let ver = 0.3;
+let ver = 0.1;
 let cnv;
 let dpi = -1;
 let currentTrainBlock = 0;
@@ -34,15 +34,11 @@ var sessions;
 var blockType;
 var isDraw;
 var dis;
-var ang;
-var act;
+var vDis;
+//var act;
 var nse;
-var blockErr = [];
-var blockErrn_x = [];
-var blockErrn = [];
-var blockErrr_x = [];
-var blockErrr = [];
-var blockNam = [];
+var dis_temp;
+var vDis_temp;
 var h;
 var maxA;
 var maxPoints;
@@ -51,12 +47,9 @@ var fps;
 var error;
 var errors;
 var susE;
-var goodjob;
 var noiseM;
 var path = null;
 var pathWidth = 15;
-var vDist;
-var pIdx;
 var trace;
 var traceBuffer;
 var traceLen = 10;
@@ -67,18 +60,12 @@ var sessionTotal;
 var straightLen = 0;
 var blanknum;
 var blank;
-var pOffsets;
 var highscore;
 var timer;
 var timerCount;
 var movin;
 var frBuffer;
 var plen;
-var famTargets;
-var famTargetState;
-var famTargetNext;
-var famTargetInterval = 180;
-var famScore;
 var heading;
 function setup() {
     isDraw = false;
@@ -106,6 +93,7 @@ function trainBlockStart() {
 }
 function sessionNext() {
     //isdraw = false;
+    document.exitPointerLock();
     document.getElementById("container-exp").onmousemove = null;
     noLoop();
     clear();
@@ -122,24 +110,21 @@ function startSession() {
     document.getElementById("container-exp").onmousemove = handleMouseMove;
     document.getElementById("container-exp").requestPointerLock();
     dis = []; 
-    ang = [];
-    act = [];
-    vDist = [];
+    vDis = [];
     nse = [];
+    dis_temp = [];
+    vDis_temp = [];
     maxPoints = 0;
     if(sessionsType[currentSession] == 0) { // empty session
         isTest = false;
-        maxPoints = 3600;
+        maxPoints = 300;
         maxX = width_x*0.625; //150
         maxY = maxX*2;
         scaling = scaling_base;
         blank = 30;
-        lines = null;
+        lines = straightLine(maxPoints);
         dotX = 0;
-        dotY = 0;
-        randTargets(maxPoints/famTargetInterval);
-        famTargetNext = 0
-        famScore = 0;
+        dotY = -maxY/2;
     } else {
         maxPoints = 300;
         maxX = width_x*0.625; //150
@@ -153,12 +138,8 @@ function startSession() {
     clear();
     blanknum = 0;
     frameNum = 0;
-    error = 0.0;
+    error = [];
     errors = [];
-    susE = 0;
-    goodjob = 0;
-    noiseM = 0.0;
-    pIdx = [0, 0];
     trace = [];
     traceBuffer = null;
     inactivity = 0;
@@ -182,25 +163,17 @@ function sessionInfo() {
     else if(currentSession > 0) { // handles data
         mse = 0;
         isPlot = false;
-        for(let i=0;i<errors.length;i++) {
-            blockErr.push(errors[i]);
-            mse += errors[i];
-            blockNam.push(sessionComplete+"_"+i);
-        }
         mse = 1.0*mse/errors.length;
         // Record data
         let avgfps = fps/dis.length;
         let blockData = {
             xh: lines,
             x: dis,
-            y: vDist,
-            a: ang,
-            u: act,
+            y: vDis,
             n: nse,
             num: sessionComplete,
             type: sessionsType[currentSession-1],
             hori: blank,
-            offs: pOffsets,
             id: null,
             fps: fps/dis.length,
             version: ver,
@@ -213,40 +186,22 @@ function sessionInfo() {
         if(sessionComplete<2&&avgfps<50) { // Screen out participants
             forceQuit(1);
         }
-        if(isPlot) {
-            // Define Data for plotting
-            const idx = Array.from(Array((maxPoints+straightLen)*blank).keys());
-            let data = [
-                {x: blockNam, y: blockErr, type: 'scatter', mode: 'lines', line: {color: 'blue', width: 3}},
-            ];
-            // layout
-            var layout = {
-                title: 'Average Error and Trajectory',
-                yaxis: {rangemode: "tozero"},
-                grid: {rows: 1, columns: 2, pattern: 'independent'},
-            };
-            // Display using Plotly
-            plot.show();
-            plot.html("");
-            Plotly.newPlot("plot", data, layout, {responsive: true});
+        let msg;
+        if(highscore<0) {
+            let color = "blue";
+            highscore = mse;
+            msg = `<br><br>Best performance: <span style="color:${color};">${highscore.toFixed(1)}%</span>`;
+        } 
+        else if(mse>highscore) {
+            let color = "blue";
+            highscore = mse;
+            msg = `<br><br>Congratulations! Your score improved better! Keep it up!<br><br>Best performance: <span style="color:${color};">${highscore.toFixed(1)}%</span>`;
         } else {
-            let msg;
-            if(highscore<0) {
-                let color = "blue";
-                highscore = mse;
-                msg = `<br><br>Best performance: <span style="color:${color};">${highscore.toFixed(1)}%</span>`;
-            } 
-            else if(mse>highscore) {
-                let color = "blue";
-                highscore = mse;
-                msg = `<br><br>Congratulations! Your score improved better! Keep it up!<br><br>Best performance: <span style="color:${color};">${highscore.toFixed(1)}%</span>`;
-            } else {
-                let color = "red";
-                msg = `<br><br>Your score was worse this time! Try to beat your score!<br><br>Best performance: <span style="color:${color};">${highscore.toFixed(1)}%</span>`;
-            }
-            plot.show();
-            plot.html(msg);
+            let color = "red";
+            msg = `<br><br>Your score was worse this time! Try to beat your score!<br><br>Best performance: <span style="color:${color};">${highscore.toFixed(1)}%</span>`;
         }
+        plot.show();
+        plot.html(msg);
     } else {
         mse = -1.0;
         plot.hide();
@@ -289,7 +244,9 @@ function draw() {
     if(isDraw) {
         if(movin) {
             if(-dotY >= plen) {
-                errors.push((error-straightLen)/frameNum*100);
+                dis.push(dis_temp);
+                vDis.push(vDis_temp);
+                errors.push(error);
                 movin = false;
                 if(blanknum < blank-1) { // next sub-session
                     blanknum++;
@@ -297,9 +254,11 @@ function draw() {
                     //dotX = lines[-dotY];
                     dotA = 0.0;
                     dotB = 0.0;
-                    timer = 0;
-                    error = 0;
+                    dis_temp = [];
+                    vDis_temp = [];
+                    error = [];
                     frameNum = 0;
+                    return;
                 } else {
                     isDraw = false;
                     sessionNext();
@@ -310,11 +269,11 @@ function draw() {
             var noise = 0;
             
             // record trajectory
-            dis.push(dotX);
-            vDist.push(-dotY);
-            ang.push(dotA);
-            act.push(angAcc);
-            nse.push(noise);
+            dis_temp.push(dotX);
+            vDis_temp.push(-dotY);
+            //actx.push(dotA);
+            //acty.push(dotB);
+            //nse.push(noise);
             var inPath;
             if(lines == null) {
                 let nextTarget =  famTargets[famTargetNext]; // nextTarget[x-coord, y-coords]
@@ -330,6 +289,7 @@ function draw() {
             } else {
                 var pathError = distToPath();
                 inPath = pathError < pathWidth**2;
+                error.push(pathError);
             }
             if(!inPath)
                 inactivity++;
@@ -352,7 +312,7 @@ function draw() {
             } else if(dotA > maxA) {
                 dotA = maxA;
             }*/
-            dotX += dotA;
+            dotX += fixBetween(dotA,-10,10);
             if(dotX < -maxX) { // hits edge
                 dotX = -maxX;
                 dotA = 0; // mirrors motion when hitting edge
@@ -360,8 +320,7 @@ function draw() {
                 dotX = maxX;
                 dotA = 0;
             }
-            if(dotB < 0)
-                dotY += dotB;
+            dotY += fixBetween(dotB,-10,0);
             if(dotA != 0 || dotB != 0)
                 heading = Math.atan2(dotA, -dotB);
             //console.log(dotA+" "+dotB+": "+heading)
@@ -381,8 +340,6 @@ function draw() {
             drawCurve(lines);
             drawBike(inPath, heading);
             drawTrace(inPath);
-            if(inPath)
-            error++;
             // save framerate
             fr = frameRate();
             if(frameNum%10==0)
@@ -464,7 +421,6 @@ function sinuousCurve(len, mode) { // generate trajectory
     var paths = [];
     lLines = [];
     rLines = [];
-    pOffsets = {};
     for(let k=0; k<repeat; k++) { // generate each sub-trajectory
         let start = 0;
         let points = [];
@@ -496,12 +452,12 @@ function sinuousCurve(len, mode) { // generate trajectory
     }
     return paths;
 }
-function randTargets(num) {
-    //famTargets = Array(ampl.length).fill().map(() => (random()-0.5)*width_x);
-    famTargets = Array(num).fill().map(() => [(random()-0.5)*width_x, 0]);
-    for(let i=0;i<num;i++)
-        famTargets[i][1] = (i+1)*famTargetInterval;
-    famTargetState = Array(num).fill(0);
+function straightLine(len) {
+    var mid = 0;
+    var paths = Array(len).fill(mid);
+    lLines = Array(len).fill(mid-pathWidth);
+    rLines = Array(len).fill(mid+pathWidth);
+    return paths;
 }
 function arrayRotate(arr, count) { // rotates array, ex. arrayRotate([0, 1, 2, 3, 4, 5], 2) -> [2, 3, 4, 5, 0, 1]
     const len = arr.length
