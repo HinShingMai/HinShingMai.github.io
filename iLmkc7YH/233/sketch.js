@@ -600,6 +600,12 @@ function drawBike() {
         triangle(x+15*sin(heading+A), y-15*cos(heading+A), x+6*cos(heading+A), y+6*sin(heading+A), x-6*cos(heading+A), y-6*sin(heading+A));
         noFill();
         curve(x+d*cos(heading),y+d*sin(heading), x, y, x-45*sin(heading), y+45*cos(heading), x-45*sin(heading)+d*cos(heading), y+45*cos(heading)+d*sin(heading));
+        let lLimit = min(maxX+dotX,maxY);
+        let rLimit = min(maxX-dotX,maxY);
+        stroke('grey');
+        strokeWeight(1);
+        line(dotX*scaling,dotY*scaling,(dotX-lLimit)*scaling,(dotY-lLimit)*scaling);
+        line(dotX*scaling,dotY*scaling,(dotX+rLimit)*scaling,(dotY-rLimit)*scaling);
     }
 }
 function drawTrace() { // draw trace behind triangle
