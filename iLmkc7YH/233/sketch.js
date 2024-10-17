@@ -2,7 +2,7 @@ let ver = 0.3;
 let cnv;
 let dpi = -1;
 let currentTrainBlock = 0;
-let trainBlocks = [ 6, 4, 7,5];
+let trainBlocks = [4, 6, 4, 7,5];
 /*
 -n: n-minutes break
 0: no path normal familiarization block
