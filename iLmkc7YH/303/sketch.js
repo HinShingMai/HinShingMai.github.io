@@ -2,7 +2,7 @@ let ver = 0.1;
 let cnv;
 let dpi = -1;
 let currentTrainBlock = 0;
-let trainBlocks = [0,1,-1,1,-1,1,-1,1,-1,1,-1,1,-1,1,-10,1,2];
+let trainBlocks = [0,1,-1,1,-1,1,-1,1,-1,1,-10,1,2];
 /*
 -n: n-minutes break
 0: no path normal familiarization block
@@ -35,6 +35,7 @@ var isDraw;
 var dis;
 var vDis;
 var nse;
+var scores;
 var dis_temp;
 var vDis_temp;
 var h;
@@ -65,8 +66,11 @@ var plen;
 var heading;
 var wHeight;
 var sMargin = 15;
+var mode;
 var SAT1_score;
 var SAT2_score;
+var speed_base;
+var speed_scale;
 function setup() {
     isDraw = false;
     frameRate(60);
@@ -107,7 +111,6 @@ function startSession() {
     //maxY = width_x*0.625; //150
     isDraw = true;
     select('#container-exp').show()
-    document.getElementById("container-exp").onmousemove = handleMouseMove;
     document.getElementById("container-exp").requestPointerLock();
     dis = []; 
     vDis = [];
@@ -115,8 +118,9 @@ function startSession() {
     dis_temp = [];
     vDis_temp = [];
     maxPoints = 0;
-    if(sessionsType[currentSession] == 0) { // empty session
-        isTest = false;
+    if(sessionsType[currentSession] == 0) { // familiarization session
+        document.getElementById("container-exp").onmousemove = calibrateMouse;
+        mode = 2; // 0: normal, 1: familiarization, 2: mouse calibration
         maxPoints = 300;
         maxX = width_x*0.625; //150
         maxY = maxX*2;
@@ -126,7 +130,11 @@ function startSession() {
         lines = straightLine(maxPoints);
         dotX = 0;
         dotY = -maxY/2;
+        speed_base = -1; // scaling factor on cursor speed, should be >0 once calibrated
+        movin = -600; // 10 seconds calibration time
     } else {
+        document.getElementById("container-exp").onmousemove = handleMouseMove;
+        mode = 0;
         maxPoints = 300;
         maxX = width_x*0.625; //150
         maxY = maxX*2;
@@ -136,6 +144,7 @@ function startSession() {
         lines = sinuousCurve(maxPoints, sessionsType[currentSession]);
         dotX = 0;
         dotY = -maxY/2;
+        movin = -120; // 1: in trial, 0: awaiting cursor to move back to starting position(resetting), <0: inter-trial cooldown
     }
     clear();
     blanknum = 0;
@@ -145,7 +154,6 @@ function startSession() {
     trace = [];
     traceBuffer = null;
     inactivity = 0;
-    movin = false;
     fps = 0.0;
     frBuffer = 60.0;
     plen = maxPoints+straightLen;
@@ -175,14 +183,16 @@ function sessionInfo() {
             x: dis,
             y: vDis,
             n: nse,
-            num: sessionComplete,
+            bNum: sessionComplete,
             type: sessionsType[currentSession-1],
-            hori: blank,
+            len: blank,
             id: null,
             fps: fps/dis.length,
             version: ver,
             scale: scaling,
-            percent: errors
+            error: errors,
+            score: scores.slice(scores.length-blank, scores.length),
+            baseSp: speed_base
         }
         console.log(blockData)
         //recordTrialSession(trialcollection, blockData);
@@ -190,7 +200,7 @@ function sessionInfo() {
         if(sessionComplete<2&&avgfps<50) { // Screen out participants
             forceQuit(1);
         }
-        let msg;
+        /*let msg;
         if(highscore<0) {
             let color = "blue";
             highscore = mse;
@@ -205,53 +215,66 @@ function sessionInfo() {
             msg = `<br><br>Your score was worse this time! Try to beat your score!<br><br>Best performance: <span style="color:${color};">${highscore.toFixed(1)}%</span>`;
         }
         plot.show();
-        plot.html(msg);
+        plot.html(msg);*/
     } else {
         mse = -1.0;
         plot.hide();
     }
     mse = mse.toFixed(1);
     select('#container-exp').hide()
-    let button = document.getElementById("startBt");
-    timer = setTimeout(()=>{select('#endInstr-span').html("Are you still there? Please click the button now or you will be disconnected due to inactivity.");document.getElementById("endInstr-span").style.color = "red";
-                            timer = setTimeout(()=>{forceQuit(2);},60000);},60000);
     if(currentSession < sessions) { // proceed to next session
+        let button = document.getElementById("startBt");
+        timer = setTimeout(()=>{select('#endInstr-span').html("Are you still there? Please click the button now or the experiment will terminate.");document.getElementById("endInstr-span").style.color = "red";
+                                timer = setTimeout(()=>{forceQuit(2);},60000);},60000);
         testTrain = sessionsType[currentSession]%4 > 1? 1: 0;
         let color = "blue";
         let desc;
         if(sessionsType[currentSession] == 0)
-            desc = "First, please take some time to familiarize yourself with the controls.\nMove the arrow upwards along the white path."
+            desc = "First, lets familiarize ourselves with the controls."
         else if(sessionsType[currentSession] == 1)
-            desc = "Train: try to follow the white path as closely as posible.";
+            desc = "Train: time to learn how to do the task!";
         else
-            desc = "Test: try to follow the white path as closely as posible.";
-        if(mse < 0)
+            desc = "Test: now it is time to try a different track!";
+        /*if(mse < 0)
             instr.html(`<br><span style="color:${color};">${desc}</span><br><br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br><br><span id="endInstr-span">Click the Continue button to proceed.</span>`);
         else
-            instr.html(`<br><span style="color:${color};">${desc}</span><br><br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br>Average Percentage in Path: ${mse}%<br><span id="endInstr-span">Click the Continue button to proceed.</span>`);
+            instr.html(`<br><span style="color:${color};">${desc}</span><br><br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br>Average Percentage in Path: ${mse}%<br><span id="endInstr-span">Click the Continue button to proceed.</span>`);*/
+        instr.html(`<br><span style="color:${color};">${desc}</span><br><br><span id="endInstr-span">Click the Continue button to proceed.</span>`);
         butfunc = ()=>{plot.hide();select('#endDiv').hide();startSession();};
+        button.onclick = ()=>{clearTimeout(timer);butfunc();};
     } else { // end of a block
         if(currentTrainBlock+1 < totalTrainBlocks){ // proceed to next block
-            if(mse < 0)
-                instr.html(`<br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br><br><br><span id="endInstr-span">Click the Continue button to proceed to next training block.</span>`);
-            else
-                instr.html(`<br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br>Average Percentage in Path: ${mse}%<br><br><span id="endInstr-span">Click the Continue button to proceed to next training block.</span>`);
-            butfunc = ()=>{plot.hide();select('#endDiv').hide(); currentTrainBlock++; trainBlockStart();};
+            //instr.html(`<br>Great work!<br><br><span id="endInstr-span">Click the Continue button to proceed.</span>`);
+            //butfunc = ()=>{plot.hide();select('#endDiv').hide(); currentTrainBlock++; trainBlockStart();};
+            plot.hide();
+            select('#endDiv').hide();
+            currentTrainBlock++;
+            trainBlockStart();
         } else { // Final block, end game
-            instr.html(`<br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br>Average Percentage in Path: ${mse}%<br><br><span id="endInstr-span">Click the Continue button to proceed.</span>`);
+            //instr.html(`<br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br>Average Percentage in Path: ${mse}%<br><br><span id="endInstr-span">Click the Continue button to proceed.</span>`);
+            instr.html(`<br>Great Work! We are almost done.<br><br><span id="endInstr-span">Click the Continue button to proceed.</span>`);
             butfunc = ()=>{plot.hide();select('#endDiv').hide(); currentTrainBlock++; endGame();};
+            button.onclick = ()=>{butfunc();};
         }
     }
-    button.onclick = ()=>{clearTimeout(timer);butfunc();};
+    //button.onclick = ()=>{clearTimeout(timer);butfunc();};
 }
 function draw() {
     if(isDraw) {
-        if(movin) {
+        if(movin>0) {
             if(-dotY >= plen) {
                 dis.push(dis_temp);
                 vDis.push(vDis_temp);
                 errors.push(error);
-                movin = false;
+                movin = -120;
+                if(mode == 1) { // update base speed during baseline block
+                    if(speed_base<SAT1_score[0]/error.length) {
+                        speed_base = SAT1_score[0]/SAT1_score[1];
+                        console.log(speed_base);
+                    }
+                } else { // update SAT scores
+                    scores.push(1000*SAT1_score[0]/(SAT1_score[1]+1));
+                }
                 if(blanknum < blank-1) { // next sub-session
                     blanknum++;
                     //dotY = 0;
@@ -279,22 +302,9 @@ function draw() {
             //acty.push(dotB);
             //nse.push(noise);
             var inPath;
-            if(lines == null) {
-                let nextTarget =  famTargets[famTargetNext]; // nextTarget[x-coord, y-coords]
-                inPath = false;
-                if(nextTarget != null) {
-                    if(-dotY >nextTarget[1]+5)
-                        famTargetNext += 1;
-                    else if(famTargetState[famTargetNext] == 0 && -dotY > nextTarget[1]-5 && Math.abs(dotX-nextTarget[0])<5) {
-                        famTargetState[famTargetNext] = 1;
-                        famScore += 1;
-                    }
-                }
-            } else {
-                var pathError = distToPath();
-                inPath = pathError < pathWidth**2;
-                error.push(pathError);
-            }
+            var pathError = distToPath();
+            inPath = pathError < pathWidth**2;
+            error.push(pathError);
             if(!inPath)
                 inactivity++;
             if(frameNum%5 == 0) {
@@ -329,12 +339,13 @@ function draw() {
                 heading = 0.8*heading + 0.2*fixBetween(Math.atan2(dotA, -dotB),-PI/2,PI/2);
             //update SAT feedback
             let v = Math.sqrt(dotA**2+dotB**2);
-            let e = Math.sqrt(pathError);
-            //console.log(v+' '+e+' : '+v/e);
-            SAT1_score[0] += v;
-            SAT1_score[1] += pathError;
-            SAT2_score[0] += v;
-            SAT2_score[1] += e;
+            if(mode == 1) {
+                SAT1_score[0] += v;
+                SAT1_score[1] += 1;
+            } else {
+                SAT1_score[0] += v/speed_base;
+                SAT1_score[1] += pathError;
+            }
             // draw
             clear();
             background('black');
@@ -350,9 +361,9 @@ function draw() {
             drawTrace(inPath);
             // save framerate
             fr = frameRate();
-            if(frameNum%10==0)
+            /*if(frameNum%10==0)
                 frBuffer = fr.toFixed();
-            /*stroke('black');
+            stroke('black');
             fill('black');
             textSize(12);
             strokeWeight(1);
@@ -378,11 +389,12 @@ function draw() {
             stroke('white');
             strokeWeight(4);
             noFill();
-            //let high = int(maxY-dotY);
             translate(windowWidth/2, windowHeight*(sMargin+maxY)/wHeight);
             rect(-maxX*scaling, sMargin*scaling, maxX*scaling*2, -wHeight*scaling);
             drawReturnCursor();
             frameNum++;
+            if(movin<0)
+                movin += 1;
         }
     }
 }
@@ -418,14 +430,29 @@ function distToPath() { // squared distance to path, approximate
     }
     return minDist;
 }
-function sinuousCurve(len, mode) { // generate trajectory
+function linearError() { // horizontal distance to trajectory
+    if(lines==null || dotY>0 || -dotY>=lines.length+1)
+        return 0;
+    return (dotX-lines[Math.floor(-dotY)])**2;
+}
+function getMeanStd(array) { // returns [mean, std]
+  if (array.length < 2) {
+    return undefined;
+  }
+  const n = array.length;
+  const mean = array.reduce((a, b) => a + b) / n;
+  return [mean, Math.sqrt(
+    array.map((x) => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / (n - 1),
+  )];
+}
+function sinuousCurve(len, mod) { // generate trajectory
     var ampl;
     var freq;
     var repeat;
     ampl = amplitudes[0];
     freq = frequency[0];
     repeat = blank;
-    let offset = offsets[mode];
+    let offset = offsets[mod];
     var X, X2;
     var paths = [];
     lLines = [];
@@ -491,12 +518,12 @@ function drawCurve(coords) {
             line(rLines[i-1].x*scaling, -(i-1+rLines[i-1].y)*scaling, rLines[i].x*scaling, -(i+rLines[i].y)*scaling);
         }
     }
-    stroke('lightgray');
+    /*stroke('lightgray');
     fill('lightgray');
     textSize(24);
     strokeWeight(1);
     textAlign(RIGHT);
-    text(`${blanknum+1} / ${blank}`, (maxX-sMargin)*scaling, -sMargin*scaling);//-maxY*1/6*scaling
+    text(`${blanknum+1} / ${blank}`, (maxX-sMargin)*scaling, -sMargin*scaling);//-maxY*1/6*scaling*/
 }
 function drawBike(state, angle) { // state: true/false = inPath/outOfPath, angle: angle arrow is pointing at (0 is vertical up)
     var heading;
@@ -526,7 +553,7 @@ function drawBike(state, angle) { // state: true/false = inPath/outOfPath, angle
 }
 function drawTrace(state) { // draw trace behind triangle, state: true/false = inPath/outOfPath
     var baseColor;
-    if(!movin)
+    if(movin<1)
         baseColor = color('grey');
     else if(state)
         baseColor = color('blue');
@@ -545,31 +572,67 @@ function drawTrace(state) { // draw trace behind triangle, state: true/false = i
 function drawReturnCursor() {
     stroke('lightgray');
     fill('lightgray');
-    rect(lines[0]-20*scaling, 0, 40*scaling, 15*scaling);
-    ellipse(dotX*scaling, dotY*scaling, 20, 20);
-    /*var d = ((dotX-lines[0])*scaling)**2 + (dotY*scaling)**2;
-    var f = frameNum%100;
-    if(d>10000 && d*f>640000) {
-        d = Math.sqrt(d)/100-0.4;
-        var a = Math.atan2(dotX*scaling-lines[0], -dotY*scaling);
-        //var x = lines[0]+40*Math.sin(a);
-        //var y = -40*Math.cos(a);
-        var x = dotX*scaling-d*Math.sin(a)*f;
-        var y = dotY*scaling+d*Math.cos(a)*f;
-        //console.log(dotY);
-        line(dotX*scaling-20*Math.sin(a),dotY*scaling+20*Math.cos(a), x,y);
-        line(x,y ,x+10*Math.sin(a+PI/4),y-10*Math.cos(a+PI/4));
-        line(x,y ,x+10*Math.sin(a-PI/4),y-10*Math.cos(a-PI/4));
-    }*/
-    textSize(24);
-    strokeWeight(1);
-    textAlign(CENTER);
-    if(SAT1_score == null)
-        text("Move the dot into the box at the bottom of the screen.", 0, -maxY*2/3*scaling);
-    else {
-        //let n = errors[errors.length-1].length;
-        text(`SAT1 score: ${(SAT1_score[0]/SAT1_score[1]).toFixed(2)}, SAT2 score: ${(SAT2_score[0]/SAT2_score[1]).toFixed(2)}\n\nMove the dot into the box at the bottom of the screen.`, 0, -maxY*2/3*scaling);
-        //text(`SAT score: ${(SAT2_score[0]/SAT2_score[1]).toFixed(2)}\n\nMove the dot into the box at the bottom of the screen.`, 0, -maxY*2/3*scaling);
+    if(mode == 2) { // during mouse calibration
+        if(movin==0) {
+            if(dotB < 0.1) { // little mouse movement detected, recalibrate.
+                movin = -600;
+                dotB = 0;
+                return;
+            }
+            speed_scale = fixBetween(dotB/200,0.1,5);
+            console.log(dotB);
+            document.getElementById("container-exp").onmousemove = handleMouseMove;
+            mode = 1;
+            dotB = 0;
+            movin = -120;
+        } else {
+            textSize(24);
+            strokeWeight(1);
+            textAlign(CENTER);
+            text(`Mouse Calibration: Without lifting the mouse off the mousepad,\nMove your mouse upwards as far as you can! ${Math.floor(movin/-60)}\n\nVertical movement: ${dotB.toFixed(2)}`, 0, -maxY*2/3*scaling);
+            return;
+        }
+    }
+    if(movin==0) {
+        rect(lines[0]-20*scaling, 0, 40*scaling, 15*scaling);
+        ellipse(dotX*scaling, dotY*scaling, 20, 20);
+        if(frameNum > 600) {
+            textSize(24);
+            strokeWeight(1);
+            textAlign(CENTER);
+            text("Move the dot into the box at the bottom of the screen.", 0, -maxY*2/3*scaling);
+        }
+    } else {
+        textSize(24);
+        strokeWeight(1);
+        textAlign(CENTER);
+        if(blanknum<1) {
+            text(`${blanknum} / ${blank}\n\nfollow the white path as fast and as accurately as you can.`, 0, -maxY*2/3*scaling);
+        } else if(mode == 0) {
+            //text(`SAT score: ${(100*SAT1_score[0]/(SAT1_score[1]+1)).toFixed(2)}`, 0, -maxY*2/3*scaling);
+            let start = scores.length-21; // moving window of 20 len for computing mean and std
+            let score = scores[scores.length-1];
+            if(start<0)
+                text(`${blanknum} / ${blank}\n\n\nYour Score: ${score.toFixed(2)}`, 0, -maxY*2/3*scaling);
+            else { // give reward according to performance compared to moving window
+                let meanStd = getMeanStd(scores.slice(start, start+20)); // [mean, std]
+                let tier = fixBetween(Math.floor((score-meanStd[0])*2/meanStd[1])+3, 0, 5)
+                let msg = ["Try Harder!","OK!","Nice!","Nice!","Good!","Very Good!"];
+                let color = ["red","orange","lightgray","lightgray","yellow","green"]
+                stroke(color[tier]);
+                fill(color[tier]);
+                text(`${blanknum} / ${blank}\n\n${msg[tier]}\nYour Score: ${score.toFixed(2)}`, 0, -maxY*2/3*scaling);
+            }
+        }
+        else
+            text(`${blanknum} / ${blank}`, 0, -maxY*2/3*scaling);
+        /*if(SAT1_score == null)
+            text("Move the dot into the box at the bottom of the screen.", 0, -maxY*2/3*scaling);
+        else {
+            //let n = errors[errors.length-1].length;
+            //text(`SAT1 score: ${(SAT1_score[0]/SAT1_score[1]).toFixed(2)}, SAT2 score: ${(SAT2_score[0]/SAT2_score[1]).toFixed(2)}\n\nMove the dot into the box at the bottom of the screen.`, 0, -maxY*2/3*scaling);
+            text(`SAT score: ${(100*SAT1_score[0]/(SAT1_score[1]+1)).toFixed(2)}\n\nMove the dot into the box at the bottom of the screen.`, 0, -maxY*2/3*scaling);
+        }*/
     }
 }
 function pause() { // pause due to inactivity
@@ -584,7 +647,7 @@ function pause() { // pause due to inactivity
     select('#container-exp').hide()
     let button = document.getElementById("startBt");
     instr.html(`<br>Are you still there?<br><br>The experiment has been paused because we cannot detect any cursor movement for a few seconds.<br><br><span id="endInstr-span">Click the Continue button to return to the experiment.</span>`);
-    timer = setTimeout(()=>{select('#endInstr-span').html("Please click the button now or you will be disconnected due to inactivity.");document.getElementById("endInstr-span").style.color = "red";
+    timer = setTimeout(()=>{select('#endInstr-span').html("Please click the button now or the experiment will terminate.");document.getElementById("endInstr-span").style.color = "red";
                             timer = setTimeout(()=>{forceQuit(2);},60000);},120000);
     butfunc = ()=>{select('#endDiv').hide();resume();};
     button.onclick = ()=>{clearTimeout(timer);butfunc();};
@@ -592,7 +655,11 @@ function pause() { // pause due to inactivity
 function resume() {
     isDraw = true;
     inactivity = 0;
-    select('#container-exp').show()
+    select('#container-exp').show();
+    if(mode==2)
+        document.getElementById("container-exp").onmousemove = calibrateMouse;
+    else
+        document.getElementById("container-exp").onmousemove = handleMouseMove;
     document.getElementById("container-exp").requestPointerLock();
     clear();
     loop();
@@ -610,7 +677,7 @@ function startBreak(len) { // len-minutes break
 function breakCountDown() { // timer countdown for break
     timerCount--;
     if(timerCount>0) {
-        select('#endInstr').html(`<br>Let's take a ${-trainBlocks[currentTrainBlock]} minute break.<br>Please come back within ${-trainBlocks[currentTrainBlock]+graceTime/60} minutes or you will be disconnected due to inactivity.
+        select('#endInstr').html(`<br>Let's take a ${-trainBlocks[currentTrainBlock]} minute break.<br>Please make sure you come back in ${-trainBlocks[currentTrainBlock]+graceTime/60} minutes or the experiment will terminate.
                                     <br>${Math.floor(timerCount/60)} : ${String(timerCount%60).padStart(2,'0')}`);
     } else if(timerCount == 0) {
         let btn = document.getElementById("startBt");
@@ -619,7 +686,7 @@ function breakCountDown() { // timer countdown for break
         btn.onclick = ()=>{select('#endDiv').hide(); currentTrainBlock++; clearInterval(timer);sessionComplete++; trainBlockStart();};
     } else {
         if(graceTime+timerCount==60) {
-            select('#endInstr').html(`<br><br><br><span style="color:red;">Are you still there? Please click the button now or you will be disconnected due to inactivity.</span>`); // show timer : <br><span style="color:red;">${Math.floor((graceTime+timerCount)/60)} : ${String((graceTime+timerCount)%60).padStart(2,'0')}</span>
+            select('#endInstr').html(`<br><br><br><span style="color:red;">Are you still there? Please click the button now or the experiment will terminate.</span>`); // show timer : <br><span style="color:red;">${Math.floor((graceTime+timerCount)/60)} : ${String((graceTime+timerCount)%60).padStart(2,'0')}</span>
         } else if(graceTime+timerCount==-1) { // timeout
             clearInterval(timer);
             butfunc = ()=>{select('#endDiv').hide(); currentTrainBlock++; sessionComplete++; trainBlockStart();};
@@ -632,34 +699,43 @@ function startBackTimer() { // starts inactivity background timer
     timer = setTimeout(inactivityTimer, 60000);
 }
 function handleMouseMove(e) {
-    if(movin) {
+    if(movin>0) {
         var scaledMovement;
         inactivity = 0;
-        scaledMovementX = e.movementX/5;
-        scaledMovementY = e.movementY/5;
+        var scaledMovementX = e.movementX/speed_scale;
+        var scaledMovementY = e.movementY/speed_scale;
         dotA += scaledMovementX;
         dotB += scaledMovementY;
         //dotA = fixBetween(dotA, -maxA, +maxA);
     } else { //translate(windowWidth/2, windowHeight);
         //dotX += e.movementX/5;
         //dotY += e.movementY/5;
-        dotX = fixBetween(dotX+e.movementX/5,-maxX,maxX);
-        dotY = fixBetween(dotY+e.movementY/5,-maxY-sMargin,sMargin);
-        let x = dotX - lines[0];
-        let y = dotY;
-        //console.log(x+" "+y)
-        if(x>-20 && x<20 && y>0 && y<15) {
-            //document.getElementById("container-exp").requestPointerLock();
-            //noCursor();
-            dotX = lines[0];
-            dotY = 0.0;
-            SAT1_score = [0.0,0.0];
-            SAT2_score = [0.0,0.0];
-            movin = true;
+        dotX = fixBetween(dotX+e.movementX/speed_scale,-maxX,maxX);
+        dotY = fixBetween(dotY+e.movementY/speed_scale,-maxY-sMargin,sMargin);
+        if(movin == 0) {
+            let x = dotX - lines[0];
+            let y = dotY;
+            //console.log(x+" "+y)
+            if(x>-20 && x<20 && y>0 && y<15) {
+                //document.getElementById("container-exp").requestPointerLock();
+                //noCursor();
+                dotX = lines[0];
+                dotY = 0.0;
+                SAT1_score = [0.0,0.0];
+                SAT2_score = [0.0,0.0];
+                frameNum = 0;
+                movin = 1;
+            }
         }
     }
 }
-function moveNoise(mode) {
+function calibrateMouse(e) {
+    //scaledMovementX = e.movementX;
+    var scaledMovementY = e.movementY;
+    if(scaledMovementY<0)
+        dotB -= scaledMovementY;
+}
+function moveNoise(mod) {
     return 0;
     /*const mean = 0;
     const std = 0.05;
@@ -704,6 +780,7 @@ function startGame() {
     sessionComplete = 0;
     maxA = PI/2;
     highscore = [-1];
+    scores = [];
     sessionTotal = computeSessionTotal();
     trainBlockStart();
 }
