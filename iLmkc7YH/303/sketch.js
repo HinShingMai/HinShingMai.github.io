@@ -579,7 +579,7 @@ function drawReturnCursor() {
                 dotB = 0;
                 return;
             }
-            speed_scale = fixBetween(dotB/200,0.1,5);
+            speed_scale = fixBetween(dotB/400,0.1,5);
             console.log(dotB);
             document.getElementById("container-exp").onmousemove = handleMouseMove;
             mode = 1;
