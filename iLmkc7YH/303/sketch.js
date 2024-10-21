@@ -584,6 +584,7 @@ function drawReturnCursor() {
             document.getElementById("container-exp").onmousemove = handleMouseMove;
             mode = 1;
             dotB = 0;
+            dotY = -300.0;
             movin = -120;
         } else {
             textSize(24);
