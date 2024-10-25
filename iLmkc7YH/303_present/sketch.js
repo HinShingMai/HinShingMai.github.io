@@ -71,7 +71,7 @@ var mode;
 var SAT1_score;
 var SAT2_score;
 var speed_base = 6;
-var speed_scale = 1;
+var speed_scale = 2;
 function setup() {
     isDraw = false;
     frameRate(60);
