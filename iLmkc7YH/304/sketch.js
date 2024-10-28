@@ -61,6 +61,7 @@ var highscore;
 var timer;
 var timerCount;
 var movin;
+var delay;
 var frBuffer;
 var plen;
 var heading;
@@ -69,8 +70,9 @@ var sMargin = 15;
 var mode;
 var SAT1_score;
 var SAT2_score;
-var speed_base;
+var speed_base; // removed
 var speed_scale;
+var feedback_sc;
 function setup() {
     isDraw = false;
     frameRate(60);
@@ -119,19 +121,20 @@ function startSession() {
     vDis_temp = [];
     maxPoints = 0;
     if(sessionsType[currentSession] == 0) { // familiarization session
-        document.getElementById("container-exp").onmousemove = calibrateMouse;
+        //document.getElementById("container-exp").onmousemove = calibrateMouse;
+        document.onkeyup = handleKeyReleased;
         mode = 2; // 0: normal, 1: familiarization, 2: mouse calibration
         maxPoints = 300;
         maxX = width_x*0.625; //150
         maxY = maxX*2;
         wHeight = maxY+2*sMargin;
         scaling = scaling_base;
-        blank = 30;
+        blank = 5;
         lines = straightLine(maxPoints);
         dotX = 0;
         dotY = -maxY/2;
         speed_base = -1; // scaling factor on cursor speed, should be >0 once calibrated
-        movin = -600; // 10 seconds calibration time
+        movin = 0; // 10 seconds calibration time
     } else {
         document.getElementById("container-exp").onmousemove = handleMouseMove;
         mode = 0;
@@ -160,6 +163,7 @@ function startSession() {
     heading = 0;
     SAT1_score = null;
     SAT2_score = null;
+    delay = -1;
     loop();
 }
 function sessionInfo() {
@@ -266,8 +270,20 @@ function draw() {
                 dis.push(dis_temp);
                 vDis.push(vDis_temp);
                 errors.push(error);
-                movin = -120;
-                if(mode == 1) { // update base speed during baseline block
+                movin = -180;
+                if(mode == 0) {
+                    let sc = SAT1_score[0]/(SAT1_score[1]+1)
+                    
+                    if(scores.length<2) // compute feedback score relative to first 5 trials
+                        feedback_sc = -1;
+                    else {
+                        let endpos = Math.min(5, scores.length);
+                        let meanStd = getMeanStd(scores.slice(0, endpos)); // [mean, std]
+                        feedback_sc = fixBetween(Math.floor((sc-meanStd[0])*2/meanStd[1])+2, 0, 5)
+                    }
+                    scores.push(sc);
+                }
+                /*if(mode == 1) { // update base speed during baseline block
                     if(speed_base<SAT1_score[0]/error.length) {
                         speed_base = SAT1_score[0]/SAT1_score[1];
                         console.log(speed_base);
@@ -281,8 +297,6 @@ function draw() {
                     //dotX = lines[-dotY];
                     dotA = 0.0;
                     dotB = 0.0;
-                    dis_temp = [];
-                    vDis_temp = [];
                     error = [];
                     frameNum = 0;
                     return;
@@ -290,7 +304,13 @@ function draw() {
                     isDraw = false;
                     sessionNext();
                     return;
-                }
+                }*/
+                blanknum++;
+                dotA = 0.0;
+                dotB = 0.0;
+                error = [];
+                frameNum = 0;
+                return;
             }
             //var noise = moveNoise(sessionsType[currentSession]);
             var noise = 0;
@@ -320,12 +340,6 @@ function draw() {
                 //pause();
             }
             // motion model
-            /*
-            if(dotA < -maxA) {
-                dotA = -maxA;
-            } else if(dotA > maxA) {
-                dotA = maxA;
-            }*/
             dotX += fixBetween(dotA,-10,10);
             if(dotX < -maxX) { // hits edge
                 dotX = -maxX;
@@ -339,11 +353,8 @@ function draw() {
                 heading = 0.8*heading + 0.2*fixBetween(Math.atan2(dotA, -dotB),-PI/2,PI/2);
             //update SAT feedback
             let v = Math.sqrt(dotA**2+dotB**2);
-            if(mode == 1) {
+            if(mode == 0) {
                 SAT1_score[0] += v;
-                SAT1_score[1] += 1;
-            } else {
-                SAT1_score[0] += v/speed_base;
                 SAT1_score[1] += pathError;
             }
             // draw
@@ -395,7 +406,33 @@ function draw() {
             frameNum++;
             if(movin<0)
                 movin += 1;
+            else if(movin==0) {
+                if(delay > 0)
+                    delay -= 1;
+                else if(delay==0) {
+                    if(blanknum < blank-1) {
+                        dotX = lines[0];
+                        dotY = 0.0;
+                        dis_temp = [];
+                        vDis_temp = [];
+                        SAT1_score = [0.0,0.0];
+                        SAT2_score = [0.0,0.0];
+                        frameNum = 0;
+                        movin = 1;
+                        delay -= 1;
+                    } else {
+                        isDraw = false;
+                        sessionNext();
+                        return;
+                    }
+                }
+            }
         }
+        stroke('gray');
+        fill('gray');
+        textSize(12);
+        strokeWeight(1);
+        text(`${currentTrainBlock} - ${blanknum}/${blank}`, maxX*scaling-50, sMargin*scaling-10);//sMargin*scaling+10
     }
 }
 function fixBetween(x, minimum, maximum) {
@@ -525,6 +562,33 @@ function drawCurve(coords) {
     textAlign(RIGHT);
     text(`${blanknum+1} / ${blank}`, (maxX-sMargin)*scaling, -sMargin*scaling);//-maxY*1/6*scaling*/
 }
+function drawPlot(X, Y, len) {
+    var scale = len/maxY*scaling;
+    if(lines!==null) {
+        noFill();
+        stroke('white');
+        strokeWeight(6);
+        for(let i = 1; i<lines.length; i++)
+            //line(lines[i-1]*scale, (1-i)*scale, lines[i]*scale, -i*scale);
+            line((X+lines[i-1])*scale, (Y+1-i)*scale, (X+lines[i])*scale, (Y-i)*scale);
+        stroke('gray');
+        strokeWeight(4);
+        startFix2 = 1;
+        endFix2 = lines.length;
+        for(let i = startFix2+1; i<endFix2; i++) {
+            //line(lLines[i-1].x*scale, -(i-1+lLines[i-1].y)*scale, lLines[i].x*scale, -(i+lLines[i].y)*scale);
+            //line(rLines[i-1].x*scale, -(i-1+rLines[i-1].y)*scale, rLines[i].x*scale, -(i+rLines[i].y)*scale);
+            line((X+lLines[i-1].x)*scale, -(i-1-Y+lLines[i-1].y)*scale, (X+lLines[i].x)*scale, -(i-Y+lLines[i].y)*scale);
+            line((X+rLines[i-1].x)*scale, -(i-1-Y+rLines[i-1].y)*scale, (X+rLines[i].x)*scale, -(i-Y+rLines[i].y)*scale);
+        }
+        var dotx = dis[dis.length-1];
+        var doty = vDis[vDis.length-1];
+        stroke('blue');
+        for(let i=1; i<dotx.length; i++)
+            line((X+dotx[i-1])*scale, (Y-doty[i-1])*scale, (X+dotx[i])*scale, (Y-doty[i])*scale);
+    }
+    
+}
 function drawBike(state, angle) { // state: true/false = inPath/outOfPath, angle: angle arrow is pointing at (0 is vertical up)
     var heading;
     if(state) {
@@ -553,13 +617,17 @@ function drawBike(state, angle) { // state: true/false = inPath/outOfPath, angle
 }
 function drawTrace(state) { // draw trace behind triangle, state: true/false = inPath/outOfPath
     var baseColor;
-    if(movin<1)
-        baseColor = color('grey');
-    else if(state)
+    if(movin<1) {
+        strokeWeight(6);
         baseColor = color('blue');
-    else
-        baseColor = color('red');
-    var transparency = 0;
+    } else {
+        strokeWeight(2);
+        if(state)
+            baseColor = color('blue');
+        else
+            baseColor = color('red');
+    }
+    /*var transparency = 0;
     var increment = 255/traceLen;
     for(let i in trace) {
         baseColor.setAlpha(transparency);
@@ -567,38 +635,44 @@ function drawTrace(state) { // draw trace behind triangle, state: true/false = i
         fill(baseColor);
         ellipse(trace[i].x*scaling, trace[i].y*scaling, 2, 2);
         transparency += increment;
-    }
+    }*/
+    stroke(baseColor);
+    for(let i=1;i<dis_temp.length;i++)
+        line(dis_temp[i-1]*scaling,-vDis_temp[i-1]*scaling,dis_temp[i]*scaling,-vDis_temp[i]*scaling);
+        //line(coords[i-1]*scaling, (1-i)*scaling, coords[i]*scaling, -i*scaling);
 }
 function drawReturnCursor() {
-    stroke('lightgray');
-    fill('lightgray');
     if(mode == 2) { // during mouse calibration
-        if(movin==0) {
-            if(dotB < 0.1) { // little mouse movement detected, recalibrate.
-                movin = -600;
-                dotB = 0;
-                return;
-            }
-            //speed_scale = fixBetween(dotB/400,0.1,100);
-            speed_scale = dotB/400;
-            console.log(speed_scale);
-            document.getElementById("container-exp").onmousemove = handleMouseMove;
-            mode = 1;
-            dotB = 0;
-            dotY = -300.0;
-            movin = -180;
-        } else {
-            //textSize(24);
-            textSize(Math.floor(10*scaling));
-            strokeWeight(1);
-            textAlign(CENTER);
-            text(`Move your mouse one credit card length (8.5cm) upwards.\nYou can use a card to help you with measurement. ${Math.floor(movin/-60)}\n\nVertical movement: ${dotB.toFixed(2)}`, 0, -maxY*2/3*scaling);
-            return;
-        }
+        stroke('lightgray');
+        fill('lightgray');
+        textSize(Math.floor(10*scaling));
+        strokeWeight(1);
+        textAlign(CENTER);
+        text(`To measure your mouse sensitivity, we need you to: \nPress space and move your mouse one credit card length upwards.\nYou can use any card to help you with measurement. \n\nPress space on your keyboard to begin calibration...`, 0, -maxY*2/3*scaling);
+        return;
+    } else if(mode == 3) {
+        stroke('lightgray');
+        fill('lightgray');
+        textSize(Math.floor(10*scaling));
+        strokeWeight(1);
+        textAlign(CENTER);
+        text(`Move your mouse one credit card length (8.5cm) upwards.\n\nPress space again when you are done moving.\nPress r to go back or restart calibration.`, 0, -maxY*2/3*scaling);
+        return;
     }
     if(movin==0) {
-        rect(lines[0]-30*scaling, 0, 60*scaling, 20*scaling);
-        ellipse(dotX*scaling, dotY*scaling, 30, 30);
+        stroke('lightgray');
+        fill('lightgray');
+        if(delay<0) {
+            rect(lines[0]-30*scaling, 0, 60*scaling, 20*scaling);
+            ellipse(dotX*scaling, dotY*scaling, 30, 30);
+        } else {
+            stroke('blue');
+            fill('blue');
+            rect(lines[0]-30*scaling, 0, 60*scaling, 20*scaling);
+            ellipse(dotX*scaling, dotY*scaling, 30, 30);
+            stroke('lightgray');
+            fill('lightgray');
+        }
         if(frameNum > 600) {
             //textSize(24);
             textSize(Math.floor(12*scaling));
@@ -608,43 +682,39 @@ function drawReturnCursor() {
         }
     } else {
         //textSize(24);
-        strokeWeight(1);
-        textAlign(CENTER);
         if(blanknum<1) {
-            textSize(Math.floor(12*scaling));
-            text(`Trial: ${blanknum} / ${blank}\n\nfollow the white path as fast and as accurately as you can.`, 0, -maxY*2/3*scaling);
-        } else if(mode == 0) {
-            textSize(Math.floor(16*scaling));
-            let start = scores.length-21; // moving window of 20 len for computing mean and std
-            let score = scores[scores.length-1];
-            if(start<0)
-                text(`Trial: ${blanknum} / ${blank}\n\n\nYour Score: ${score.toFixed(2)}`, 0, -maxY*2/3*scaling);
-            else { // give reward according to performance compared to moving window
-                let meanStd = getMeanStd(scores.slice(start, start+20)); // [mean, std]
-                let tier = fixBetween(Math.floor((score-meanStd[0])*2/meanStd[1])+3, 0, 5)
-                let msg = ["Try Harder!","OK!","Nice!","Nice!","Good!","Very Good!"];
-                let color = ["red","orange","lightgray","lightgray","yellow","green"]
-                stroke(color[tier]);
-                fill(color[tier]);
-                text(`Trial: ${blanknum} / ${blank}\n\n${msg[tier]}\nYour Score: ${score.toFixed(2)}`, 0, -maxY*2/3*scaling);
+            stroke('lightgray');
+            fill('lightgray');
+            strokeWeight(1);
+            textAlign(CENTER);
+            textSize(Math.floor(10*scaling));
+            text(`follow the white path as fast and as accurately as you can.`, 0, -maxY*2/3*scaling);
+        } else {
+            drawCurve(lines);
+            drawTrace(true);
+            strokeWeight(1);
+            textAlign(CENTER);
+            if(mode == 0) {
+                textSize(Math.floor(12*scaling));
+                if(feedback_sc>=0) {
+                    let msg = ["Try Harder!","OK!","Nice!","Nice!","Good!","Very Good!"];
+                    let color = ["red","orange","lightgray","lightgray","yellow","green"]
+                    stroke(color[feedback_sc]);
+                    fill(color[feedback_sc]);
+                    text(`${msg[feedback_sc]}\nYour Score: ${(scores[scores.length-1]*1000).toFixed(0)}`, 0, -maxY*scaling*0.7);
+                } else {
+                    stroke('lightgray');
+                    fill('lightgray');
+                    text(`\nYour Score: ${(scores[scores.length-1]*1000).toFixed(0)}`, 0, -maxY*scaling*0.7);
+                }
             }
         }
-        else {
-            textSize(Math.floor(16*scaling));
-            text(`Trial: ${blanknum} / ${blank}`, 0, -maxY*2/3*scaling);
-        }
-        /*if(SAT1_score == null)
-            text("Move the dot into the box at the bottom of the screen.", 0, -maxY*2/3*scaling);
-        else {
-            //let n = errors[errors.length-1].length;
-            //text(`SAT1 score: ${(SAT1_score[0]/SAT1_score[1]).toFixed(2)}, SAT2 score: ${(SAT2_score[0]/SAT2_score[1]).toFixed(2)}\n\nMove the dot into the box at the bottom of the screen.`, 0, -maxY*2/3*scaling);
-            text(`SAT score: ${(100*SAT1_score[0]/(SAT1_score[1]+1)).toFixed(2)}\n\nMove the dot into the box at the bottom of the screen.`, 0, -maxY*2/3*scaling);
-        }*/
     }
 }
 function pause() { // pause due to inactivity
     document.exitPointerLock();
     document.getElementById("container-exp").onmousemove = null;
+    document.onkeyup = null;
     noLoop();
     clear();
     //isdraw = false;
@@ -663,8 +733,9 @@ function resume() {
     isDraw = true;
     inactivity = 0;
     select('#container-exp').show();
-    if(mode==2)
-        document.getElementById("container-exp").onmousemove = calibrateMouse;
+    if(mode==3)
+        document.onkeyup = handleKeyReleased;
+        //document.getElementById("container-exp").onmousemove = calibrateMouse;
     else
         document.getElementById("container-exp").onmousemove = handleMouseMove;
     document.getElementById("container-exp").requestPointerLock();
@@ -720,20 +791,47 @@ function handleMouseMove(e) {
         dotX = fixBetween(dotX+e.movementX/speed_scale,-maxX,maxX);
         dotY = fixBetween(dotY+e.movementY/speed_scale,-maxY-sMargin,sMargin);
         if(movin == 0) {
-            let x = dotX - lines[0];
-            let y = dotY;
-            //console.log(x+" "+y)
-            if(x>-30 && x<30 && y>0 && y<20) {
-                //document.getElementById("container-exp").requestPointerLock();
-                //noCursor();
-                dotX = lines[0];
-                dotY = 0.0;
-                SAT1_score = [0.0,0.0];
-                SAT2_score = [0.0,0.0];
-                frameNum = 0;
-                movin = 1;
+            if(delay<0) {
+                let x = dotX - lines[0];
+                let y = dotY;
+                //console.log(x+" "+y)
+                if(x>-30 && x<30 && y>0 && y<20) {
+                    /*dotX = lines[0];
+                    dotY = 0.0;
+                    SAT1_score = [0.0,0.0];
+                    SAT2_score = [0.0,0.0];
+                    frameNum = 0;
+                    movin = 1;*/
+                    delay = 30; // 0.5 second delay before starting trial
+                }
             }
         }
+    }
+}
+function handleKeyReleased(e) { // handles key pressed during calibration
+    if(e.key===' ' || e.key==='Spacebar') {
+        if(mode == 2) {
+            mode = 3;
+            document.getElementById("container-exp").onmousemove = calibrateMouse;
+        } else if(mode == 3) {
+            if(dotB < 0.1) { // little mouse movement detected, recalibrate.
+                mode = 2;
+                dotB = 0;
+                return;
+            }
+            //speed_scale = fixBetween(dotB/400,0.1,100);
+            speed_scale = dotB/400;
+            console.log(speed_scale);
+            document.getElementById("container-exp").onmousemove = handleMouseMove;
+            document.onkeyup = null;
+            mode = 1;
+            dotB = 0;
+            dotY = -300.0;
+            movin = -180;
+        }
+    } else if(e.key==='r' && mode==3) {
+        mode = 2;
+        dotB = 0;
     }
 }
 function calibrateMouse(e) {
