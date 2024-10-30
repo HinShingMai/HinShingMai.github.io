@@ -266,104 +266,84 @@ function sessionInfo() {
 function draw() {
     if(isDraw) {
         if(movin>0) {
-            if(-dotY >= plen) {
-                dis.push(dis_temp);
-                vDis.push(vDis_temp);
-                errors.push(error);
-                movin = -180;
-                if(mode == 0) {
-                    let sc = SAT1_score[0]/(SAT1_score[1]+1)
-                    
-                    if(scores.length<2) // compute feedback score relative to first 5 trials
-                        feedback_sc = -1;
-                    else {
-                        let endpos = Math.min(5, scores.length);
-                        let meanStd = getMeanStd(scores.slice(0, endpos)); // [mean, std]
-                        feedback_sc = fixBetween(Math.floor((sc-meanStd[0])*2/meanStd[1])+2, 0, 5)
+            if(delay == -1) {
+                if(-dotY >= plen) {
+                    dis.push(dis_temp);
+                    vDis.push(vDis_temp);
+                    errors.push(error);
+                    movin = -180;
+                    if(mode == 0) {
+                        let sc = SAT1_score[0]/(SAT1_score[1]+1)
+                        
+                        if(scores.length<2) // compute feedback score relative to first 5 trials
+                            feedback_sc = -1;
+                        else {
+                            let endpos = Math.min(5, scores.length);
+                            let meanStd = getMeanStd(scores.slice(0, endpos)); // [mean, std]
+                            feedback_sc = fixBetween(Math.floor((sc-meanStd[0])*2/meanStd[1])+2, 0, 5)
+                        }
+                        scores.push(sc);
                     }
-                    scores.push(sc);
-                }
-                /*if(mode == 1) { // update base speed during baseline block
-                    if(speed_base<SAT1_score[0]/error.length) {
-                        speed_base = SAT1_score[0]/SAT1_score[1];
-                        console.log(speed_base);
-                    }
-                } else { // update SAT scores
-                    scores.push(1000*SAT1_score[0]/(SAT1_score[1]+1));
-                }
-                if(blanknum < blank-1) { // next sub-session
                     blanknum++;
-                    //dotY = 0;
-                    //dotX = lines[-dotY];
                     dotA = 0.0;
                     dotB = 0.0;
                     error = [];
                     frameNum = 0;
                     return;
-                } else {
-                    isDraw = false;
-                    sessionNext();
-                    return;
-                }*/
-                blanknum++;
-                dotA = 0.0;
-                dotB = 0.0;
-                error = [];
-                frameNum = 0;
-                return;
-            }
-            //var noise = moveNoise(sessionsType[currentSession]);
-            var noise = 0;
-            
-            // record trajectory
-            dis_temp.push(dotX);
-            vDis_temp.push(-dotY);
-            //actx.push(dotA);
-            //acty.push(dotB);
-            //nse.push(noise);
-            var inPath;
-            var pathError = distToPath();
-            inPath = pathError < pathWidth**2;
-            error.push(pathError);
-            if(!inPath)
-                inactivity++;
-            if(frameNum%5 == 0) {
-                if(traceBuffer != null)
-                    trace.push(traceBuffer);
-                if(trace.length > traceLen)
-                    trace.shift();
-                traceBuffer = {x: dotX, y: dotY};
-            }
+                }
+                //var noise = moveNoise(sessionsType[currentSession]);
+                var noise = 0;
                 
-            if(inactivity > 120) {
-                //isDraw = false;
-                //pause();
-            }
-            // motion model
-            dotX += fixBetween(dotA,-10,10);
-            if(dotX < -maxX) { // hits edge
-                dotX = -maxX;
-                dotA = 0; // mirrors motion when hitting edge
-            } else if(dotX > maxX) {
-                dotX = maxX;
-                dotA = 0;
-            }
-            dotY += fixBetween(dotB,-10,0);
-            if(dotA != 0 || dotB != 0)
-                heading = 0.8*heading + 0.2*fixBetween(Math.atan2(dotA, -dotB),-PI/2,PI/2);
-            //update SAT feedback
-            let v = Math.sqrt(dotA**2+dotB**2);
-            if(mode == 0) {
-                SAT1_score[0] += v;
-                SAT1_score[1] += pathError;
-            }
+                // record trajectory
+                dis_temp.push(dotX);
+                vDis_temp.push(-dotY);
+                //actx.push(dotA);
+                //acty.push(dotB);
+                //nse.push(noise);
+                var inPath;
+                var pathError = distToPath();
+                inPath = pathError < pathWidth**2;
+                error.push(pathError);
+                if(!inPath)
+                    inactivity++;
+                if(frameNum%5 == 0) {
+                    if(traceBuffer != null)
+                        trace.push(traceBuffer);
+                    if(trace.length > traceLen)
+                        trace.shift();
+                    traceBuffer = {x: dotX, y: dotY};
+                }
+                    
+                if(inactivity > 120) {
+                    //isDraw = false;
+                    //pause();
+                }
+                // motion model
+                dotX += fixBetween(dotA,-10,10);
+                if(dotX < -maxX) { // hits edge
+                    dotX = -maxX;
+                    dotA = 0; // mirrors motion when hitting edge
+                } else if(dotX > maxX) {
+                    dotX = maxX;
+                    dotA = 0;
+                }
+                dotY += fixBetween(dotB,-10,0);
+                if(dotA != 0 || dotB != 0)
+                    heading = 0.8*heading + 0.2*fixBetween(Math.atan2(dotA, -dotB),-PI/2,PI/2);
+                //update SAT feedback
+                let v = Math.sqrt(dotA**2+dotB**2);
+                if(mode == 0) {
+                    SAT1_score[0] += v;
+                    SAT1_score[1] += pathError;
+                }
+            } else
+                delay -= 1;
             // draw
             clear();
             background('black');
             stroke('white');
             strokeWeight(4);
             noFill();
-            //let high = int(maxY-dotY);
             translate(windowWidth/2, windowHeight*(sMargin+maxY)/wHeight);
             rect(-maxX*scaling, sMargin*scaling, maxX*scaling*2, -wHeight*scaling);
 
@@ -372,23 +352,6 @@ function draw() {
             drawTrace(inPath);
             // save framerate
             fr = frameRate();
-            /*if(frameNum%10==0)
-                frBuffer = fr.toFixed();
-            stroke('black');
-            fill('black');
-            textSize(12);
-            strokeWeight(1);
-            text("FPS: "+frBuffer, maxY*scaling-50, -(maxY-dotY)*scaling+10);*/
-            /*if(lines != null) {
-                stroke('blue');
-                fill('blue');
-                textSize(18);
-                strokeWeight(1);
-                for(let i=0;i<errors.length;i++) {
-                    text(errors[i].toFixed(1)+"%",0,maxY/2*scaling-12-18*i);
-                }
-                text("Percent in Path: ",0,maxY/2*scaling-72);
-            }*/
             dotA = 0;
             dotB = 0;
             fps += fr;
@@ -419,7 +382,7 @@ function draw() {
                         SAT2_score = [0.0,0.0];
                         frameNum = 0;
                         movin = 1;
-                        delay -= 1;
+                        delay = 30;
                     } else {
                         isDraw = false;
                         sessionNext();
@@ -591,7 +554,10 @@ function drawPlot(X, Y, len) {
 }
 function drawBike(state, angle) { // state: true/false = inPath/outOfPath, angle: angle arrow is pointing at (0 is vertical up)
     var heading;
-    if(state) {
+    if(delay> -1) {
+        stroke('gray');
+        fill('gray');
+    } else if(state) {
         stroke('blue');
         fill('blue');
         /*textSize(18);
