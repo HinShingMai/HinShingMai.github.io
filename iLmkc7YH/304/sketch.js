@@ -129,7 +129,7 @@ function startSession() {
         maxY = maxX*2;
         wHeight = maxY+2*sMargin;
         scaling = scaling_base;
-        blank = 5;
+        blank = 25;
         lines = straightLine(maxPoints);
         dotX = 0;
         dotY = -maxY/2;
