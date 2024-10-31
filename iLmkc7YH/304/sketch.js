@@ -69,8 +69,7 @@ var wHeight;
 var sMargin = 15;
 var mode;
 var SAT1_score;
-var SAT2_score;
-var speed_base; // removed
+var score_base;
 var speed_scale;
 var feedback_sc;
 function setup() {
@@ -278,9 +277,11 @@ function draw() {
                         if(scores.length<2) // compute feedback score relative to first 5 trials
                             feedback_sc = -1;
                         else {
-                            let endpos = Math.min(5, scores.length);
+                            let endpos = Math.min(20, scores.length);
                             let meanStd = getMeanStd(scores.slice(0, endpos)); // [mean, std]
                             feedback_sc = fixBetween(Math.floor((sc-meanStd[0])*2/meanStd[1])+2, 0, 5)
+                            if(score_base < sc)
+                                score_base = sc;
                         }
                         scores.push(sc);
                     }
@@ -336,8 +337,11 @@ function draw() {
                     SAT1_score[0] += v;
                     SAT1_score[1] += pathError;
                 }
-            } else
+            } else {
                 delay -= 1;
+                heading = 0;
+                inPath = true;
+            }
             // draw
             clear();
             background('black');
@@ -557,20 +561,12 @@ function drawBike(state, angle) { // state: true/false = inPath/outOfPath, angle
     if(delay> -1) {
         stroke('gray');
         fill('gray');
-    } else if(state) {
-        stroke('blue');
-        fill('blue');
-        /*textSize(18);
-        strokeWeight(1);
-        text(((error-straightLen)/maxPoints*100).toFixed(1)+"%", dotX*scaling + 60, dotY*scaling);*/
-    } else {
+    } else if(state===false) {
         stroke('red');
         fill('red');
-        /*if(lines != null) {
-            textSize(18);
-            strokeWeight(1);
-            text(((error-straightLen)/maxPoints*100).toFixed(1)+"%", dotX*scaling + 60, dotY*scaling);
-        }*/
+    } else {
+        stroke('blue');
+        fill('blue');
     }
     strokeWeight(3);
     //let heading = 0;
@@ -667,12 +663,13 @@ function drawReturnCursor() {
                     let color = ["red","orange","lightgray","lightgray","yellow","green"]
                     stroke(color[feedback_sc]);
                     fill(color[feedback_sc]);
-                    text(`${msg[feedback_sc]}\nYour Score: ${(scores[scores.length-1]*1000).toFixed(0)}`, 0, -maxY*scaling*0.7);
-                } else {
+                    let percentage = Math.min(scores[scores.length-1]/score_base*110, 100).toFixed(0);
+                    text(`${msg[feedback_sc]}\nYour Score: ${percentage}%`, 0, -maxY*scaling*0.7);
+                } /*else {
                     stroke('lightgray');
                     fill('lightgray');
                     text(`\nYour Score: ${(scores[scores.length-1]*1000).toFixed(0)}`, 0, -maxY*scaling*0.7);
-                }
+                }*/
             }
         }
     }
@@ -744,13 +741,14 @@ function startBackTimer() { // starts inactivity background timer
 }
 function handleMouseMove(e) {
     if(movin>0) {
-        var scaledMovement;
-        inactivity = 0;
-        var scaledMovementX = e.movementX/speed_scale;
-        var scaledMovementY = e.movementY/speed_scale;
-        dotA += scaledMovementX;
-        dotB += scaledMovementY;
-        //dotA = fixBetween(dotA, -maxA, +maxA);
+        if(delay<0) {
+            var scaledMovement;
+            inactivity = 0;
+            var scaledMovementX = e.movementX/speed_scale;
+            var scaledMovementY = e.movementY/speed_scale;
+            dotA += scaledMovementX;
+            dotB += scaledMovementY;
+        }
     } else { //translate(windowWidth/2, windowHeight);
         //dotX += e.movementX/5;
         //dotY += e.movementY/5;
@@ -853,6 +851,7 @@ function startGame() {
     highscore = [-1];
     scores = [];
     sessionTotal = computeSessionTotal();
+    score_base = -1;
     trainBlockStart();
 }
 // Function that ends the game appropriately after the experiment has been completed
