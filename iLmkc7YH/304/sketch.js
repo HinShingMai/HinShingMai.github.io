@@ -72,6 +72,7 @@ var SAT1_score;
 var score_base;
 var speed_scale;
 var feedback_sc;
+var iti;
 function setup() {
     isDraw = false;
     frameRate(60);
@@ -128,12 +129,13 @@ function startSession() {
         maxY = maxX*2;
         wHeight = maxY+2*sMargin;
         scaling = scaling_base;
-        blank = 25;
+        blank = 5;
         lines = straightLine(maxPoints);
         dotX = 0;
         dotY = -maxY/2;
         speed_base = -1; // scaling factor on cursor speed, should be >0 once calibrated
-        movin = 0; // 10 seconds calibration time
+        movin = 0;
+        iti = 60; // inter trial cooldown
     } else {
         document.getElementById("container-exp").onmousemove = handleMouseMove;
         mode = 0;
@@ -147,6 +149,7 @@ function startSession() {
         dotX = 0;
         dotY = -maxY/2;
         movin = -180; // 1: in trial, 0: awaiting cursor to move back to starting position(resetting), <0: inter-trial cooldown
+        iti = 180;
     }
     clear();
     blanknum = 0;
@@ -270,18 +273,17 @@ function draw() {
                     dis.push(dis_temp);
                     vDis.push(vDis_temp);
                     errors.push(error);
-                    movin = -180;
+                    movin = -iti;
                     if(mode == 0) {
                         let sc = SAT1_score[0]/(SAT1_score[1]+1)
-                        
+                        if(score_base < sc)
+                            score_base = sc;
                         if(scores.length<2) // compute feedback score relative to first 5 trials
                             feedback_sc = -1;
                         else {
                             let endpos = Math.min(20, scores.length);
                             let meanStd = getMeanStd(scores.slice(0, endpos)); // [mean, std]
                             feedback_sc = fixBetween(Math.floor((sc-meanStd[0])*2/meanStd[1])+2, 0, 5)
-                            if(score_base < sc)
-                                score_base = sc;
                         }
                         scores.push(sc);
                     }
