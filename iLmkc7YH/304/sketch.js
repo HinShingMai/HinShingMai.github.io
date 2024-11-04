@@ -69,6 +69,7 @@ var wHeight;
 var sMargin = 15;
 var mode;
 var SAT1_score;
+var score_max;
 var score_base;
 var speed_scale;
 var feedback_sc;
@@ -236,7 +237,7 @@ function sessionInfo() {
         let color = "blue";
         let desc;
         if(sessionsType[currentSession] == 0)
-            desc = "First, lets familiarize ourselves with the controls."
+            desc = "First, lets familiarize ourselves with the experiment."
         else if(sessionsType[currentSession] == 1)
             desc = "Train: time to learn how to do the task!";
         else
@@ -269,31 +270,6 @@ function draw() {
     if(isDraw) {
         if(movin>0) {
             if(delay == -1) {
-                if(-dotY >= plen) {
-                    dis.push(dis_temp);
-                    vDis.push(vDis_temp);
-                    errors.push(error);
-                    movin = -iti;
-                    if(mode == 0) {
-                        let sc = SAT1_score[0]/(SAT1_score[1]+1)
-                        if(score_base < sc)
-                            score_base = sc;
-                        if(scores.length<2) // compute feedback score relative to first 5 trials
-                            feedback_sc = -1;
-                        else {
-                            let endpos = Math.min(20, scores.length);
-                            let meanStd = getMeanStd(scores.slice(0, endpos)); // [mean, std]
-                            feedback_sc = fixBetween(Math.floor((sc-meanStd[0])*2/meanStd[1])+2, 0, 5)
-                        }
-                        scores.push(sc);
-                    }
-                    blanknum++;
-                    dotA = 0.0;
-                    dotB = 0.0;
-                    error = [];
-                    frameNum = 0;
-                    return;
-                }
                 //var noise = moveNoise(sessionsType[currentSession]);
                 var noise = 0;
                 
@@ -307,6 +283,50 @@ function draw() {
                 var pathError = distToPath();
                 inPath = pathError < pathWidth**2;
                 error.push(pathError);
+                if(-dotY >= plen) { // check if reached the goal
+                    dis.push(dis_temp);
+                    vDis.push(vDis_temp);
+                    errors.push(error);
+                    movin = -iti;
+                    if(mode == 0) {
+                        let sc = SAT1_score[0]/(SAT1_score[1]+1)
+                        if(score_max < sc)
+                            score_max = sc;
+                        if(scores.length<2) // compute feedback score relative to first 5 trials
+                            feedback_sc = -1;
+                        else {
+                            let endpos = Math.min(20, scores.length);
+                            let meanStd = getMeanStd(scores.slice(0, endpos)); // [mean, std]
+                            feedback_sc = fixBetween(Math.floor((sc-meanStd[0])*2/meanStd[1])+2, 0, 5)
+                            if(feedback_sc<2) {
+                                let meanStd1 = getMeanStd(score_base[0]);
+                                let meanStd2 = getMeanStd(score_base[1]);
+                                //let speedDiff = (SAT1_score[0]-meanStd1[0])/meanStd1[1];
+                                //let accurDiff = -(SAT1_score[1]+1-meanStd2[0])/meanStd2[1];
+                                //let accurDiff = (1/(SAT1_score[1]+1)-meanStd2[0])/meanStd2[1];
+                                let speedDiff = -meanStd1[1]/(SAT1_score[1]+1);
+                                let accurDiff = -meanStd2[1]*SAT1_score[0]/(SAT1_score[1]+1)**2;
+                                console.log(speedDiff+" "+accurDiff);
+                                if(speedDiff>accurDiff)
+                                    feedback_sc  = feedback_sc*2+7;
+                                else
+                                    feedback_sc  = feedback_sc*2+6;
+                            }
+                        }
+                        scores.push(sc);
+                        if(score_base[0].length<20) {
+                            score_base[0].push(SAT1_score[0]);
+                            score_base[1].push(SAT1_score[1]);
+                            //score_base[1].push(1/(SAT1_score[1]+1));
+                        }
+                    }
+                    blanknum++;
+                    dotA = 0.0;
+                    dotB = 0.0;
+                    error = [];
+                    frameNum = 0;
+                    return;
+                }
                 if(!inPath)
                     inactivity++;
                 if(frameNum%5 == 0) {
@@ -352,8 +372,8 @@ function draw() {
             noFill();
             translate(windowWidth/2, windowHeight*(sMargin+maxY)/wHeight);
             rect(-maxX*scaling, sMargin*scaling, maxX*scaling*2, -wHeight*scaling);
-
-            drawCurve(lines);
+            if(delay == -1)
+                drawCurve(lines);
             drawBike(inPath, heading);
             drawTrace(inPath);
             // save framerate
@@ -510,9 +530,25 @@ function arrayRotate(arr, count) { // rotates array, ex. arrayRotate([0, 1, 2, 3
 }
 function drawCurve(coords) {
     if(coords!==null) {
-        noFill();
-        stroke('white');
-        strokeWeight(6);
+        if(movin > 0) {
+            //noFill();
+            fill('white');
+            stroke('white');
+            //strokeWeight(6);
+            //line(-maxX*scaling, -maxY*scaling, maxX*scaling, -maxY*scaling); // draw goal area
+            rect(-maxX*scaling, -(maxY+sMargin)*scaling, 2*maxX*scaling, sMargin*scaling); // draw goal area
+            strokeWeight(6);
+        } else {
+            //noFill();
+            fill('blue');
+            stroke('blue');
+            //strokeWeight(6);
+            //line(-maxX*scaling, -maxY*scaling, maxX*scaling, -maxY*scaling); // draw goal area
+            rect(-maxX*scaling, -(maxY+sMargin)*scaling, 2*maxX*scaling, sMargin*scaling); // draw goal area
+            stroke('white');
+            strokeWeight(6);
+        }
+        
         for(let i = 1; i<coords.length; i++)
             line(coords[i-1]*scaling, (1-i)*scaling, coords[i]*scaling, -i*scaling);
         stroke('gray');
@@ -524,39 +560,6 @@ function drawCurve(coords) {
             line(rLines[i-1].x*scaling, -(i-1+rLines[i-1].y)*scaling, rLines[i].x*scaling, -(i+rLines[i].y)*scaling);
         }
     }
-    /*stroke('lightgray');
-    fill('lightgray');
-    textSize(24);
-    strokeWeight(1);
-    textAlign(RIGHT);
-    text(`${blanknum+1} / ${blank}`, (maxX-sMargin)*scaling, -sMargin*scaling);//-maxY*1/6*scaling*/
-}
-function drawPlot(X, Y, len) {
-    var scale = len/maxY*scaling;
-    if(lines!==null) {
-        noFill();
-        stroke('white');
-        strokeWeight(6);
-        for(let i = 1; i<lines.length; i++)
-            //line(lines[i-1]*scale, (1-i)*scale, lines[i]*scale, -i*scale);
-            line((X+lines[i-1])*scale, (Y+1-i)*scale, (X+lines[i])*scale, (Y-i)*scale);
-        stroke('gray');
-        strokeWeight(4);
-        startFix2 = 1;
-        endFix2 = lines.length;
-        for(let i = startFix2+1; i<endFix2; i++) {
-            //line(lLines[i-1].x*scale, -(i-1+lLines[i-1].y)*scale, lLines[i].x*scale, -(i+lLines[i].y)*scale);
-            //line(rLines[i-1].x*scale, -(i-1+rLines[i-1].y)*scale, rLines[i].x*scale, -(i+rLines[i].y)*scale);
-            line((X+lLines[i-1].x)*scale, -(i-1-Y+lLines[i-1].y)*scale, (X+lLines[i].x)*scale, -(i-Y+lLines[i].y)*scale);
-            line((X+rLines[i-1].x)*scale, -(i-1-Y+rLines[i-1].y)*scale, (X+rLines[i].x)*scale, -(i-Y+rLines[i].y)*scale);
-        }
-        var dotx = dis[dis.length-1];
-        var doty = vDis[vDis.length-1];
-        stroke('blue');
-        for(let i=1; i<dotx.length; i++)
-            line((X+dotx[i-1])*scale, (Y-doty[i-1])*scale, (X+dotx[i])*scale, (Y-doty[i])*scale);
-    }
-    
 }
 function drawBike(state, angle) { // state: true/false = inPath/outOfPath, angle: angle arrow is pointing at (0 is vertical up)
     var heading;
@@ -661,11 +664,11 @@ function drawReturnCursor() {
             if(mode == 0) {
                 textSize(Math.floor(12*scaling));
                 if(feedback_sc>=0) {
-                    let msg = ["Try Harder!","OK!","Nice!","Nice!","Good!","Very Good!"];
-                    let color = ["red","orange","lightgray","lightgray","yellow","green"]
+                    let msg = ["Try Harder!","OK!","Nice!","Nice!","Good!","Very Good!","Move Faster!","Be More Accurate!","Move Faster!","Be More Accurate!"];
+                    let color = ["red","orange","lightgray","lightgray","yellow","green","red","red","orange","orange"]
                     stroke(color[feedback_sc]);
                     fill(color[feedback_sc]);
-                    let percentage = Math.min(scores[scores.length-1]/score_base*110, 100).toFixed(0);
+                    let percentage = Math.min(scores[scores.length-1]/score_max*110, 100).toFixed(0);
                     text(`${msg[feedback_sc]}\nYour Score: ${percentage}%`, 0, -maxY*scaling*0.7);
                 } /*else {
                     stroke('lightgray');
@@ -853,7 +856,8 @@ function startGame() {
     highscore = [-1];
     scores = [];
     sessionTotal = computeSessionTotal();
-    score_base = -1;
+    score_max = -1;
+    score_base = [[],[]];
     trainBlockStart();
 }
 // Function that ends the game appropriately after the experiment has been completed
