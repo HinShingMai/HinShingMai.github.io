@@ -3,6 +3,7 @@ let cnv;
 let dpi = -1;
 let currentTrainBlock = 0;
 let trainBlocks = [0,1,-1,1,-1,1,-1,1,-1,1,-10,1,2];
+//let trainBlocks = [0,1];
 /*
 -n: n-minutes break
 0: no path normal familiarization block
@@ -145,7 +146,7 @@ function startSession() {
         maxY = maxX*2;
         wHeight = maxY+2*sMargin;
         scaling = scaling_base;
-        blank = 40; // 4 sub-sessions
+        blank = 40; // 40 sub-sessions
         lines = sinuousCurve(maxPoints, sessionsType[currentSession]);
         dotX = 0;
         dotY = -maxY/2;
@@ -258,6 +259,7 @@ function sessionInfo() {
             currentTrainBlock++;
             trainBlockStart();
         } else { // Final block, end game
+            let button = document.getElementById("startBt");
             //instr.html(`<br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br>Average Percentage in Path: ${mse}%<br><br><span id="endInstr-span">Click the Continue button to proceed.</span>`);
             instr.html(`<br>Great Work! We are almost done.<br><br><span id="endInstr-span">Click the Continue button to proceed.</span>`);
             butfunc = ()=>{plot.hide();select('#endDiv').hide(); currentTrainBlock++; endGame();};
@@ -858,11 +860,13 @@ function startGame() {
     sessionTotal = computeSessionTotal();
     score_max = -1;
     score_base = [[],[]];
+    fullscreen(true);
     trainBlockStart();
 }
 // Function that ends the game appropriately after the experiment has been completed
 function endGame() {
     select('#container-exp').hide();
+    fullscreen(false);
     remove();
     document.getElementById("container-exp").onmousemove = null;
     document.body.style.overflow = 'auto';
