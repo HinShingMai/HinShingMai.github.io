@@ -2,7 +2,7 @@ let ver = 0.1;
 let cnv;
 let dpi = -1;
 let currentTrainBlock = 0;
-let trainBlocks = [0,1,-1,1,-1,1,-1,1,-1,1,-10,1,2];
+let trainBlocks = [0,1,-1,1,-1,1,-1,1,-1,1,-10,1,2,0];
 //let trainBlocks = [0,1];
 /*
 -n: n-minutes break
@@ -291,7 +291,7 @@ function draw() {
                     errors.push(error);
                     movin = -iti;
                     if(mode == 0) {
-                        let sc = SAT1_score[0]/(SAT1_score[1]+1)
+                        let sc = SAT1_score[0]/(SAT1_score[1]+225)
                         if(score_max < sc)
                             score_max = sc;
                         if(scores.length<2) // compute feedback score relative to first 5 trials
@@ -306,8 +306,8 @@ function draw() {
                                 //let speedDiff = (SAT1_score[0]-meanStd1[0])/meanStd1[1];
                                 //let accurDiff = -(SAT1_score[1]+1-meanStd2[0])/meanStd2[1];
                                 //let accurDiff = (1/(SAT1_score[1]+1)-meanStd2[0])/meanStd2[1];
-                                let speedDiff = -meanStd1[1]/(SAT1_score[1]+1);
-                                let accurDiff = -meanStd2[1]*SAT1_score[0]/(SAT1_score[1]+1)**2;
+                                let speedDiff = -meanStd1[1]/(SAT1_score[1]+225);
+                                let accurDiff = -meanStd2[1]*SAT1_score[0]/(SAT1_score[1]+225)**2;
                                 console.log(speedDiff+" "+accurDiff);
                                 if(speedDiff>accurDiff)
                                     feedback_sc  = feedback_sc*2+7;
@@ -423,7 +423,7 @@ function draw() {
         fill('gray');
         textSize(12);
         strokeWeight(1);
-        text(`${currentTrainBlock} - ${blanknum}/${blank}`, maxX*scaling-50, sMargin*scaling-10);//sMargin*scaling+10
+        text(`${currentTrainBlock} - ${blanknum+1}/${blank}`, maxX*scaling-50, sMargin*scaling-10);//sMargin*scaling+10
     }
 }
 function fixBetween(x, minimum, maximum) {
@@ -580,17 +580,17 @@ function drawBike(state, angle) { // state: true/false = inPath/outOfPath, angle
     heading = angle;
     let x = dotX*scaling;
     let y = dotY*scaling;
-    triangle(x+15*sin(heading), y-15*cos(heading), x+6*cos(heading), y+6*sin(heading), x-6*cos(heading), y-6*sin(heading));
+    triangle(x+30*sin(heading), y-30*cos(heading), x+12*cos(heading), y+12*sin(heading), x-12*cos(heading), y-12*sin(heading));
     noFill();
     //curve(x+d*cos(heading),y+d*sin(heading), x, y, x-45*sin(heading), y+45*cos(heading), x-45*sin(heading)+d*cos(heading), y+45*cos(heading)+d*sin(heading));
 }
 function drawTrace(state) { // draw trace behind triangle, state: true/false = inPath/outOfPath
     var baseColor;
     if(movin<1) {
-        strokeWeight(6);
+        strokeWeight(8);
         baseColor = color('blue');
     } else {
-        strokeWeight(2);
+        strokeWeight(4);
         if(state)
             baseColor = color('blue');
         else
@@ -670,7 +670,8 @@ function drawReturnCursor() {
                     let color = ["red","orange","lightgray","lightgray","yellow","green","red","red","orange","orange"]
                     stroke(color[feedback_sc]);
                     fill(color[feedback_sc]);
-                    let percentage = Math.min(scores[scores.length-1]/score_max*110, 100).toFixed(0);
+                    //let percentage = Math.min(scores[scores.length-1]/score_max*110, 100).toFixed(0);
+                    let percentage = Math.min(scores[scores.length-1]/score_max*100, 100).toFixed(0);
                     text(`${msg[feedback_sc]}\nYour Score: ${percentage}%`, 0, -maxY*scaling*0.7);
                 } /*else {
                     stroke('lightgray');
