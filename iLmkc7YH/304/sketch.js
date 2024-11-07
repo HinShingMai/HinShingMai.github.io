@@ -291,7 +291,9 @@ function draw() {
                     errors.push(error);
                     movin = -iti;
                     if(mode == 0) {
-                        let sc = SAT1_score[0]/(SAT1_score[1]+225)
+                        let mean_speed = SAT1_score[0]/SAT1_score[2]; // SAT_score = [sum of speed, sum of error, n]
+                        let mean_error = SAT1_score[1]/SAT1_score[2];
+                        let sc = mean_speed/(mean_error+25)
                         if(score_max < sc)
                             score_max = sc;
                         if(scores.length<2) // compute feedback score relative to first 5 trials
@@ -303,11 +305,11 @@ function draw() {
                             if(feedback_sc<2) {
                                 let meanStd1 = getMeanStd(score_base[0]);
                                 let meanStd2 = getMeanStd(score_base[1]);
-                                //let speedDiff = (SAT1_score[0]-meanStd1[0])/meanStd1[1];
-                                //let accurDiff = -(SAT1_score[1]+1-meanStd2[0])/meanStd2[1];
+                                let speedDiff = (mean_speed-meanStd1[0])/meanStd1[1];
+                                let accurDiff = -(mean_error-meanStd2[0])/meanStd2[1];
                                 //let accurDiff = (1/(SAT1_score[1]+1)-meanStd2[0])/meanStd2[1];
-                                let speedDiff = -meanStd1[1]/(SAT1_score[1]+225);
-                                let accurDiff = -meanStd2[1]*SAT1_score[0]/(SAT1_score[1]+225)**2;
+                                //let speedDiff = -meanStd1[1]/(mean_error+25);
+                                //let accurDiff = -meanStd2[1]*mean_speed/(mean_error+25)**2;
                                 console.log(speedDiff+" "+accurDiff);
                                 if(speedDiff>accurDiff)
                                     feedback_sc  = feedback_sc*2+7;
@@ -317,8 +319,8 @@ function draw() {
                         }
                         scores.push(sc);
                         if(score_base[0].length<20) {
-                            score_base[0].push(SAT1_score[0]);
-                            score_base[1].push(SAT1_score[1]);
+                            score_base[0].push(mean_speed);
+                            score_base[1].push(mean_error);
                             //score_base[1].push(1/(SAT1_score[1]+1));
                         }
                     }
@@ -360,6 +362,7 @@ function draw() {
                 if(mode == 0) {
                     SAT1_score[0] += v;
                     SAT1_score[1] += pathError;
+                    SAT1_score[2] += 1;
                 }
             } else {
                 delay -= 1;
@@ -385,7 +388,7 @@ function draw() {
             fps += fr;
             frameNum++;
         } else {
-            // draw
+            // draw reset trials after each learning trial
             clear();
             background('black');
             stroke('white');
@@ -406,8 +409,8 @@ function draw() {
                         dotY = 0.0;
                         dis_temp = [];
                         vDis_temp = [];
-                        SAT1_score = [0.0,0.0];
-                        SAT2_score = [0.0,0.0];
+                        SAT1_score = [0.0,0.0,0];
+                        //SAT2_score = [0.0,0.0,0];
                         frameNum = 0;
                         movin = 1;
                         delay = 30;
