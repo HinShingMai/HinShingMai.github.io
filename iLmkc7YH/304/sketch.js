@@ -69,12 +69,13 @@ var heading;
 var wHeight;
 var sMargin = 15;
 var mode;
+var modes;
 var SAT1_score;
 var score_max;
 var score_base;
 var speed_scale;
+var dis_instr;
 var feedback_sc;
-var iti;
 function setup() {
     isDraw = false;
     frameRate(60);
@@ -124,36 +125,50 @@ function startSession() {
     maxPoints = 0;
     if(sessionsType[currentSession] == 0) { // familiarization session
         //document.getElementById("container-exp").onmousemove = calibrateMouse;
-        document.onkeyup = handleKeyReleased;
-        mode = 2; // 0: normal, 1: familiarization, 2: mouse calibration
         maxPoints = 300;
         maxX = width_x*0.625; //150
         maxY = maxX*2;
         wHeight = maxY+2*sMargin;
         scaling = scaling_base;
-        blank = 5;
+        if(currentTrainBlock==0) {
+            document.onkeyup = handleKeyReleased;
+            mode = 2; // 0: normal, 1: familiarization, 2: mouse calibration, 3: no feed-back
+            modes = [1,1,1,4,4];
+            speed_base = -1; // scaling factor on cursor speed, should be >0 once calibrated
+            //blank = 5;
+            movin = 0;
+        } else {
+            document.getElementById("container-exp").onmousemove = handleMouseMove;
+            mode = 0;
+            modes = Array(15).fill(1);
+            //blank = 5;
+            movin = -1;
+        }
         lines = straightLine(maxPoints);
         dotX = 0;
         dotY = -maxY/2;
-        speed_base = -1; // scaling factor on cursor speed, should be >0 once calibrated
-        movin = 0;
-        iti = 60; // inter trial cooldown
     } else {
         document.getElementById("container-exp").onmousemove = handleMouseMove;
         mode = 0;
+        //modes = Array(40).fill(0);
+        if(currentTrainBlock>1)
+            modes = new Array(4).fill([4,4,4].concat(Array(10).fill(0))).flat();
+        else // no no-feedback trials for first learning block
+            modes = Array(10).fill(0).concat(Array(3).fill([4,4,4].concat(Array(10).fill(0))).flat());
         maxPoints = 300;
         maxX = width_x*0.625; //150
         maxY = maxX*2;
         wHeight = maxY+2*sMargin;
         scaling = scaling_base;
-        blank = 40; // 40 sub-sessions
+        //blank = 40; // 40 sub-sessions
         lines = sinuousCurve(maxPoints, sessionsType[currentSession]);
         dotX = 0;
         dotY = -maxY/2;
-        movin = -180; // 1: in trial, 0: awaiting cursor to move back to starting position(resetting), <0: inter-trial cooldown
-        iti = 180;
+        movin = -1; // 1: in trial, 0: awaiting cursor to move back to starting position(resetting), <0: inter-trial cooldown
     }
+    blank = modes.length;
     clear();
+    dis_instr = 1;
     blanknum = 0;
     frameNum = 0;
     error = [];
@@ -167,7 +182,7 @@ function startSession() {
     heading = 0;
     SAT1_score = null;
     SAT2_score = null;
-    delay = -1;
+    delay = -180;
     loop();
 }
 function sessionInfo() {
@@ -289,19 +304,17 @@ function draw() {
                     dis.push(dis_temp);
                     vDis.push(vDis_temp);
                     errors.push(error);
-                    movin = -iti;
                     if(mode == 0) {
                         let mean_speed = SAT1_score[0]/SAT1_score[2]; // SAT_score = [sum of speed, sum of error, n]
                         let mean_error = SAT1_score[1]/SAT1_score[2];
-                        let sc = mean_speed/(mean_error+25)
-                        if(score_max < sc)
-                            score_max = sc;
-                        if(scores.length<2) // compute feedback score relative to first 5 trials
+                        let sc = mean_speed/(mean_error+25);
+                        /*if(scores.length<2) // compute feedback score relative to first 5 trials
                             feedback_sc = -1;
                         else {
                             let endpos = Math.min(20, scores.length);
                             let meanStd = getMeanStd(scores.slice(0, endpos)); // [mean, std]
-                            feedback_sc = fixBetween(Math.floor((sc-meanStd[0])*2/meanStd[1])+2, 0, 5)
+                            feedback_sc = fixBetween(Math.floor((sc-meanStd[0])*2/meanStd[1])+2, 0, 5);
+                            score_max = feedback_sc;
                             if(feedback_sc<2) {
                                 let meanStd1 = getMeanStd(score_base[0]);
                                 let meanStd2 = getMeanStd(score_base[1]);
@@ -317,13 +330,28 @@ function draw() {
                                     feedback_sc  = feedback_sc*2+6;
                             }
                         }
-                        scores.push(sc);
+                        scores.push(sc);*/
+                        if(scores.length<5) { // compute feedback score relative to first 5 trials
+                            movin = -60;
+                            feedback_sc = -1;
+                            scores.push(sc);
+                            scores.sort();
+                        }
+                        else {
+                            movin = -180;
+                            scores.push(sc)
+                            scores.sort();
+                            score_max = scores[Math.ceil(scores.length*0.95-1)];
+                            score_max = sc/score_max*100;
+                            feedback_sc = fixBetween(Math.floor((score_max-5)/15), 0, 5);
+                        }// end new % scoring
                         if(score_base[0].length<20) {
                             score_base[0].push(mean_speed);
                             score_base[1].push(mean_error);
                             //score_base[1].push(1/(SAT1_score[1]+1));
                         }
-                    }
+                    } else
+                        movin = -60;
                     blanknum++;
                     dotA = 0.0;
                     dotB = 0.0;
@@ -377,10 +405,23 @@ function draw() {
             noFill();
             translate(windowWidth/2, windowHeight*(sMargin+maxY)/wHeight);
             rect(-maxX*scaling, sMargin*scaling, maxX*scaling*2, -wHeight*scaling);
-            if(delay == -1)
-                drawCurve(lines);
-            drawBike(inPath, heading);
-            drawTrace(inPath);
+            if(mode == 4) { // nofeedback trials
+                if(delay == -1)
+                    drawGoal();
+                else {
+                    if(dis_instr > 0)
+                        drawInstr();
+                    drawBike(inPath, heading);
+                }
+            } else {
+                if(delay == -1) {
+                    drawGoal();
+                    drawCurve(lines);
+                } else if(dis_instr > 0)
+                    drawInstr();
+                drawBike(inPath, heading);
+                drawTrace(inPath);
+            }
             // save framerate
             fr = frameRate();
             dotA = 0;
@@ -413,7 +454,25 @@ function draw() {
                         //SAT2_score = [0.0,0.0,0];
                         frameNum = 0;
                         movin = 1;
-                        delay = 30;
+                        let next_mode = modes[blanknum+1];
+                        if(next_mode!=mode) {
+                            if(next_mode==4) {
+                                if(mode==1) {
+                                    dis_instr = 2;
+                                    delay = 300;
+                                } else {
+                                    dis_instr = 3;
+                                    delay = 180;
+                                }
+                            } else {
+                                dis_instr = 1;
+                                delay = 180;
+                            }
+                            mode = next_mode;
+                        } else {
+                            dis_instr = 0;
+                            delay = 30;
+                        }
                     } else {
                         isDraw = false;
                         sessionNext();
@@ -533,27 +592,47 @@ function arrayRotate(arr, count) { // rotates array, ex. arrayRotate([0, 1, 2, 3
     arr.push(...arr.splice(0, (-count % len + len) % len))
     return arr
 }
+function drawGoal() {
+    if(movin > 0) {
+        fill('white');
+        stroke('white');
+        rect(-maxX*scaling, -(maxY+sMargin)*scaling, 2*maxX*scaling, sMargin*scaling); // draw goal area
+    } else {
+        fill('blue');
+        stroke('blue');
+        rect(-maxX*scaling, -(maxY+sMargin)*scaling, 2*maxX*scaling, sMargin*scaling); // draw goal area
+    }
+    if(mode == 4) {
+        fill('white');
+        stroke('white');
+        textSize(Math.floor(12*scaling));
+        strokeWeight(1);
+        textAlign(CENTER);
+        text("Try to trace the previous path from your memory.", 0, -maxY*2/3*scaling);
+        stroke('blue');
+        strokeWeight(8);
+        line(maxX*scaling,0,maxX*scaling,dotY*scaling);
+    }
+}
+function drawInstr() {
+    fill('white');
+    stroke('white');
+    textSize(Math.floor(10*scaling));
+    strokeWeight(1);
+    textAlign(CENTER);
+    if(dis_instr == 1) {
+        text("Follow the white path as fast and as accurately as you can.", 0, -maxY*2/3*scaling);
+    } else if(dis_instr == 2) {
+        text("No-Feedback: In a no-feedback trial, the path will not be shown.\n"+
+        "You need to trace the previous path from your memory.", 0, -maxY*2/3*scaling);
+    } else if(dis_instr == 3) {
+        text("No-Feedback: Try to trace the curved path from your memory.", 0, -maxY*2/3*scaling);
+    }
+}
 function drawCurve(coords) {
     if(coords!==null) {
-        if(movin > 0) {
-            //noFill();
-            fill('white');
-            stroke('white');
-            //strokeWeight(6);
-            //line(-maxX*scaling, -maxY*scaling, maxX*scaling, -maxY*scaling); // draw goal area
-            rect(-maxX*scaling, -(maxY+sMargin)*scaling, 2*maxX*scaling, sMargin*scaling); // draw goal area
-            strokeWeight(6);
-        } else {
-            //noFill();
-            fill('blue');
-            stroke('blue');
-            //strokeWeight(6);
-            //line(-maxX*scaling, -maxY*scaling, maxX*scaling, -maxY*scaling); // draw goal area
-            rect(-maxX*scaling, -(maxY+sMargin)*scaling, 2*maxX*scaling, sMargin*scaling); // draw goal area
-            stroke('white');
-            strokeWeight(6);
-        }
-        
+        stroke('white');
+        strokeWeight(6);
         for(let i = 1; i<coords.length; i++)
             line(coords[i-1]*scaling, (1-i)*scaling, coords[i]*scaling, -i*scaling);
         stroke('gray');
@@ -599,15 +678,6 @@ function drawTrace(state) { // draw trace behind triangle, state: true/false = i
         else
             baseColor = color('red');
     }
-    /*var transparency = 0;
-    var increment = 255/traceLen;
-    for(let i in trace) {
-        baseColor.setAlpha(transparency);
-        stroke(baseColor);
-        fill(baseColor);
-        ellipse(trace[i].x*scaling, trace[i].y*scaling, 2, 2);
-        transparency += increment;
-    }*/
     stroke(baseColor);
     for(let i=1;i<dis_temp.length;i++)
         line(dis_temp[i-1]*scaling,-vDis_temp[i-1]*scaling,dis_temp[i]*scaling,-vDis_temp[i]*scaling);
@@ -662,25 +732,29 @@ function drawReturnCursor() {
             textSize(Math.floor(10*scaling));
             text(`follow the white path as fast and as accurately as you can.`, 0, -maxY*2/3*scaling);
         } else {
-            drawCurve(lines);
-            drawTrace(true);
-            strokeWeight(1);
-            textAlign(CENTER);
-            if(mode == 0) {
-                textSize(Math.floor(12*scaling));
-                if(feedback_sc>=0) {
-                    let msg = ["Try Harder!","OK!","Nice!","Nice!","Good!","Very Good!","Move Faster!","Be More Accurate!","Move Faster!","Be More Accurate!"];
-                    let color = ["red","orange","lightgray","lightgray","yellow","green","red","red","orange","orange"]
-                    stroke(color[feedback_sc]);
-                    fill(color[feedback_sc]);
-                    //let percentage = Math.min(scores[scores.length-1]/score_max*110, 100).toFixed(0);
-                    let percentage = Math.min(scores[scores.length-1]/score_max*100, 100).toFixed(0);
-                    text(`${msg[feedback_sc]}\nYour Score: ${percentage}%`, 0, -maxY*scaling*0.7);
-                } /*else {
-                    stroke('lightgray');
-                    fill('lightgray');
-                    text(`\nYour Score: ${(scores[scores.length-1]*1000).toFixed(0)}`, 0, -maxY*scaling*0.7);
-                }*/
+            drawGoal();
+            if(mode != 4) {
+                drawCurve(lines);
+                drawTrace(true);
+                strokeWeight(1);
+                textAlign(CENTER);
+                if(mode == 0) {
+                    textSize(Math.floor(12*scaling));
+                    if(feedback_sc>=0) {
+                        let msg = ["Try Harder!","OK!","Nice!","Nice!","Good!","Very Good!","Move Faster!","Be More Accurate!","Move Faster!","Be More Accurate!"];
+                        let color = ["red","orange","lightgray","lightgray","yellow","green","red","red","orange","orange"]
+                        stroke(color[feedback_sc]);
+                        fill(color[feedback_sc]);
+                        //let percentage = Math.min(scores[scores.length-1]/score_max*110, 100).toFixed(0);
+                        //let percentage = Math.min(score_max*100, 100).toFixed(0);
+                        let percentage = score_max.toFixed(0);
+                        text(`${msg[feedback_sc]}\nYour Score: ${percentage}%`, 0, -maxY*scaling*0.7);
+                    } /*else {
+                        stroke('lightgray');
+                        fill('lightgray');
+                        text(`\nYour Score: ${(scores[scores.length-1]*1000).toFixed(0)}`, 0, -maxY*scaling*0.7);
+                    }*/
+                }
             }
         }
     }
@@ -728,14 +802,18 @@ function startBreak(len) { // len-minutes break
 }
 function breakCountDown() { // timer countdown for break
     timerCount--;
-    if(timerCount>0) {
-        select('#endInstr').html(`<br>Let's take a ${-trainBlocks[currentTrainBlock]} minute break.<br>Please make sure you come back in ${-trainBlocks[currentTrainBlock]+graceTime/60} minutes or the experiment will terminate.
-                                    <br>${Math.floor(timerCount/60)} : ${String(timerCount%60).padStart(2,'0')}`);
+    if(timerCount>10) {
+        select('#endInstr').html(`<br>Let's take a ${-trainBlocks[currentTrainBlock]} minute break.<br>Please make sure you come back before ${-trainBlocks[currentTrainBlock]+graceTime/60} minutes or the experiment will terminate.`);
+    } else if(timerCount>0) {
+        select('#endInstr').html(`<br>Let's take a ${-trainBlocks[currentTrainBlock]} minute break.<br>Please make sure you come back before ${-trainBlocks[currentTrainBlock]+graceTime/60} minutes or the experiment will terminate.
+                                    <br><p style="font-size:10vw;color:red;">0 : ${String(timerCount%60).padStart(2,'0')}</p>`);
     } else if(timerCount == 0) {
         let btn = document.getElementById("startBt");
         select('#endInstr').html(`<br><br><br>Please click the button and proceed with the experiment.<br>`);
         btn.style.display = 'block';
         btn.onclick = ()=>{select('#endDiv').hide(); currentTrainBlock++; clearInterval(timer);sessionComplete++; trainBlockStart();};
+        console.log("beep")
+        beep();
     } else {
         if(graceTime+timerCount==60) {
             select('#endInstr').html(`<br><br><br><span style="color:red;">Are you still there? Please click the button now or the experiment will terminate.</span>`); // show timer : <br><span style="color:red;">${Math.floor((graceTime+timerCount)/60)} : ${String((graceTime+timerCount)%60).padStart(2,'0')}</span>
@@ -749,6 +827,10 @@ function breakCountDown() { // timer countdown for break
 function startBackTimer() { // starts inactivity background timer
     timerCount = 120;
     timer = setTimeout(inactivityTimer, 60000);
+}
+function beep() {
+    var snd = new  Audio("data:audio/wav;base64,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qJrx4KOQjahZxWbcZgztj2c49nKmkId44S71j0c8eV9yDK6uPRzx5X18eDvjvQ6yKo9ZSS6l//8elePK/Lf//IInrOF/FvDoADYAGBMGb7FtErm5MXMlmPAJQVgWta7Zx2go+8xJ0UiCb8LHHdftWyLJE0QIAIsI+UbXu67dZMjmgDGCGl1H+vpF4NSDckSIkk7Vd+sxEhBQMRU8j/12UIRhzSaUdQ+rQU5kGeFxm+hb1oh6pWWmv3uvmReDl0UnvtapVaIzo1jZbf/pD6ElLqSX+rUmOQNpJFa/r+sa4e/pBlAABoAAAAA3CUgShLdGIxsY7AUABPRrgCABdDuQ5GC7DqPQCgbbJUAoRSUj+NIEig0YfyWUho1VBBBA//uQZB4ABZx5zfMakeAAAAmwAAAAF5F3P0w9GtAAACfAAAAAwLhMDmAYWMgVEG1U0FIGCBgXBXAtfMH10000EEEEEECUBYln03TTTdNBDZopopYvrTTdNa325mImNg3TTPV9q3pmY0xoO6bv3r00y+IDGid/9aaaZTGMuj9mpu9Mpio1dXrr5HERTZSmqU36A3CumzN/9Robv/Xx4v9ijkSRSNLQhAWumap82WRSBUqXStV/YcS+XVLnSS+WLDroqArFkMEsAS+eWmrUzrO0oEmE40RlMZ5+ODIkAyKAGUwZ3mVKmcamcJnMW26MRPgUw6j+LkhyHGVGYjSUUKNpuJUQoOIAyDvEyG8S5yfK6dhZc0Tx1KI/gviKL6qvvFs1+bWtaz58uUNnryq6kt5RzOCkPWlVqVX2a/EEBUdU1KrXLf40GoiiFXK///qpoiDXrOgqDR38JB0bw7SoL+ZB9o1RCkQjQ2CBYZKd/+VJxZRRZlqSkKiws0WFxUyCwsKiMy7hUVFhIaCrNQsKkTIsLivwKKigsj8XYlwt/WKi2N4d//uQRCSAAjURNIHpMZBGYiaQPSYyAAABLAAAAAAAACWAAAAApUF/Mg+0aohSIRobBAsMlO//Kk4soosy1JSFRYWaLC4qZBYWFRGZdwqKiwkNBVmoWFSJkWFxX4FFRQWR+LsS4W/rFRb/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////VEFHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAU291bmRib3kuZGUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMjAwNGh0dHA6Ly93d3cuc291bmRib3kuZGUAAAAAAAAAACU=");  
+    snd.play();
 }
 function handleMouseMove(e) {
     if(movin>0) {
@@ -799,10 +881,10 @@ function handleKeyReleased(e) { // handles key pressed during calibration
             console.log(speed_scale);
             document.getElementById("container-exp").onmousemove = handleMouseMove;
             document.onkeyup = null;
-            mode = 1;
+            mode = -1;
             dotB = 0;
             dotY = -300.0;
-            movin = -180;
+            movin = -1;
         }
     } else if(e.key==='r' && mode==3) {
         mode = 2;
