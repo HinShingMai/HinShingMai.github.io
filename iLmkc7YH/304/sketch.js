@@ -3,7 +3,7 @@ let cnv;
 let dpi = -1;
 let currentTrainBlock = 0;
 let trainBlocks = [0,1,-1,1,-1,1,-1,1,-1,1,-10,1,2,0];
-//let trainBlocks = [0,1];
+//let trainBlocks = [0,1,-1,1,2,0];
 /*
 -n: n-minutes break
 0: no path normal familiarization block
@@ -132,16 +132,14 @@ function startSession() {
         scaling = scaling_base;
         if(currentTrainBlock==0) {
             document.onkeyup = handleKeyReleased;
-            mode = 2; // 0: normal, 1: familiarization, 2: mouse calibration, 3: no feed-back
+            mode = 2; // 0: normal, 1: familiarization, 2: mouse calibration, 4: no feed-back
             modes = [1,1,1,4,4];
             speed_base = -1; // scaling factor on cursor speed, should be >0 once calibrated
-            //blank = 5;
             movin = 0;
         } else {
             document.getElementById("container-exp").onmousemove = handleMouseMove;
             mode = 0;
             modes = Array(15).fill(1);
-            //blank = 5;
             movin = -1;
         }
         lines = straightLine(maxPoints);
@@ -150,17 +148,15 @@ function startSession() {
     } else {
         document.getElementById("container-exp").onmousemove = handleMouseMove;
         mode = 0;
-        //modes = Array(40).fill(0);
-        if(currentTrainBlock>1)
+        if(currentTrainBlock>0 && trainBlocks[currentTrainBlock-1]<0)
             modes = new Array(4).fill([4,4,4].concat(Array(10).fill(0))).flat();
-        else // no no-feedback trials for first learning block
+        else // no no-feedback trials if there is no break before current block
             modes = Array(10).fill(0).concat(Array(3).fill([4,4,4].concat(Array(10).fill(0))).flat());
         maxPoints = 300;
         maxX = width_x*0.625; //150
         maxY = maxX*2;
         wHeight = maxY+2*sMargin;
         scaling = scaling_base;
-        //blank = 40; // 40 sub-sessions
         lines = sinuousCurve(maxPoints, sessionsType[currentSession]);
         dotX = 0;
         dotY = -maxY/2;
@@ -252,8 +248,12 @@ function sessionInfo() {
         testTrain = sessionsType[currentSession]%4 > 1? 1: 0;
         let color = "blue";
         let desc;
-        if(sessionsType[currentSession] == 0)
-            desc = "First, lets familiarize ourselves with the experiment."
+        if(sessionsType[currentSession] == 0) {
+            if(currentTrainBlock == 0)
+                desc = "First, lets familiarize ourselves with the experiment."
+            else
+                desc = "Baseline: let's try the straight line track again."
+        }
         else if(sessionsType[currentSession] == 1)
             desc = "Train: time to learn how to do the task!";
         else
@@ -331,7 +331,7 @@ function draw() {
                             }
                         }
                         scores.push(sc);*/
-                        if(scores.length<5) { // compute feedback score relative to first 5 trials
+                        if(scores.length<5) { // less than 5 trials, no feedback
                             movin = -60;
                             feedback_sc = -1;
                             scores.push(sc);
@@ -344,11 +344,20 @@ function draw() {
                             score_max = scores[Math.ceil(scores.length*0.95-1)];
                             score_max = sc/score_max*100;
                             feedback_sc = fixBetween(Math.floor((score_max-5)/15), 0, 5);
+                            if(feedback_sc<2) {
+                                let meanStd1 = getMeanStd(score_base[0]);
+                                let meanStd2 = getMeanStd(score_base[1]);
+                                let speedDiff = (mean_speed-meanStd1[0])/meanStd1[1];
+                                let accurDiff = -(mean_error-meanStd2[0])/meanStd2[1];
+                                if(speedDiff>accurDiff)
+                                    feedback_sc  = feedback_sc*2+7;
+                                else
+                                    feedback_sc  = feedback_sc*2+6;
+                            }
                         }// end new % scoring
                         if(score_base[0].length<20) {
                             score_base[0].push(mean_speed);
                             score_base[1].push(mean_error);
-                            //score_base[1].push(1/(SAT1_score[1]+1));
                         }
                     } else
                         movin = -60;
@@ -608,7 +617,7 @@ function drawGoal() {
         textSize(Math.floor(12*scaling));
         strokeWeight(1);
         textAlign(CENTER);
-        text("Try to trace the previous path from your memory.", 0, -maxY*2/3*scaling);
+        text("Start!\n\nTry to trace the previous path from your memory.", 0, -maxY*2/3*scaling);
         stroke('blue');
         strokeWeight(8);
         line(maxX*scaling,0,maxX*scaling,dotY*scaling);
@@ -747,7 +756,7 @@ function drawReturnCursor() {
                         fill(color[feedback_sc]);
                         //let percentage = Math.min(scores[scores.length-1]/score_max*110, 100).toFixed(0);
                         //let percentage = Math.min(score_max*100, 100).toFixed(0);
-                        let percentage = score_max.toFixed(0);
+                        let percentage = Math.min(score_max, 100).toFixed(0);
                         text(`${msg[feedback_sc]}\nYour Score: ${percentage}%`, 0, -maxY*scaling*0.7);
                     } /*else {
                         stroke('lightgray');
