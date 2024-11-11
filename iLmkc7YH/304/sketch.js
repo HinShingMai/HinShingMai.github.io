@@ -331,16 +331,14 @@ function draw() {
                             }
                         }
                         scores.push(sc);*/
+                        scores.push(sc);
+                        scores.sort();
                         if(scores.length<5) { // less than 5 trials, no feedback
                             movin = -60;
                             feedback_sc = -1;
-                            scores.push(sc);
-                            scores.sort();
                         }
                         else {
                             movin = -180;
-                            scores.push(sc)
-                            scores.sort();
                             score_max = scores[Math.ceil(scores.length*0.95-1)];
                             score_max = sc/score_max*100;
                             feedback_sc = fixBetween(Math.floor((score_max-5)/15), 0, 5);
@@ -355,10 +353,8 @@ function draw() {
                                     feedback_sc  = feedback_sc*2+6;
                             }
                         }// end new % scoring
-                        if(score_base[0].length<20) {
-                            score_base[0].push(mean_speed);
-                            score_base[1].push(mean_error);
-                        }
+                        score_base[0].push(mean_speed);
+                        score_base[1].push(mean_error);
                     } else
                         movin = -60;
                     blanknum++;
