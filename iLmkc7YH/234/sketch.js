@@ -443,8 +443,8 @@ function draw() {
                 dotU = -angAcc;
             
             //dotA = dotA + dotU;
-            //dotA = dotA + Math.atan(40*dotU)*maxA/20;
-            dotA = dotA + (2/(1+Math.exp(-64*dotU))-1)*maxA/20;
+            //dotA = dotA + (2/(1+Math.exp(-64*dotU))-1)*maxA/20;
+            dotA = dotA + maxA/20/5*Math.log2((9*dotU+0.5)/(1-9*dotU-0.5));
             if(dotA < -maxA) {
                 dotA = -maxA;
                 angAcc = 0;
