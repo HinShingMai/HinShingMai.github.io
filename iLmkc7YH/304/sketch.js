@@ -3,7 +3,7 @@ let cnv;
 let dpi = -1;
 let currentTrainBlock = 0;
 let trainBlocks = [0,1,-1,1,-1,1,-1,1,-1,1,-10,1,2,0];
-//let trainBlocks = [0,1,-1,1,2,0];
+//let trainBlocks = [0,-1,1,2,0];
 /*
 -n: n-minutes break
 0: no path normal familiarization block
@@ -460,7 +460,23 @@ function draw() {
                         frameNum = 0;
                         movin = 1;
                         let next_mode = modes[blanknum+1];
-                        if(next_mode!=mode) {
+                        if(next_mode==4) {
+                            if(trainBlocks[currentTrainBlock] == 0) {
+                                dis_instr = 2;
+                                delay = 300;
+                            } else {
+                                dis_instr = 3;
+                                delay = 180;
+                            }
+                        } else if(next_mode!=mode) {
+                            dis_instr = 1;
+                            delay = 180;
+                        } else {
+                            dis_instr = 0;
+                            delay = 30;
+                        }
+                        mode = next_mode;
+                        /*if(next_mode!=mode) {
                             if(next_mode==4) {
                                 if(mode==1) {
                                     dis_instr = 2;
@@ -477,7 +493,7 @@ function draw() {
                         } else {
                             dis_instr = 0;
                             delay = 30;
-                        }
+                        }*/
                     } else {
                         isDraw = false;
                         sessionNext();
@@ -613,10 +629,11 @@ function drawGoal() {
         textSize(Math.floor(12*scaling));
         strokeWeight(1);
         textAlign(CENTER);
-        text("Start!\n\nTry to trace the previous path from your memory.", 0, -maxY*2/3*scaling);
+        text("Start!", 0, -maxY*2/3*scaling);
         stroke('blue');
         strokeWeight(8);
         line(maxX*scaling,0,maxX*scaling,dotY*scaling);
+        line(-maxX*scaling,0,-maxX*scaling,dotY*scaling);
     }
 }
 function drawInstr() {
@@ -817,7 +834,6 @@ function breakCountDown() { // timer countdown for break
         select('#endInstr').html(`<br><br><br>Please click the button and proceed with the experiment.<br>`);
         btn.style.display = 'block';
         btn.onclick = ()=>{select('#endDiv').hide(); currentTrainBlock++; clearInterval(timer);sessionComplete++; trainBlockStart();};
-        console.log("beep")
         beep();
     } else {
         if(graceTime+timerCount==60) {
