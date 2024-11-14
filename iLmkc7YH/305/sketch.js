@@ -464,14 +464,14 @@ function draw() {
                         if(next_mode==4) {
                             if(trainBlocks[currentTrainBlock] == 0) {
                                 dis_instr = 2;
-                                delay = 300;
+                                delay = 240;
                             } else {
                                 dis_instr = 3;
-                                delay = 180;
+                                delay = 120;
                             }
                         } else if(next_mode!=mode) {
                             dis_instr = 1;
-                            delay = 180;
+                            delay = 120;
                         } else {
                             dis_instr = 0;
                             delay = 30;
