@@ -338,7 +338,7 @@ function draw() {
                             feedback_sc = -1;
                         }
                         else {
-                            movin = -180;
+                            movin = -120;
                             score_max = scores[Math.ceil(scores.length*0.95-1)];
                             score_max = sc/score_max*100;
                             feedback_sc = fixBetween(Math.floor((score_max-5)/15), 0, 5);
@@ -467,11 +467,11 @@ function draw() {
                                 delay = 240;
                             } else {
                                 dis_instr = 3;
-                                delay = 120;
+                                delay = 180;
                             }
                         } else if(next_mode!=mode) {
                             dis_instr = 1;
-                            delay = 120;
+                            delay = 180;
                         } else {
                             dis_instr = 0;
                             delay = 30;
