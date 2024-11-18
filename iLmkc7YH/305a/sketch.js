@@ -76,6 +76,8 @@ var score_base;
 var speed_scale;
 var dis_instr;
 var feedback_sc;
+var butfunc;
+var keyfunc;
 function setup() {
     isDraw = false;
     frameRate(60);
@@ -131,7 +133,7 @@ function startSession() {
         wHeight = maxY+2*sMargin;
         scaling = scaling_base;
         if(currentTrainBlock==0) {
-            document.onkeyup = handleKeyReleased;
+            document.onkeyup = handleCalibrationKey;
             mode = 2; // 0: normal, 1: familiarization, 2: mouse calibration, 4: no feed-back
             modes = [1,1,1,4,4];
             speed_base = -1; // scaling factor on cursor speed, should be >0 once calibrated
@@ -149,10 +151,12 @@ function startSession() {
         document.getElementById("container-exp").onmousemove = handleMouseMove;
         mode = 0;
         modes = Array(10).fill(0).concat([4,4,4]);
-        /*if(currentTrainBlock>0 && trainBlocks[currentTrainBlock-1]<0)
-            modes = new Array(4).fill([4,4,4].concat(Array(10).fill(0))).flat();
+        if(currentTrainBlock>0 && trainBlocks[currentTrainBlock-1]<0)
+            //modes = new Array(4).fill([4,4,4].concat(Array(10).fill(0))).flat();
+            modes = [4,4,4].concat(pesudoRandom(4,true));
         else // no no-feedback trials if there is no break before current block
-            modes = Array(10).fill(0).concat(Array(3).fill([4,4,4].concat(Array(10).fill(0))).flat());*/
+            //modes = Array(10).fill(0).concat(Array(3).fill([4,4,4].concat(Array(10).fill(0))).flat());
+            modes = pesudoRandom(4,false);
         maxPoints = 300;
         maxX = width_x*0.625; //150
         maxY = maxX*2;
@@ -263,9 +267,11 @@ function sessionInfo() {
             instr.html(`<br><span style="color:${color};">${desc}</span><br><br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br><br><span id="endInstr-span">Click the Continue button to proceed.</span>`);
         else
             instr.html(`<br><span style="color:${color};">${desc}</span><br><br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br>Average Percentage in Path: ${mse}%<br><span id="endInstr-span">Click the Continue button to proceed.</span>`);*/
-        instr.html(`<br><span style="color:${color};">${desc}</span><br><br><span id="endInstr-span">Click the Continue button to proceed.</span>`);
+        instr.html(`<br><span style="color:${color};">${desc}</span><br><br><span id="endInstr-span">Press Space Bar to proceed.</span>`);
         butfunc = ()=>{plot.hide();select('#endDiv').hide();startSession();};
-        button.onclick = ()=>{clearTimeout(timer);butfunc();};
+        //button.onclick = ()=>{clearTimeout(timer);butfunc();};
+        document.onkeyup = handleKeyReleased;
+        keyfunc = ()=>{clearTimeout(timer);butfunc();};
     } else { // end of a block
         if(currentTrainBlock+1 < totalTrainBlocks){ // proceed to next block
             //instr.html(`<br>Great work!<br><br><span id="endInstr-span">Click the Continue button to proceed.</span>`);
@@ -277,9 +283,11 @@ function sessionInfo() {
         } else { // Final block, end game
             let button = document.getElementById("startBt");
             //instr.html(`<br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br>Average Percentage in Path: ${mse}%<br><br><span id="endInstr-span">Click the Continue button to proceed.</span>`);
-            instr.html(`<br>Great Work! We are almost done.<br><br><span id="endInstr-span">Click the Continue button to proceed.</span>`);
+            instr.html(`<br>Great Work! We are almost done.<br><br><span id="endInstr-span">Press Space Bar to proceed.</span>`);
             butfunc = ()=>{plot.hide();select('#endDiv').hide(); currentTrainBlock++; endGame();};
-            button.onclick = ()=>{butfunc();};
+            //button.onclick = ()=>{butfunc();};
+            document.onkeyup = handleKeyReleased;
+            keyfunc = butfunc;
         }
     }
     //button.onclick = ()=>{clearTimeout(timer);butfunc();};
@@ -301,7 +309,8 @@ function draw() {
                 var pathError = distToPath();
                 inPath = pathError < pathWidth**2;
                 error.push(pathError);
-                if(-dotY >= plen) { // check if reached the goal
+                //if(-dotY >= plen) { // check if reached the goal
+                if(-dotY+30*cos(heading)/scaling >= plen) {
                     dis.push(dis_temp);
                     vDis.push(vDis_temp);
                     errors.push(error);
@@ -354,8 +363,14 @@ function draw() {
                                     feedback_sc  = feedback_sc*2+6;
                             }
                         }// end new % scoring
-                        score_base[0].push(mean_speed);
-                        score_base[1].push(mean_error);
+                        if(blockType == 1) {
+                            score_base[0].push(mean_speed);
+                            score_base[1].push(mean_error);
+                            if(score_base[0].length > 20) {
+                                score_base[0].shift();
+                                score_base[1].shift();
+                            }
+                        }
                     } else
                         movin = -60;
                     blanknum++;
@@ -365,8 +380,8 @@ function draw() {
                     frameNum = 0;
                     return;
                 }
-                if(!inPath)
-                    inactivity++;
+                /*if(!inPath)
+                    inactivity++;*/
                 if(frameNum%5 == 0) {
                     if(traceBuffer != null)
                         trace.push(traceBuffer);
@@ -604,8 +619,6 @@ function sinuousCurve(len, mod) { // generate trajectory
 function straightLine(len) {
     var mid = 0;
     var paths = Array(len).fill(mid);
-    //lLines = Array(len).fill(mid-pathWidth);
-    //rLines = Array(len).fill(mid+pathWidth);
     lLines = Array(len).fill({x: mid-pathWidth, y: 0});
     rLines = Array(len).fill({x: mid+pathWidth, y: 0});
     return paths;
@@ -614,6 +627,30 @@ function arrayRotate(arr, count) { // rotates array, ex. arrayRotate([0, 1, 2, 3
     const len = arr.length
     arr.push(...arr.splice(0, (-count % len + len) % len))
     return arr
+}
+function pesudoRandom(len, noFirst) { // schedules 10*len feedback trials with 3 non-feedback in each 10 feedback trials. noFirst: Do not put no-feedback at first trial
+    var flag = noFirst;
+    var arr = [];
+    for(let i=0;i<len;i++) {
+        let arr_10 = Array(10).fill(0);
+        let idx_10 = Array.from(Array(11).keys());
+        if(flag)
+            idx_10.shift();
+        for(let j=0;j<3;j++) { // pick random index to insert 1 non-feedback before the index
+            let choice = Math.floor(Math.random() * idx_10.length);
+            //console.log(j+" -> "+choice);
+            arr_10.splice(idx_10[choice], 0, 4);
+            for(let k=choice;k<idx_10.length;k++)
+                idx_10[k]++;
+            idx_10.splice(choice, 1); // prevents adjacent non-feedback trials
+        }
+        arr = arr.concat(arr_10);
+        if(arr_10[arr_10.length-1] == 4)
+            flag = true;
+        else
+            flag = false;
+    }
+    return arr;
 }
 function drawGoal() {
     if(movin > 0) {
@@ -796,18 +833,20 @@ function pause() { // pause due to inactivity
     htmlDiv.show();
     select('#container-exp').hide()
     let button = document.getElementById("startBt");
-    instr.html(`<br>Are you still there?<br><br>The experiment has been paused because we cannot detect any cursor movement for a few seconds.<br><br><span id="endInstr-span">Click the Continue button to return to the experiment.</span>`);
+    instr.html(`<br>Are you still there?<br><br>The experiment has been paused because we cannot detect any cursor movement for a few seconds.<br><br><span id="endInstr-span">Press Space Bar to return to the experiment.</span>`);
     timer = setTimeout(()=>{select('#endInstr-span').html("Please click the button now or the experiment will terminate.");document.getElementById("endInstr-span").style.color = "red";
                             timer = setTimeout(()=>{forceQuit(2);},60000);},120000);
     butfunc = ()=>{select('#endDiv').hide();resume();};
-    button.onclick = ()=>{clearTimeout(timer);butfunc();};
+    //button.onclick = ()=>{clearTimeout(timer);butfunc();};
+    document.onkeyup = handleKeyReleased;
+    keyfunc = ()=>{clearTimeout(timer);butfunc();};
 }
 function resume() {
     isDraw = true;
     inactivity = 0;
     select('#container-exp').show();
     if(mode==3)
-        document.onkeyup = handleKeyReleased;
+        document.onkeyup = handleCalibrationKey;
         //document.getElementById("container-exp").onmousemove = calibrateMouse;
     else
         document.getElementById("container-exp").onmousemove = handleMouseMove;
@@ -834,13 +873,15 @@ function breakCountDown() { // timer countdown for break
                                     <br><p style="font-size:10vw;color:red;">0 : ${String(timerCount%60).padStart(2,'0')}</p>`);
     } else if(timerCount == 0) {
         let btn = document.getElementById("startBt");
-        select('#endInstr').html(`<br><br><br>Please click the button and proceed with the experiment.<br>`);
+        select('#endInstr').html(`<br><br><br>Press Space Bar to proceed with the experiment.<br>`);
         btn.style.display = 'block';
-        btn.onclick = ()=>{select('#endDiv').hide(); currentTrainBlock++; clearInterval(timer);sessionComplete++; trainBlockStart();};
+        //btn.onclick = ()=>{select('#endDiv').hide(); currentTrainBlock++; clearInterval(timer);sessionComplete++; trainBlockStart();};
+        document.onkeyup = handleKeyReleased;
+        keyfunc = ()=>{select('#endDiv').hide(); currentTrainBlock++; clearInterval(timer);sessionComplete++; trainBlockStart();};
         beep();
     } else {
         if(graceTime+timerCount==60) {
-            select('#endInstr').html(`<br><br><br><span style="color:red;">Are you still there? Please click the button now or the experiment will terminate.</span>`); // show timer : <br><span style="color:red;">${Math.floor((graceTime+timerCount)/60)} : ${String((graceTime+timerCount)%60).padStart(2,'0')}</span>
+            select('#endInstr').html(`<br><br><br><span style="color:red;">Are you still there? Please press Space Bar now or the experiment will terminate.</span>`); // show timer : <br><span style="color:red;">${Math.floor((graceTime+timerCount)/60)} : ${String((graceTime+timerCount)%60).padStart(2,'0')}</span>
         } else if(graceTime+timerCount==-1) { // timeout
             clearInterval(timer);
             butfunc = ()=>{select('#endDiv').hide(); currentTrainBlock++; sessionComplete++; trainBlockStart();};
@@ -889,7 +930,14 @@ function handleMouseMove(e) {
         }
     }
 }
-function handleKeyReleased(e) { // handles key pressed during calibration
+function handleKeyReleased(e) {
+    if(e.key===' ' || e.key==='Spacebar') {
+        document.onkeyup = null;
+        keyfunc();
+        keyfunc = null;
+    }
+}
+function handleCalibrationKey(e) { // handles key pressed during calibration
     if(e.key===' ' || e.key==='Spacebar') {
         if(mode == 2) {
             mode = 3;
