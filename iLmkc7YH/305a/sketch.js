@@ -518,6 +518,11 @@ function draw() {
                         sessionNext();
                         return;
                     }
+                } else {
+                    let x = dotX - lines[0];
+                    let y = dotY;
+                    if(x>-30 && x<30 && y>0 && y<20) 
+                        delay = 30;
                 }
             }
         }
@@ -914,22 +919,6 @@ function handleMouseMove(e) {
         //dotY += e.movementY/5;
         dotX = fixBetween(dotX+e.movementX/speed_scale,-maxX,maxX);
         dotY = fixBetween(dotY+e.movementY/speed_scale,-maxY-sMargin,sMargin);
-        if(movin == 0) {
-            if(delay<0) {
-                let x = dotX - lines[0];
-                let y = dotY;
-                //console.log(x+" "+y)
-                if(x>-30 && x<30 && y>0 && y<20) {
-                    /*dotX = lines[0];
-                    dotY = 0.0;
-                    SAT1_score = [0.0,0.0];
-                    SAT2_score = [0.0,0.0];
-                    frameNum = 0;
-                    movin = 1;*/
-                    delay = 30; // 0.5 second delay before starting trial
-                }
-            }
-        }
     }
 }
 function handleKeyReleased(e) {
