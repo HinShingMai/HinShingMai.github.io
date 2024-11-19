@@ -131,24 +131,27 @@ function startSession() {
             mode = 2; // 0: normal, 1: familiarization, 2: mouse calibration, 4: no feed-back
             modes = [1,1,1,4,4];
             speed_base = -1; // scaling factor on cursor speed, should be >0 once calibrated
-            movin = 0;
+            movin = -120; // 1: in trial, 0: awaiting cursor to move back to starting position(resetting), <0: inter-trial cooldown
         } else {
             document.getElementById("container-exp").onmousemove = handleMouseMove;
-            mode = 0;
+            mode = -1;
             modes = Array(15).fill(1);
-            movin = -1;
+            movin = 0;
         }
         lines = straightLine(maxPoints);
         dotX = 0;
         dotY = -maxY/2;
     } else {
         document.getElementById("container-exp").onmousemove = handleMouseMove;
-        mode = 0;
+        mode = -1;
         modes = Array(10).fill(0).concat([4,4,4]);
-        if(currentTrainBlock>0 && trainBlocks[currentTrainBlock-1]<0)
-            modes = [4,4,4].concat(pesudoRandom(4,true));
-        else // no no-feedback trials if there is no break before current block
+        if(currentTrainBlock>0 && trainBlocks[currentTrainBlock-1]<0) {
+            modes = [4,4,4].concat(pesudoRandom(4,false));
+            movin = 0;
+        } else { // no no-feedback trials if there is no break before current block
             modes = pesudoRandom(4,false);
+            movin = 0;
+        }
         maxPoints = 300;
         maxX = width_x*0.625; //150
         maxY = maxX*2;
@@ -157,7 +160,6 @@ function startSession() {
         lines = sinuousCurve(maxPoints, sessionsType[currentSession]);
         dotX = 0;
         dotY = -maxY/2;
-        movin = -1; // 1: in trial, 0: awaiting cursor to move back to starting position(resetting), <0: inter-trial cooldown
     }
     blank = modes.length;
     clear();
@@ -422,7 +424,7 @@ function draw() {
                                 dis_instr = 3;
                                 delay = 180;
                             }
-                        } else if(next_mode!=mode) {
+                        } else if(mode==-1) { //next_mode!=mode
                             dis_instr = 1;
                             delay = 180;
                         } else {
@@ -727,7 +729,6 @@ function startBreak(len) { // len-minutes break
     timerCount = 60*len;
     graceTime = 120; // participants have 120 seconds to click next button after break timer runs out
     instr.html(`<br>Let's take a ${len} minute break.<br><br>${len} : 00`);
-    select('#startBt').hide();
     timer = setInterval(breakCountDown, 1000);
 }
 function breakCountDown() { // timer countdown for break
@@ -738,10 +739,7 @@ function breakCountDown() { // timer countdown for break
         select('#endInstr').html(`<br>Let's take a ${-trainBlocks[currentTrainBlock]} minute break.<br>Please make sure you come back before ${-trainBlocks[currentTrainBlock]+graceTime/60} minutes or the experiment will terminate.
                                     <br><p style="font-size:10vw;color:red;">0 : ${String(timerCount%60).padStart(2,'0')}</p>`);
     } else if(timerCount == 0) {
-        let btn = document.getElementById("startBt");
         select('#endInstr').html(`<br><br><br>Press Space Bar to proceed with the experiment.<br>`);
-        btn.style.display = 'block';
-        //btn.onclick = ()=>{select('#endDiv').hide(); currentTrainBlock++; clearInterval(timer);sessionComplete++; trainBlockStart();};
         document.onkeyup = handleKeyReleased;
         keyfunc = ()=>{select('#endDiv').hide(); currentTrainBlock++; clearInterval(timer);sessionComplete++; trainBlockStart();};
         beep();
@@ -795,8 +793,10 @@ function handleMouseMove(e) {
 function handleKeyReleased(e) {
     if(e.key===' ' || e.key==='Spacebar') {
         document.onkeyup = null;
+        let prev_func = keyfunc;
         keyfunc();
-        keyfunc = null;
+        if(prev_func === keyfunc)
+            keyfunc = null;
     }
 }
 function handleCalibrationKey(e) { // handles key pressed during calibration
