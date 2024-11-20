@@ -153,11 +153,11 @@ function startSession() {
         modes = Array(10).fill(0).concat([4,4,4]);
         if(currentTrainBlock>0 && trainBlocks[currentTrainBlock-1]<0) {
             //modes = new Array(4).fill([4,4,4].concat(Array(10).fill(0))).flat();
-            modes = [4,4,4].concat(pesudoRandom(1,false));
+            modes = [4,4,4].concat(pesudoRandom(1,true));
             movin = 0;
         } else { // no no-feedback trials if there is no break before current block
             //modes = Array(10).fill(0).concat(Array(3).fill([4,4,4].concat(Array(10).fill(0))).flat());
-            modes = pesudoRandom(1,false);
+            modes = pesudoRandom(1,true);
             movin = 0;
         }
         maxPoints = 300;
@@ -313,6 +313,8 @@ function draw() {
                 error.push(pathError);
                 //if(-dotY >= plen) { // check if reached the goal
                 if(-dotY+30*cos(heading)/scaling >= plen) {
+                    dis_temp.push(dotX+30*sin(heading)/scaling); // save tip of triangle as final coordinate
+                    vDis_temp.push(-dotY+30*cos(heading)/scaling);
                     dis.push(dis_temp);
                     vDis.push(vDis_temp);
                     errors.push(error);
@@ -691,8 +693,8 @@ function drawInstr() {
     if(dis_instr == 1) {
         text("Follow the white path as fast and as accurately as you can.", 0, -maxY*2/3*scaling);
     } else if(dis_instr == 2) {
-        text("No-Feedback: In a no-feedback trial, the cursor will not be shown.\n"+
-        "You need to guess your position and rely on your muscle memory.", 0, -maxY*2/3*scaling);
+        text("No-Feedback: In a no-feedback trial, the cursor is not displayed.\n"+
+        "You need to guess your position.", 0, -maxY*2/3*scaling);
     } else if(dis_instr == 3) {
         text("No-Feedback: Try to trace the curved path without the cursor.", 0, -maxY*2/3*scaling);
     }
