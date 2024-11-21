@@ -129,7 +129,7 @@ function startSession() {
         if(currentTrainBlock==0) {
             document.onkeyup = handleCalibrationKey;
             mode = 2; // 0: normal, 1: familiarization, 2: mouse calibration, 4: no feed-back
-            modes = [1,1,1,4,4];
+            modes = [1,1,1,4,4].concat(Array(15).fill(1));
             speed_base = -1; // scaling factor on cursor speed, should be >0 once calibrated
             movin = -120; // 1: in trial, 0: awaiting cursor to move back to starting position(resetting), <0: inter-trial cooldown
         } else {
