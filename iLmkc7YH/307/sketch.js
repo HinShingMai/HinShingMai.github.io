@@ -744,13 +744,13 @@ function handleMouseMove(e) {
     if(movin>0) {
         if(delay<0) {
             var scaledMovement;
-            var scaledMovementX = e.movementX/speed_scale;
+            var scaledMovementX = e.movementX/speed_scale/2;
             var scaledMovementY = e.movementY/speed_scale;
             dotA += scaledMovementX;
             dotB += scaledMovementY;
         }
     } else {
-        dotX = fixBetween(dotX+e.movementX/speed_scale,-maxX,maxX);
+        dotX = fixBetween(dotX+e.movementX/speed_scale/2,-maxX,maxX);
         dotY = fixBetween(dotY+e.movementY/speed_scale,-maxY-sMargin,sMargin);
     }
 }
