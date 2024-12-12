@@ -144,7 +144,7 @@ function startSession() {
     } else {
         document.getElementById("container-exp").onmousemove = handleMouseMove;
         mode = -1;
-        modes = pesudoRandom(1,true);
+        modes = pesudoRandom(5,true);
         movin = 0;
         maxPoints = 300;
         maxX = width_x*0.625; //150
