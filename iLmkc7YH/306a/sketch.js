@@ -2,8 +2,8 @@ let ver = 0.2;
 let cnv;
 let dpi = -1;
 let currentTrainBlock = 0;
-let trainBlocks = [0,1,-1,1,-1,1,-1,1,-1,1,-10,1,2,0];
-//let trainBlocks = [0,-1,1,2,0];
+//let trainBlocks = [0,1,-1,1,-1,1,-1,1,-1,1,-10,1,2,0];
+let trainBlocks = [0,1,2,0];
 /*
 -n: n-minutes break
 0: no path normal familiarization block
@@ -129,13 +129,13 @@ function startSession() {
         if(currentTrainBlock==0) {
             document.onkeyup = handleCalibrationKey;
             mode = 2; // 0: normal, 1: familiarization, 2/3: mouse calibration, 4: no-feedback familiarization, 5: feedback trial
-            modes = [1,1,1,4,4].concat(Array(15).fill(1));
+            modes = [1,1,1,4,4];
             speed_base = -1; // scaling factor on cursor speed, should be >0 once calibrated
             movin = -120; // 1: in trial, 0: awaiting cursor to move back to starting position(resetting), <0: inter-trial cooldown
         } else {
             document.getElementById("container-exp").onmousemove = handleMouseMove;
             mode = -1;
-            modes = Array(15).fill(1);
+            modes = Array(5).fill(1);
             movin = 0;
         }
         lines = straightLine(maxPoints);
@@ -144,7 +144,7 @@ function startSession() {
     } else {
         document.getElementById("container-exp").onmousemove = handleMouseMove;
         mode = -1;
-        modes = pesudoRandom(5,true);
+        modes = pesudoRandom(1,true);
         movin = 0;
         maxPoints = 300;
         maxX = width_x*0.625; //150
