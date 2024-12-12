@@ -144,7 +144,11 @@ function startSession() {
     } else {
         document.getElementById("container-exp").onmousemove = handleMouseMove;
         mode = -1;
-        modes = pesudoRandom(5,true);
+        if(sessionsType[currentSession] == 1)
+            modes = pesudoRandom(5,true);
+        else
+            modes = Array(40).fill(0);
+        //modes = pesudoRandom(5,true);
         movin = 0;
         maxPoints = 300;
         maxX = width_x*0.625; //150
