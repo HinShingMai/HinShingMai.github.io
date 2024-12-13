@@ -308,7 +308,8 @@ function draw() {
                     traceBuffer = {x: dotX, y: dotY};
                 }
                 // motion model
-                dotX += fixBetween(dotA,-10,10);
+                dotA = fixBetween(dotA,-10,10);
+                dotX += dotA;
                 if(dotX < -maxX) { // hits edge
                     dotX = -maxX;
                     dotA = 0; // mirrors motion when hitting edge
@@ -316,15 +317,19 @@ function draw() {
                     dotX = maxX;
                     dotA = 0;
                 }
-                dotY += fixBetween(dotB,-10,0);
+                dotB = fixBetween(dotB,-10,0);
+                dotY += dotB;
                 if(dotA != 0 || dotB != 0)
                     heading = 0.8*heading + 0.2*fixBetween(Math.atan2(dotA, -dotB),-PI/2,PI/2);
                 //update SAT feedback
                 let v = Math.sqrt(dotA**2+dotB**2);
                 if(mode == 0 || mode == 5) {
-                    SAT1_score[0] += v;
+                    /*SAT1_score[0] += v;
                     SAT1_score[1] += pathError;
-                    SAT1_score[2] += 1;
+                    SAT1_score[2] += 1;*/
+                    SAT1_score[0] += v*dotB;
+                    SAT1_score[1] += pathError*dotB;
+                    SAT1_score[2] += dotB;
                 }
             } else {
                 delay -= 1;
@@ -743,7 +748,6 @@ function beep() {
 function handleMouseMove(e) {
     if(movin>0) {
         if(delay<0) {
-            var scaledMovement;
             var scaledMovementX = e.movementX/speed_scale/2;
             var scaledMovementY = e.movementY/speed_scale;
             dotA += scaledMovementX;
