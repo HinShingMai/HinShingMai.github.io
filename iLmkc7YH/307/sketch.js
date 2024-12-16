@@ -3,7 +3,7 @@ let cnv;
 let dpi = -1;
 let currentTrainBlock = 0;
 //let trainBlocks = [0,1,-1,1,-1,1,-1,1,-1,1,-10,1,2,0];
-let trainBlocks = [0,1,2,0];
+let trainBlocks = [0,1,2];
 /*
 -n: n-minutes break
 0: no path normal familiarization block
@@ -13,8 +13,10 @@ let trainBlocks = [0,1,2,0];
 7: reverse testing block
 */
 let totalTrainBlocks;
-let amplitudes = [[1/2,-1/4]];
-let frequency = [[1/3,2/3]];
+//let amplitudes = [[1/2,-1/4]];
+//let frequency = [[1/3,2/3]];
+let amplitudes = [[1/2]];
+let frequency = [[1/6]];
 let offsets = [0,1,-1];
 let frameNum = 0; // Number of frames in the current session
 var dotX;
@@ -128,7 +130,7 @@ function startSession() {
         scaling = scaling_base;
         if(currentTrainBlock==0) {
             document.onkeyup = handleCalibrationKey;
-            mode = 2; // 0: normal, 1: familiarization, 2/3: mouse calibration, 4: no-feedback familiarization, 5: feedback trial
+            mode = 2; // 0: normal, 1: familiarization, 2/3: mouse calibration, 4: no-feedback straight, 5: traj feedback trial, 6: traj feedback straight
             modes = [1,1,1,4,4];
             speed_base = -1; // scaling factor on cursor speed, should be >0 once calibrated
             movin = -120; // 1: in trial, 0: awaiting cursor to move back to starting position(resetting), <0: inter-trial cooldown
@@ -145,7 +147,7 @@ function startSession() {
         document.getElementById("container-exp").onmousemove = handleMouseMove;
         mode = -1;
         if(sessionsType[currentSession] == 1)
-            modes = pesudoRandom(5,true);
+            modes = pesudoRandom(4,true);
         else
             modes = Array(40).fill(0);
         //modes = pesudoRandom(5,true);
@@ -344,7 +346,7 @@ function draw() {
             noFill();
             translate(windowWidth/2, windowHeight*(sMargin+maxY)/wHeight);
             rect(-maxX*scaling, sMargin*scaling, maxX*scaling*2, -wHeight*scaling);
-            if(mode == 4 || mode == 0) { // nofeedback trials
+            if(mode == 4 || mode == 0 || mode == 5) { // nofeedback trials
                 if(delay == -1) {
                     drawGoal();
                     drawCurve(lines);
@@ -529,12 +531,12 @@ function arrayRotate(arr, count) { // rotates array, ex. arrayRotate([0, 1, 2, 3
     arr.push(...arr.splice(0, (-count % len + len) % len))
     return arr
 }
-function pesudoRandom(len, noFirst) { // schedules 10*len no-feedback trials with 1 feedback in each 8 feedback trials. noFirst: Do not put no-feedback at first trial
+function pesudoRandom(len, noFirst) { // schedules 10*len no-feedback trials with 1 feedback in each 10 feedback trials. noFirst: Do not put no-feedback at first trial
     var flag = noFirst;
     var arr = [];
     for(let i=0;i<len;i++) {
-        let arr_8 = Array(8).fill(0);
-        let idx_8 = Array.from(Array(9).keys());
+        let arr_8 = Array(10).fill(0);
+        let idx_8 = Array.from(Array(11).keys());
         if(flag)
             idx_8.shift();
         let choice = Math.floor(Math.random() * idx_8.length);
@@ -590,14 +592,14 @@ function drawCurve(coords) {
         strokeWeight(6);
         for(let i = 1; i<coords.length; i++)
             line(coords[i-1]*scaling, (1-i)*scaling, coords[i]*scaling, -i*scaling);
-        stroke('gray');
+        /*stroke('gray');
         strokeWeight(4);
         startFix2 = 1;
         endFix2 = coords.length;
         for(let i = startFix2+1; i<endFix2; i++) {
             line(lLines[i-1].x*scaling, -(i-1+lLines[i-1].y)*scaling, lLines[i].x*scaling, -(i+lLines[i].y)*scaling);
             line(rLines[i-1].x*scaling, -(i-1+rLines[i-1].y)*scaling, rLines[i].x*scaling, -(i+rLines[i].y)*scaling);
-        }
+        }*/
     }
 }
 function drawBike(state, angle) { // state: true/false = inPath/outOfPath, angle: angle arrow is pointing at (0 is vertical up)
@@ -694,13 +696,13 @@ function drawReturnCursor() {
                 textAlign(CENTER);
                 textSize(Math.floor(12*scaling));
                 if(feedback_sc>=0) {
-                    let msg = ["Be More Accurate!","Be More Accurate!","Nice!","Nice!","Good!","Very Good!"];
+                    //let msg = ["Be More Accurate!","Be More Accurate!","Nice!","Nice!","Good!","Very Good!"];
                     let color = ["red","orange","lightgray","lightgray","yellow","green"];
                     stroke(color[feedback_sc]);
                     fill(color[feedback_sc]);
-                    //let percentage = Math.min(score_max, 100).toFixed(0);
                     let percentage = score_max;
-                    text(`${msg[feedback_sc]}\nYour Score: ${percentage}%`, 0, -maxY*scaling*0.7);
+                    //text(`${msg[feedback_sc]}\nYour Score: ${percentage}%`, 0, -maxY*scaling*0.7);
+                    text(`\nYour Score: ${percentage}%`, 0, -maxY*scaling*0.7);
                 }
             }
         }
