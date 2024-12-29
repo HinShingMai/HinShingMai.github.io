@@ -458,7 +458,7 @@ function draw() {
             }
             
             yaw -= dotU + 0.1*yaw/v;
-            console.log(yaw);
+            //console.log(yaw);
             
             dotY -= 1;
             if(movin)
