@@ -449,9 +449,9 @@ function draw() {
             } else if(freeze_margin > 0)
                 freeze_margin -= 1;
             
-            dotU = angAcc;
+            dotU = b_val[offset][1]*angAcc;
             
-            dotA = dotA + b_val[offset][1]*dotU;
+            dotA = dotA + dotU;
             if(dotA < -maxA) {
                 dotA = -maxA;
                 angAcc = 0;
