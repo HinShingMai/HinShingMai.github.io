@@ -50,9 +50,6 @@ var error;
 var errors;
 var path = null;
 var pathWidth = 15;
-var trace;
-var traceBuffer;
-var traceLen = 10;
 var sessionsType;
 var sessionComplete;
 var sessionTotal;
@@ -146,11 +143,11 @@ function startSession() {
     } else {
         document.getElementById("container-exp").onmousemove = handleMouseMove;
         mode = -1;
-        if(sessionsType[currentSession] == 1)
+        /*if(sessionsType[currentSession] == 1)
             modes = pesudoRandom(4,true);
         else
-            modes = Array(40).fill(0);
-        //modes = pesudoRandom(5,true);
+            modes = Array(40).fill(0);*/
+        modes = Array(40).fill(0);
         movin = 0;
         maxPoints = 300;
         maxX = width_x*0.625; //150
@@ -168,8 +165,6 @@ function startSession() {
     frameNum = 0;
     error = [];
     errors = [];
-    trace = [];
-    traceBuffer = null;
     fps = 0.0;
     frBuffer = 60.0;
     plen = maxPoints+straightLen;
@@ -289,7 +284,7 @@ function draw() {
                         //scores.push(sc);
                         //scores.sort();
                         movin = -120;
-                        let score = 275/(mean_error+225)-0.03;
+                        let score = 400/(mean_error+400)-0.05;
                         scores.push(score);
                         score_max = fixBetween(score*100, 0, 100).toFixed(0);
                         feedback_sc = fixBetween(Math.floor((score-0.05)/0.15), 0, 5);
@@ -301,13 +296,6 @@ function draw() {
                     error = [];
                     frameNum = 0;
                     return;
-                }
-                if(frameNum%5 == 0) {
-                    if(traceBuffer != null)
-                        trace.push(traceBuffer);
-                    if(trace.length > traceLen)
-                        trace.shift();
-                    traceBuffer = {x: dotX, y: dotY};
                 }
                 // motion model
                 dotA = fixBetween(dotA,-10,10);
@@ -659,7 +647,7 @@ function drawReturnCursor() {
         return;
     }
     if(movin==0) {
-        stroke('lightgray');
+        /*stroke('lightgray');
         fill('lightgray');
         if(delay<0) {
             rect(lines[0]-30*scaling, 0, 60*scaling, 20*scaling);
@@ -673,6 +661,33 @@ function drawReturnCursor() {
             fill('lightgray');
         }
         if(frameNum > 600) {
+            textSize(Math.floor(12*scaling));
+            strokeWeight(1);
+            textAlign(CENTER);
+            text("Move the dot into the box at the bottom of the screen.", 0, -maxY*2/3*scaling);
+        }*/
+        var coverHeight = maxY+sMargin;
+        if(delay<0) {
+            stroke('lightgray');
+            fill('lightgray');
+            rect(-maxX*scaling, -coverHeight*scaling, maxX*scaling*2, coverHeight*0.6*scaling);
+            rect(lines[0]-30*scaling, 0, 60*scaling, 20*scaling);
+            ellipse(dotX*scaling, dotY*scaling, 30, 30);
+            stroke('blue');
+            line(maxX*scaling,dotY*scaling,maxX*scaling,0);
+            line(-maxX*scaling,dotY*scaling,-maxX*scaling,0);
+        } else {
+            stroke('lightgray');
+            fill('lightgray');
+            rect(-maxX*scaling, -coverHeight*scaling, maxX*scaling*2, coverHeight*0.6*scaling);
+            stroke('blue');
+            fill('blue');
+            rect(lines[0]-30*scaling, 0, 60*scaling, 20*scaling);
+            ellipse(dotX*scaling, dotY*scaling, 30, 30);
+        }
+        if(frameNum > 600) {
+            stroke('black');
+            fill('black');
             textSize(Math.floor(12*scaling));
             strokeWeight(1);
             textAlign(CENTER);
@@ -702,7 +717,7 @@ function drawReturnCursor() {
                     fill(color[feedback_sc]);
                     let percentage = score_max;
                     //text(`${msg[feedback_sc]}\nYour Score: ${percentage}%`, 0, -maxY*scaling*0.7);
-                    text(`\nYour Score: ${percentage}%`, 0, -maxY*scaling*0.7);
+                    text(`\nYour Score: ${percentage}`, 0, -maxY*scaling*0.7);
                 }
             }
         }
