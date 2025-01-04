@@ -13,7 +13,8 @@ let trainBlocks = [4,5];
 7: reverse testing block
 */
 let totalTrainBlocks;
-let amplitudes = [[1/2,-1/4,-1/16,1/8,-1/16,-1/32,1/64,1/32],[0,1/4,1/16,1/8,-1/16,-1/32,1/64,1/32]];
+//let amplitudes = [[1/2,-1/4,-1/16,1/8,-1/16,-1/32,1/64,1/32],[0,1/4,1/16,1/8,-1/16,-1/32,1/64,1/32]];
+let amplitudes = [[1/2,1/4,1/16,1/8,-1/16,-1/32,1/64,1/32],[0,1/4,1/16,1/8,-1/16,-1/32,1/64,1/32]];
 let frequency = [[1/24,1/6,2/6,3/6,5/6,7/6,8/6,12/6],[1/24,1/6,2/6,3/6,5/6,7/6,8/6,12/6]];
 let frameNum = 0; // Number of frames in the current session
 var dotX;
@@ -532,7 +533,7 @@ function sinuousCurve(len, isTest) { // generate trajectory
         freq = frequency[0];
         repeat = blank.length;
     }
-    if(isTest) { // generate the same sub-trajectories for testing
+    /*if(isTest) { // generate the same sub-trajectories for testing
         var points = [];
         for(let i=0; i<len; i++) {
             X = 0;
@@ -570,7 +571,25 @@ function sinuousCurve(len, isTest) { // generate trajectory
             paths = paths.concat(Array(straightLen).fill(path[0]).concat(path));
         }
         return paths;
+    }*/
+    var points = [];
+    for(let i=0; i<len; i++) {
+        X = 0;
+        for(let j=0; j<ampl.length; j++) {
+            X += width_x/2*ampl[j]*sin(2*PI*start*freq[j]);
+        }
+        points.push(X);
+        start += 0.01;
     }
+    var paths = [];
+    pOffsets = {startpos:[]};
+    for(let i=0; i<repeat; i++) { // generate each sub-trajectory
+        let offset = int(random()*points.length);
+        pOffsets.startpos.push(offset);
+        var path = arrayRotate(points.slice(0), offset); // randomize starting position for each sub-trajectory
+        paths = paths.concat(Array(straightLen).fill(path[0]).concat(path));
+    }
+    return paths;
 }
 function randTargets(num) { // generate random points for familiarization session
     famTargets = Array(num).fill().map(() => [(random()-0.5)*width_x, 0]);
