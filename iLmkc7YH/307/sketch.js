@@ -128,7 +128,7 @@ function startSession() {
         if(currentTrainBlock==0) {
             document.onkeyup = handleCalibrationKey;
             mode = 2; // 0: normal, 1: familiarization, 2/3: mouse calibration, 4: no-feedback straight, 5: traj feedback trial, 6: traj feedback straight
-            modes = [1,1,1,4,4];
+            modes = Array(5).fill(1).concat(Array(5).fill(4));
             speed_base = -1; // scaling factor on cursor speed, should be >0 once calibrated
             movin = -120; // 1: in trial, 0: awaiting cursor to move back to starting position(resetting), <0: inter-trial cooldown
         } else {
@@ -147,7 +147,7 @@ function startSession() {
             modes = pesudoRandom(4,true);
         else
             modes = Array(40).fill(0);*/
-        modes = Array(40).fill(0);
+        modes = Array(20).fill(0);
         movin = 0;
         maxPoints = 300;
         maxX = width_x*0.625; //150
@@ -385,10 +385,10 @@ function draw() {
                         frameNum = 0;
                         movin = 1;
                         let next_mode = modes[blanknum];
-                        if(next_mode==4) {
+                        if(next_mode==4 && mode!=4) {
                             dis_instr = 2;
                             delay = 240;
-                        } else if(mode==-1) { //next_mode!=mode
+                        } else if(mode==-1) {
                             if(next_mode==1) {
                                 dis_instr = 3;
                                 delay = 180;
@@ -647,25 +647,6 @@ function drawReturnCursor() {
         return;
     }
     if(movin==0) {
-        /*stroke('lightgray');
-        fill('lightgray');
-        if(delay<0) {
-            rect(lines[0]-30*scaling, 0, 60*scaling, 20*scaling);
-            ellipse(dotX*scaling, dotY*scaling, 30, 30);
-        } else {
-            stroke('blue');
-            fill('blue');
-            rect(lines[0]-30*scaling, 0, 60*scaling, 20*scaling);
-            ellipse(dotX*scaling, dotY*scaling, 30, 30);
-            stroke('lightgray');
-            fill('lightgray');
-        }
-        if(frameNum > 600) {
-            textSize(Math.floor(12*scaling));
-            strokeWeight(1);
-            textAlign(CENTER);
-            text("Move the dot into the box at the bottom of the screen.", 0, -maxY*2/3*scaling);
-        }*/
         var coverHeight = maxY+sMargin;
         if(delay<0) {
             stroke('lightgray');
@@ -700,7 +681,7 @@ function drawReturnCursor() {
             strokeWeight(1);
             textAlign(CENTER);
             textSize(Math.floor(10*scaling));
-            text(`follow the white path as fast and as accurately as you can.`, 0, -maxY*2/3*scaling);
+            text(`Move the dot into the box at the bottom of the screen.\nThen, follow the white path as fast and as accurately as you can.`, 0, -maxY*2/3*scaling);
         } else {
             drawGoal();
             drawCurve(lines);
@@ -712,9 +693,11 @@ function drawReturnCursor() {
                 textSize(Math.floor(12*scaling));
                 if(feedback_sc>=0) {
                     //let msg = ["Be More Accurate!","Be More Accurate!","Nice!","Nice!","Good!","Very Good!"];
-                    let color = ["red","orange","lightgray","lightgray","yellow","green"];
-                    stroke(color[feedback_sc]);
-                    fill(color[feedback_sc]);
+                    //let color = ["red","orange","lightgray","lightgray","yellow","green"];
+                    //stroke(color[feedback_sc]);
+                    //fill(color[feedback_sc]);
+                    stroke("lightgray");
+                    fill("lightgray");
                     let percentage = score_max;
                     //text(`${msg[feedback_sc]}\nYour Score: ${percentage}%`, 0, -maxY*scaling*0.7);
                     text(`\nYour Score: ${percentage}`, 0, -maxY*scaling*0.7);
@@ -802,7 +785,7 @@ function handleCalibrationKey(e) { // handles key pressed during calibration
             mode = -1;
             dotB = 0;
             dotY = -300.0;
-            movin = -1;
+            movin = -300; // -1
         }
     } else if(e.key==='r' && mode==3) {
         mode = 2;
