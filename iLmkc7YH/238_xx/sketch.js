@@ -13,9 +13,10 @@ let trainBlocks = [4,5];
 7: reverse testing block
 */
 let totalTrainBlocks;
-//let amplitudes = [[1/2,-1/4,-1/16,1/8,-1/16,-1/32,1/64,1/32],[0,1/4,1/16,1/8,-1/16,-1/32,1/64,1/32]];
-let amplitudes = [[1/2,1/4,1/16,1/8,-1/16,-1/32,1/64,1/32],[0,1/4,1/16,1/8,-1/16,-1/32,1/64,1/32]];
-let frequency = [[1/24,1/6,2/6,3/6,5/6,7/6,8/6,12/6],[1/24,1/6,2/6,3/6,5/6,7/6,8/6,12/6]];
+//let amplitudes = [[1/2,1/4,1/16,1/8,-1/16,-1/32,1/64,1/32],[0,1/4,1/16,1/8,-1/16,-1/32,1/64,1/32]];
+//let frequency = [[1/24,1/6,2/6,3/6,5/6,7/6,8/6,12/6],[1/24,1/6,2/6,3/6,5/6,7/6,8/6,12/6]];
+let amplitudes = [[1/2,1/4,1/16],[0,1/4,1/16]];
+let frequency = [[1/24,1/6,2/6],[1/24,1/6,2/6]];
 let frameNum = 0; // Number of frames in the current session
 var dotX;
 var dotY;
@@ -93,10 +94,18 @@ var freeze_time = 200;
 var freeze_margin;
 var alph;
 var beta = 0.1;
+var gamm = 0.001;
 var v_scale;
 var b_val;
 var tilt_mode;
 var keyState;
+
+//const M_mat = [[0.01593498, -0.12409203], [-0.12409203, 4.32384018]];
+//const C_mat = [[-794.1195, 2732.00319192, 0.0, 203.19848349], [-25.50126032, 87.67502575, -5.10213849,  10.11242384]];
+const A_mat = [[1.0,0.0,0.01666667,0],[0,1,0,0.01666667],[0.15816291,-0.54424403,0.98944776,-0.03305154],[0.19532461,-0.66788316,0.36768052,0.69151345]];
+const B_mat = [[0,0,],[0,0],[0.01593498,-0.12409203],[-0.12409203,4.32384018]];
+var angle;
+var dotAng;
 function setup() {
     isDraw = false;
     frameRate(60);
@@ -153,9 +162,11 @@ function startSession() {
     dotA = 0;
     angleV1 = 0;
     angleV2 = 0;
-    dotU =0;
+    dotU = [0,0];
     yaw = 0;
     til = 0;
+    dotR = 0;
+    angle = [0,0,0,0];
     //maxY = width_x*0.625; //150
     isDraw = true;
     select('#container-exp').show();
@@ -163,6 +174,15 @@ function startSession() {
         document.getElementById("container-exp").onmousemove = handleMouseMove2;
     } else if(tilt_mode == 1) {
         document.getElementById("container-exp").onmousemove = handleMouseMove;
+        keyState = {};
+        document.onkeydown = handleTiltKeyDown;
+        document.onkeyup = handleTiltKeyUp;
+    } else if(tilt_mode == 2) {
+        document.getElementById("container-exp").onmousemove = handleMouseMove1;
+        keyState = {};
+        document.onkeydown = handleTiltKeyDown;
+        document.onkeyup = handleTiltKeyUp;
+    } else {
         keyState = {};
         document.onkeydown = handleTiltKeyDown;
         document.onkeyup = handleTiltKeyUp;
@@ -383,6 +403,8 @@ function draw() {
                 angleV2 = 0.0;
                 yaw = 0.0;
                 til = 0.0;
+                dotR = 0;
+                angle = [0,0,0,0];
                 movin=false;
             } else {
                 //console.log("draw end: "+isDraw)
@@ -436,11 +458,11 @@ function draw() {
                 //pause();
             }
             // motion model
-            dotX  = dotX + b_val[offset][0]*Math.tan(dotA+yaw); // +/+
-            
+            dotX  = dotX + b_val[offset][0]*Math.tan(dotA);
+            dotY -= 1;
             var v;
             if(v_scale)
-                v = Math.sqrt(Math.tan(dotA+yaw)**2+1);
+                v = Math.sqrt(Math.tan(dotA)**2+1);
             else
                 v = 1;
             if(dotX < -maxX*0.9) { // hits edge
@@ -468,33 +490,92 @@ function draw() {
             } else if(freeze_margin > 0)
                 freeze_margin -= 1;
             
-            dotU = b_val[offset][1]*angleV1;
-            
-            dotA = dotA + dotU;
-            if(dotA < -maxA) {
-                dotA = -maxA;
+            /*if(tilt_mode == 3) {
                 angleV1 = 0;
-                dotU = 0;
-            } else if(dotA > maxA) {
-                dotA = maxA;
+                if(keyState['.'])
+                    angleV1 += -0.2;
+                if(keyState['/'])
+                    angleV1 += 0.2;
+            } else if(tilt_mode == 2) {
                 angleV1 = 0;
-                dotU = 0;
-            }
-            
-            //yaw -= dotU + (alph+beta*til*Math.sign(dotU))*yaw/v;
-            yaw = fixBetween(yaw - dotU - (alph+beta*til*Math.sign(dotU))*yaw/v, -maxA, maxA);
-            //console.log(yaw + "   " + til);
-            if(tilt_mode == 1) {
+                if(keyState['z'])
+                    angleV1 += -0.2;
+                if(keyState['x'])
+                    angleV1 += 0.2;
+            } if(tilt_mode%2 == 1) {
                 angleV2 = 0;
                 if(keyState['z'])
-                    angleV2 -= 0.02;
+                    angleV2 += -0.2;
                 if(keyState['x'])
-                    angleV2 += 0.02;
+                    angleV2 += 0.2;
+            }*/
+            
+            if(tilt_mode == 3) {
+                angleV1 = 0;
+                if(keyState['.'])
+                    angleV1 += -0.1;
+                if(keyState['/'])
+                    angleV1 += 0.1;
+            } else if(tilt_mode == 2) {
+                angleV1 = 0;
+                if(keyState['z'])
+                    angleV1 += -0.1;
+                if(keyState['x'])
+                    angleV1 += 0.1;
+            } if(tilt_mode%2 == 1) {
+                angleV2 = 0;
+                if(keyState['z'])
+                    angleV2 += -3;
+                if(keyState['x'])
+                    angleV2 += 3;
             }
             
-            til = fixBetween(til + angleV2, -maxA, maxA);
+            dotU[0] = angleV2;
+            dotU[1] = b_val[offset][1]*angleV1;
+            angleV1 = 0; // test
+            angleV2 = 0;
             
-            dotY -= 1;
+            /*dotAng = math.multiply(M_mat, (math.subtract(dotU, math.multiply(C_mat,angle))));
+
+            angle[0] += angle[2]/60;
+            angle[1] += angle[3]/60;
+            angle[2] += dotAng[0]/60// + dotU[0];
+            angle[3] += dotAng[1]/60// + dotU[1];
+            //dotA += angle[1]/60;*/
+            
+            angle = math.add(math.multiply(A_mat,angle),math.multiply(B_mat,dotU));
+            //angle[1] =0;// debug
+            dotA += (6*angle[1]+0.08*angle[3])*0.0155401391551;
+            if(dotA < -maxA) {
+                dotA = -maxA;
+                angle[1] = 0;
+                angle[3] = Math.max(0, angle[3]);
+            } else if(dotA > maxA) {
+                dotA = maxA;
+                angle[1] = 0;
+                angle[3] = Math.min(0, angle[3]);
+            } if(angle[0] < -maxA) {
+                angle[0] = -maxA;
+                angle[2] = 0;
+            } else if(angle[0] > maxA) {
+                angle[0] = maxA;
+                angle[2] = 0;
+            }
+            
+            //yaw = fixBetween(yaw - dotU - (alph+beta*til*Math.sign(dotU))*yaw/v, -maxA-dotA, maxA-dotA);
+            //console.log(yaw + "   " + til);
+            /*if(tilt_mode == 1) {
+                angleV2 = 0;
+                if(keyState['z'])
+                    angleV2 -= 0.2;
+                if(keyState['x'])
+                    angleV2 += 0.2;
+            }*/
+            
+            //til = fixBetween(til + angleV2, -maxA, maxA);
+            //til = fixBetween(til + dotR + angleV2, -maxA, maxA);
+            //dotR += gamm*(9.81*Math.sin(til)-v*10*dotU*Math.cos(til));
+            
             if(movin)
                 error += pathError;
         } else {
@@ -524,6 +605,9 @@ function draw() {
         textSize(12);
         strokeWeight(1);
         text("FPS: "+frBuffer, maxY*scaling-50, -(maxY-dotY)*scaling+10);
+        text("ang: "+angle[0].toFixed(2)+" "+angle[1].toFixed(2), maxY*scaling-50, -(maxY-dotY)*scaling+20); // debug
+        text("dtA: "+angle[2].toFixed(2)+" "+angle[3].toFixed(2), maxY*scaling-50, -(maxY-dotY)*scaling+30);
+        text("ddA: "+dotU[0].toFixed(2)+" "+dotU[1].toFixed(2), maxY*scaling-50, -(maxY-dotY)*scaling+40);
         if(freeze<1) { 
             fps += fr;
             frameNum++;
@@ -535,9 +619,11 @@ function resetAndUnfreeze() {
     dotA = 0;
     angleV1 = 0;
     angleV2 = 0;
-    dotU = 0;
+    dotU = [0,0];
     yaw = 0;
     til = 0;
+    dotR = 0;
+    angle = [0,0,0,0];
 }
 function fixBetween(x, minimum, maximum) {
     if(x < minimum)
@@ -730,7 +816,7 @@ function drawBox() {
     let x_dis = dotX*scaling;
     let y_dis = dotY*scaling;
     let x_rot = 0;
-    let y_rot = til;
+    let y_rot = -angle[0];
     let z_rot = dotA;
     let rot = math.matrix([[cos(y_rot)*cos(z_rot), sin(x_rot)*sin(y_rot)*cos(z_rot)-cos(x_rot)*sin(z_rot), cos(x_rot)*sin(y_rot)*cos(z_rot)+sin(x_rot)*sin(z_rot)], 
                             [cos(y_rot)*sin(z_rot), sin(x_rot)*sin(y_rot)*sin(z_rot)+cos(x_rot)*cos(z_rot), cos(x_rot)*sin(y_rot)*sin(z_rot)-sin(x_rot)*cos(z_rot)], 
@@ -765,6 +851,7 @@ function drawBox() {
     strokeWeight(1);
     stroke('black');
     fill('blue');
+    line(60*cos(angle[1]), 120+60*sin(angle[1]), -60*cos(angle[1]), 120-60*sin(angle[1])); // handle test
     if(visible[5] > 0)
         quad(v5r[0]*cons/(cons+v5r[2]),v5r[1]*cons/(cons+v5r[2]),v6r[0]*cons/(cons+v6r[2]),v6r[1]*cons/(cons+v6r[2]),v7r[0]*cons/(cons+v7r[2]),v7r[1]*cons/(cons+v7r[2]),v8r[0]*cons/(cons+v8r[2]),v8r[1]*cons/(cons+v8r[2]));
     if(visible[2] > 0)
@@ -902,8 +989,8 @@ function drawBike() {
         let heading = dotA;
         let x = dotX*scaling;
         let y = dotY*scaling;
-        let A = dotU*20;
-        let d = dotU*4800/PI;
+        let A = angle[3]*20;
+        let d = angle[3]*4800/PI;
         triangle(x+15*sin(heading+A), y-15*cos(heading+A), x+6*cos(heading+A), y+6*sin(heading+A), x-6*cos(heading+A), y-6*sin(heading+A));
         //triangle(x+15*sin(heading), y-15*cos(heading), x+6*cos(heading), y+6*sin(heading), x-6*cos(heading), y-6*sin(heading));
         noFill();
@@ -950,11 +1037,20 @@ function pause() { // pause due to inactivity
 function resume() {
     isDraw = true;
     inactivity = 0;
-    select('#container-exp').show()
+    select('#container-exp').show();
     if(tilt_mode == 0) {
         document.getElementById("container-exp").onmousemove = handleMouseMove2;
     } else if(tilt_mode == 1) {
         document.getElementById("container-exp").onmousemove = handleMouseMove;
+        keyState = {};
+        document.onkeydown = handleTiltKeyDown;
+        document.onkeyup = handleTiltKeyUp;
+    } else if(tilt_mode == 2) {
+        document.getElementById("container-exp").onmousemove = handleMouseMove1;
+        keyState = {};
+        document.onkeydown = handleTiltKeyDown;
+        document.onkeyup = handleTiltKeyUp;
+    } else {
         keyState = {};
         document.onkeydown = handleTiltKeyDown;
         document.onkeyup = handleTiltKeyUp;
@@ -1002,9 +1098,19 @@ function handleMouseMove(e) {
         var scaledMovementX;
         var scaledMovementY;
         //inactivity = 0;
-        scaledMovementX = e.movementX/5000;
+        scaledMovementX = e.movementX/500;
         angleV1 += scaledMovementX;
-        angleV1 = fixBetween(angleV1, -maxA/20, +maxA/20);
+        angleV1 = fixBetween(angleV1, -maxA, +maxA);
+    }
+}
+function handleMouseMove1(e) {
+    if(movin) {
+        var scaledMovementX;
+        var scaledMovementY;
+        //inactivity = 0;
+        scaledMovementX = e.movementX/500;
+        angleV2 += scaledMovementX;
+        angleV2 = fixBetween(angleV1, -maxA, +maxA);
     }
 }
 function handleMouseMove2(e) {
@@ -1012,12 +1118,12 @@ function handleMouseMove2(e) {
         var scaledMovementX;
         var scaledMovementY;
         //inactivity = 0;
-        scaledMovementX = e.movementX/5000;
-        scaledMovementY = e.movementY/5000;
+        scaledMovementX = e.movementX/500;
+        scaledMovementY = e.movementY/500;
         angleV1 += scaledMovementX;
-        angleV1 = fixBetween(angleV1, -maxA/20, +maxA/20);
+        angleV1 = fixBetween(angleV1, -maxA, +maxA);
         angleV2 += scaledMovementY;
-        angleV2 = fixBetween(angleV2, -maxA/20, +maxA/20);
+        angleV2 = fixBetween(angleV2, -maxA, +maxA);
     }
 }
 function handleTiltKeyDown(e) {
@@ -1025,12 +1131,20 @@ function handleTiltKeyDown(e) {
         keyState['z'] = true;
     if(e.key==='x' || e.key==='X')
         keyState['x'] = true;
+    if(e.key==='.')
+        keyState['.'] = true;
+    if(e.key==='/')
+        keyState['/'] = true;
 }
 function handleTiltKeyUp(e) {
     if(e.key==='z' || e.key==='Z')
         keyState['z'] = false;
     if(e.key==='x' || e.key==='X')
         keyState['x'] = false;
+    if(e.key==='.')
+        keyState['.'] = false;
+    if(e.key==='/')
+        keyState['/'] = false;
 }
 function moveNoise(mode) {
     return 0;
