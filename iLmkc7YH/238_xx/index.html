@@ -13,36 +13,18 @@
     <div id="cover">
         <div>
             <form id="cover-form1">
-                <!--<label for="alp">Alpha:</label></br>
-                <select id="alp" name="cover-select">
-                <option value='0.01'>0.01</option>
-                <option value='0.03'>0.03</option>
-                <option value='0.04'>0.04</option>
-                <option value='0.05' selected>0.05</option>
-                <option value='0.06'>0.06</option>
-                <option value='0.07'>0.07</option>
-                <option value='0.1'>0.10</option>
-                <option value='0.2'>0.20</option>
-                <option value='0.5'>0.50</option>
-                </select></br>
-                <label for="v?">constant v or variable v?</label></br>
-                <select id="v?" name="cover-select">
-                <option value='0'>constant</option>
-                <option value='1' selected>variable</option>
-                </select></br>
-                <label for="reverse?">normal or reverse controls?</label></br>
-                <select id="reverse?" name="cover-select">
-                <option value='0' selected>normal</option>
-                <option value='1'>reverse</option>
-                </select></br>
+                <label for="ytor">yaw torque (between 0.005 and 0.5):</label></br>
+                <input type="number" id="ytor" name="cover-select" value="0.1" min="0.005" max="0.5"></br>
+                <label for="rtor">roll torque (between 0.1 and 20):</label></br>
+                <input type="number" id="rtor" name="cover-select" value="3" min="0.01" max="20"></br>
                 <label for="rControl">if reverse, reverse control type:</label></br>
                 <select id="rControl" name="cover-select">
                 <option value='0' selected>+-</option>
                 <option value='1'>-+</option>
                 <option value='2'>--</option>
-                </select></br>-->
+                </select></br>
                 <label for="tilt">controls mode (roll and yaw):</label></br>
-                <select id="tilt" name="cover-select">
+                <select id="tilt" name="cover-select" disabled>
                 <option value='0'>cursor</option>
                 <option value='1'>z/x key + horizontal cursor</option>
                 <option value='2'>horizontal cursor + z/x key</option>

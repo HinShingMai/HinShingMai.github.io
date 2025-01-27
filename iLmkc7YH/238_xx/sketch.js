@@ -106,6 +106,8 @@ const A_mat = [[1.0,0.0,0.01666667,0],[0,1,0,0.01666667],[0.15816291,-0.54424403
 const B_mat = [[0,0,],[0,0],[0.01593498,-0.12409203],[-0.12409203,4.32384018]];
 var angle;
 var dotAng;
+var yawTorque;
+var rolTorque;
 function setup() {
     isDraw = false;
     frameRate(60);
@@ -513,21 +515,21 @@ function draw() {
             if(tilt_mode == 3) {
                 angleV1 = 0;
                 if(keyState['.'])
-                    angleV1 += -0.1;
+                    angleV1 += -yawTorque;
                 if(keyState['/'])
-                    angleV1 += 0.1;
+                    angleV1 += yawTorque;
             } else if(tilt_mode == 2) {
                 angleV1 = 0;
                 if(keyState['z'])
-                    angleV1 += -0.1;
+                    angleV1 += -yawTorque;
                 if(keyState['x'])
-                    angleV1 += 0.1;
+                    angleV1 += yawTorque;
             } if(tilt_mode%2 == 1) {
                 angleV2 = 0;
                 if(keyState['z'])
-                    angleV2 += -3;
+                    angleV2 += -rolTorque;
                 if(keyState['x'])
-                    angleV2 += 3;
+                    angleV2 += rolTorque;
             }
             
             dotU[0] = angleV2;
@@ -1184,7 +1186,7 @@ function forceQuit(reason) { // force quit experiment because of : 1. low frame 
 }
 function startGame() {
     var values = document.getElementsByName('cover-select');
-    alph = Number(values[0].value);
+    /*alph = Number(values[0].value);
     v_scale = values[1].value === "1";
     if(values[2].value === "0")
         trainBlocks = [4,5];
@@ -1193,7 +1195,14 @@ function startGame() {
     var b_candidates = [[[1,1],[1,-1]], [[1,1],[-1,1]], [[1,1],[-1,-1]]];
     b_val = b_candidates[Number(values[3].value)];
     tilt_mode = Number(values[4].value);
-    beta = Number(values[5].value);
+    beta = Number(values[5].value); */
+    yawTorque = Number(values[0].value);
+    rolTorque = Number(values[1].value);
+    var b_candidates = [[[1,1],[1,-1]], [[1,1],[-1,1]], [[1,1],[-1,-1]]];
+    b_val = b_candidates[Number(values[2].value)];
+    //tilt_mode = Number(values[3].value);
+    tilt_mode = 3
+    console.log(values);
     
     cnv = createCanvas(windowWidth, windowHeight);
     cnv.parent("container-exp");
