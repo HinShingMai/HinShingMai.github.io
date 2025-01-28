@@ -1196,8 +1196,8 @@ function startGame() {
     b_val = b_candidates[Number(values[3].value)];
     tilt_mode = Number(values[4].value);
     beta = Number(values[5].value); */
-    yawTorque = Number(values[0].value);
-    rolTorque = Number(values[1].value);
+    yawTorque = Number(values[0].value)/60;
+    rolTorque = Number(values[1].value)/60;
     var b_candidates = [[[1,1],[1,-1]], [[1,1],[-1,1]], [[1,1],[-1,-1]]];
     b_val = b_candidates[Number(values[2].value)];
     //tilt_mode = Number(values[3].value);
