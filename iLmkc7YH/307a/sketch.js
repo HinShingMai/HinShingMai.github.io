@@ -356,7 +356,7 @@ function draw() {
             fr = frameRate();
             dotA = 0;
             //dotB = 0;
-            dotB = -5; // constant v speed
+            dotB = -2; // constant v speed
             fps += fr;
             frameNum++;
         } else {
