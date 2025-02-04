@@ -74,10 +74,13 @@ var score_base;
 var speed_scale;
 var dis_instr;
 var feedback_sc;
+var feedback_rk;
 var butfunc;
 var keyfunc;
 var rank;
+var ding = [new Audio('./ding-1-c.mp3'), new Audio('./ding-13-c.mp3'), null, new Audio('./ding-25-c.mp3')];
 function setup() {
+    ding[2] = ding[1];
     isDraw = false;
     frameRate(60);
     randomSeed(1024);
@@ -285,6 +288,14 @@ function draw() {
                         scores.push(score);
                         score_max = fixBetween(score*100, 0, 100).toFixed(0);
                         feedback_sc = fixBetween(Math.floor((score-0.05)/0.15), 0, 5);
+                        if(scores.length<5) // compute current score relative to last 20 trials after 5 trials
+                            feedback_rk = -1;
+                        else {
+                            let startpos = Math.max(0, scores.length-20);
+                            let meanStd = getMeanStd(scores.slice(startpos, scores.length)); // [mean, std]
+                            feedback_rk = fixBetween(Math.floor((score-meanStd[0])/meanStd[1]/0.66)+2, 0, 3);
+                            ding[feedback_rk].play();
+                        }
                     } else if(mode == 5) {
                         let mean_speed = SAT1_score[0]/SAT1_score[2];
                         let mean_error = SAT1_score[1]/SAT1_score[2];
@@ -705,13 +716,15 @@ function drawReturnCursor() {
                 textSize(Math.floor(12*scaling));
                 if(feedback_sc>=0) {
                     //let msg = ["Be More Accurate!","Be More Accurate!","Nice!","Nice!","Good!","Very Good!"];
-                    //let color = ["red","orange","lightgray","lightgray","yellow","green"];
-                    //stroke(color[feedback_sc]);
-                    //fill(color[feedback_sc]);
-                    stroke("lightgray");
-                    fill("lightgray");
+                    let colors_list = ["orange","lightgray","lightgray","green"];
+                    var choice;
+                    if(feedback_rk < 0) choice = 1;
+                    else choice = feedback_rk;
+                    stroke(colors_list[choice]);
+                    fill(colors_list[choice]);
+                    //stroke("lightgray");
+                    //fill("lightgray");
                     let percentage = score_max;
-                    //text(`${msg[feedback_sc]}\nYour Score: ${percentage}%`, 0, -maxY*scaling*0.7);
                     text(`\nYour Score: ${percentage}`, 0, -maxY*scaling*0.7);
                 }
             }
