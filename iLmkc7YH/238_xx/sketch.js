@@ -104,6 +104,9 @@ var keyState;
 //const C_mat = [[-794.1195, 2732.00319192, 0.0, 203.19848349], [-25.50126032, 87.67502575, -5.10213849,  10.11242384]];
 const A_mat = [[1.0,0.0,0.01666667,0],[0,1,0,0.01666667],[0.15816291,-0.54424403,0.98944776,-0.03305154],[0.19532461,-0.66788316,0.36768052,0.69151345]];
 const B_mat = [[0,0,],[0,0],[0.01593498,-0.12409203],[-0.12409203,4.32384018]];
+//const A_mat = [[1.0,0.0,0.01666667,0],[0,1,0,0.01666667],[0.15816291,-0.06893857,0.99648259,-0.01101718],[0.19532461,0.38369822,0.12256017,0.89717115]]; // 2
+//const A_mat = [[1.0,0.0,0.01666667,0],[0,1,0,0.01666667],[0.15816291,-0.14320505,0.99472388,-0.01652577],[0.19532461,0.21938863,0.18384026,0.84575672]]; // 3
+//const A_mat = [[1.0,0.0,0.01666667,0],[0,1,0,0.01666667],[0.15816291,-0.24717812,0.99296517,-0.02203436],[0.19532461,-0.0106448,0.2451203,0.7943423]]; // 4
 var angle;
 var dotAng;
 var yawTorque;
@@ -492,26 +495,6 @@ function draw() {
             } else if(freeze_margin > 0)
                 freeze_margin -= 1;
             
-            /*if(tilt_mode == 3) {
-                angleV1 = 0;
-                if(keyState['.'])
-                    angleV1 += -0.2;
-                if(keyState['/'])
-                    angleV1 += 0.2;
-            } else if(tilt_mode == 2) {
-                angleV1 = 0;
-                if(keyState['z'])
-                    angleV1 += -0.2;
-                if(keyState['x'])
-                    angleV1 += 0.2;
-            } if(tilt_mode%2 == 1) {
-                angleV2 = 0;
-                if(keyState['z'])
-                    angleV2 += -0.2;
-                if(keyState['x'])
-                    angleV2 += 0.2;
-            }*/
-            
             if(tilt_mode == 3) {
                 angleV1 = 0;
                 if(keyState['.'])
@@ -546,7 +529,7 @@ function draw() {
             //dotA += angle[1]/60;*/
             
             angle = math.add(math.multiply(A_mat,angle),math.multiply(B_mat,dotU));
-            //angle[1] =0;// debug
+            //angle[1] =0; // disable roll
             dotA += (6*angle[1]+0.08*angle[3])*0.0155401391551;
             if(dotA < -maxA) {
                 dotA = -maxA;
@@ -564,19 +547,30 @@ function draw() {
                 angle[2] = 0;
             }
             
-            //yaw = fixBetween(yaw - dotU - (alph+beta*til*Math.sign(dotU))*yaw/v, -maxA-dotA, maxA-dotA);
-            //console.log(yaw + "   " + til);
-            /*if(tilt_mode == 1) {
-                angleV2 = 0;
-                if(keyState['z'])
-                    angleV2 -= 0.2;
-                if(keyState['x'])
-                    angleV2 += 0.2;
-            }*/
-            
-            //til = fixBetween(til + angleV2, -maxA, maxA);
-            //til = fixBetween(til + dotR + angleV2, -maxA, maxA);
-            //dotR += gamm*(9.81*Math.sin(til)-v*10*dotU*Math.cos(til));
+            /*if(angle[0] < -maxA*0.9) { // falls over
+                freeze_margin += 2;
+                if(lines!=null&&freeze_margin>60) {
+                    dotX = (dotX+lines[-dotY])/2.0;
+                    freeze = freeze_time;
+                    freeze_margin = 0;
+                }
+                if(angle[0] < -maxA) {
+                    angle[0] = -maxA;
+                    angle[2] = 0;
+                }
+            } else if(angle[0] > maxA*0.9) {
+                freeze_margin += 2;
+                if(lines!=null&&freeze_margin>60) {
+                    dotX = (dotX+lines[-dotY])/2.0;
+                    freeze = freeze_time;
+                    freeze_margin = 0;
+                }
+                if(angle[0] > maxA) {
+                    angle[0] = maxA;
+                    angle[2] = 0;
+                }
+            } else if(freeze_margin > 0)
+                freeze_margin -= 1;*/
             
             if(movin)
                 error += pathError;
@@ -768,53 +762,60 @@ function drawCurve(coords, start, end) {
 }
 function drawBox0() {
     let x_len = 20;
-    let y_len = 40;
-    let z_len = 60;
+    let y_len = 60;
+    let z_len = 40;
     let x_dis = dotX*scaling;
     let y_dis = dotY*scaling;
     let x_rot = 0;
-    let y_rot = til*8;
+    let y_rot = -angle[0];
     let z_rot = dotA;
     let rot = math.matrix([[cos(y_rot)*cos(z_rot), sin(x_rot)*sin(y_rot)*cos(z_rot)-cos(x_rot)*sin(z_rot), cos(x_rot)*sin(y_rot)*cos(z_rot)+sin(x_rot)*sin(z_rot)], 
                             [cos(y_rot)*sin(z_rot), sin(x_rot)*sin(y_rot)*sin(z_rot)+cos(x_rot)*cos(z_rot), cos(x_rot)*sin(y_rot)*sin(z_rot)-sin(x_rot)*cos(z_rot)], 
                             [-sin(y_rot), sin(x_rot)*cos(y_rot), cos(x_rot)*cos(y_rot)]]);
-    // corners for each faces
-    var face = [[5,6,7,8], [1,2,3,4], [1,5,8,4], [1,2,6,5], [2,3,7,6], [3,4,8,7]];
     // coordinate of vertices
-    var v = [[x_len, y_len, z_len],
-            [-x_len, y_len, z_len],
-            [-x_len, -y_len, z_len],
-            [x_len, -y_len, z_len],
-            [x_len, y_len, -z_len],
-            [-x_len, y_len, -z_len],
-            [-x_len, -y_len, -z_len],
-            [x_len, -y_len, -z_len]];
+    var v1 = math.matrix([x_len, y_len, -z_len]);
+    var v2 = math.matrix([-x_len, y_len, -z_len]);
+    var v3 = math.matrix([-x_len, -y_len, -z_len]);
+    var v4 = math.matrix([x_len, -y_len, -z_len]);
+    var v5 = math.matrix([0, y_len, z_len]);
+    var v6 = math.matrix([0, -y_len, z_len]);
     // coordinates of vertices from origin
-    //var v_r = math.multiply(rot, v)._data;
-    var v_r = v.map((x)=>math.multiply(rot, math.matrix(x))._data);
+    var v1r = math.multiply(rot, v1)._data;
+    var v2r = math.multiply(rot, v2)._data;
+    var v3r = math.multiply(rot, v3)._data;
+    var v4r = math.multiply(rot, v4)._data;
+    var v5r = math.multiply(rot, v5)._data;
+    var v6r = math.multiply(rot, v6)._data;
     // compute visible faces
     let cons = 2*(math.sqrt(2)+1)*40; // perspective constant
     let dot = (a, b) => a.map((x, i) => a[i] * b[i]).reduce((m, n) => m + n);
     let cull = (x) => Math.sign(-cons*dot(rot._data[2],x)-(dot(rot._data[0],x)**2+dot(rot._data[1],x)**2+dot(rot._data[2],x)**2));
-    //let cull = (x,y,z) => math.subset(rot, math.index(2, math.range(0,2)));
-    let visible = [cull([1,0,0]),cull([0,1,0]),cull([0,0,1]),cull([-1,0,0]),cull([0,-1,0]),cull([0,0,-1])];
+    //let visible = [cull([1,0,0]),cull([0,1,0]),cull([0,0,1]),cull([-1,0,0]),cull([0,-1,0]),cull([0,0,-1])];
+    let angle1 = Math.acos(x_len/2/z_len);
+    let visible = [cull([x_len*sin(angle1),0,0.5*z_len*cos(angle1)]),cull([0,y_len,0]),cull([0,0,z_len]),cull([-x_len*sin(angle1),0,0.5*z_len*cos(angle1)]),cull([0,-y_len,0]),cull([0,0,-z_len])];
     // draw faces
     push();
     translate(x_dis, y_dis);
     strokeWeight(1);
     stroke('black');
     fill('blue');
-    let vis_idx = [5,2,0,1,3,4]
-    for(let i=0; i<6; i++)
-        if(visible[vis_idx[i]] > 0)
-            quad(v_r[i][0]*cons/(cons+v_r[i][2]),v_r[i][1]*cons/(cons+v_r[i][2]),v_r[i][0]*cons/(cons+v_r[i][2]),v_r[i][1]*cons/(cons+v_r[i][2]),v_r[i][0]*cons/(cons+v_r[i][2]),v_r[i][1]*cons/(cons+v_r[i][2]),v_r[i][0]*cons/(cons+v_r[i][2]),v_r[i][1]*cons/(cons+v_r[i][2]));
+    line(60*cos(angle[1]), 120+60*sin(angle[1]), -60*cos(angle[1]), 120-60*sin(angle[1])); // handle test
+    fill(50, 55, 100);
+    //if(visible[5] > 0) // top face
+        //quad(v5r[0]*cons/(cons+v5r[2]),v5r[1]*cons/(cons+v5r[2]),v6r[0]*cons/(cons+v6r[2]),v6r[1]*cons/(cons+v6r[2]),v7r[0]*cons/(cons+v7r[2]),v7r[1]*cons/(cons+v7r[2]),v8r[0]*cons/(cons+v8r[2]),v8r[1]*cons/(cons+v8r[2]));
+    if(visible[5] > 0) // top face
+        quad(v1r[0]*cons/(cons+v1r[2]),v1r[1]*cons/(cons+v1r[2]),v2r[0]*cons/(cons+v2r[2]),v2r[1]*cons/(cons+v2r[2]),v3r[0]*cons/(cons+v3r[2]),v3r[1]*cons/(cons+v3r[2]),v4r[0]*cons/(cons+v4r[2]),v4r[1]*cons/(cons+v4r[2]));
+    fill('blue');
+    if(visible[0] > 0) // right face
+        quad(v1r[0]*cons/(cons+v1r[2]),v1r[1]*cons/(cons+v1r[2]),v5r[0]*cons/(cons+v5r[2]),v5r[1]*cons/(cons+v5r[2]),v6r[0]*cons/(cons+v6r[2]),v6r[1]*cons/(cons+v6r[2]),v4r[0]*cons/(cons+v4r[2]),v4r[1]*cons/(cons+v4r[2]));
+    if(visible[3] > 0) // left face
+        quad(v2r[0]*cons/(cons+v2r[2]),v2r[1]*cons/(cons+v2r[2]),v3r[0]*cons/(cons+v3r[2]),v3r[1]*cons/(cons+v3r[2]),v6r[0]*cons/(cons+v6r[2]),v6r[1]*cons/(cons+v6r[2]),v5r[0]*cons/(cons+v5r[2]),v5r[1]*cons/(cons+v5r[2]));
     pop();
-
 }
 function drawBox() {
     let x_len = 20;
-    let y_len = 40;
-    let z_len = 60;
+    let y_len = 60;
+    let z_len = 40;
     let x_dis = dotX*scaling;
     let y_dis = dotY*scaling;
     let x_rot = 0;
@@ -853,62 +854,77 @@ function drawBox() {
     strokeWeight(1);
     stroke('black');
     fill('blue');
-    line(60*cos(angle[1]), 120+60*sin(angle[1]), -60*cos(angle[1]), 120-60*sin(angle[1])); // handle test
-    if(visible[5] > 0)
+    line(60*cos(angle[1]), 60*sin(angle[1])-120, -60*cos(angle[1]), -60*sin(angle[1])-120); // handle test
+    fill(50, 55, 100);
+    if(visible[5] > 0) // top face
         quad(v5r[0]*cons/(cons+v5r[2]),v5r[1]*cons/(cons+v5r[2]),v6r[0]*cons/(cons+v6r[2]),v6r[1]*cons/(cons+v6r[2]),v7r[0]*cons/(cons+v7r[2]),v7r[1]*cons/(cons+v7r[2]),v8r[0]*cons/(cons+v8r[2]),v8r[1]*cons/(cons+v8r[2]));
-    if(visible[2] > 0)
-        quad(v1r[0]*cons/(cons+v1r[2]),v1r[1]*cons/(cons+v1r[2]),v2r[0]*cons/(cons+v2r[2]),v2r[1]*cons/(cons+v2r[2]),v3r[0]*cons/(cons+v3r[2]),v3r[1]*cons/(cons+v3r[2]),v4r[0]*cons/(cons+v4r[2]),v4r[1]*cons/(cons+v4r[2]));
-    if(visible[0] > 0)
+    fill('blue');
+    //if(visible[2] > 0) // ? face
+        //quad(v1r[0]*cons/(cons+v1r[2]),v1r[1]*cons/(cons+v1r[2]),v2r[0]*cons/(cons+v2r[2]),v2r[1]*cons/(cons+v2r[2]),v3r[0]*cons/(cons+v3r[2]),v3r[1]*cons/(cons+v3r[2]),v4r[0]*cons/(cons+v4r[2]),v4r[1]*cons/(cons+v4r[2]));
+    if(visible[0] > 0) // right face
         quad(v1r[0]*cons/(cons+v1r[2]),v1r[1]*cons/(cons+v1r[2]),v5r[0]*cons/(cons+v5r[2]),v5r[1]*cons/(cons+v5r[2]),v8r[0]*cons/(cons+v8r[2]),v8r[1]*cons/(cons+v8r[2]),v4r[0]*cons/(cons+v4r[2]),v4r[1]*cons/(cons+v4r[2]));
-    if(visible[1] > 0)
-        quad(v1r[0]*cons/(cons+v1r[2]),v1r[1]*cons/(cons+v1r[2]),v2r[0]*cons/(cons+v2r[2]),v2r[1]*cons/(cons+v2r[2]),v6r[0]*cons/(cons+v6r[2]),v6r[1]*cons/(cons+v6r[2]),v5r[0]*cons/(cons+v5r[2]),v5r[1]*cons/(cons+v5r[2]));
-    if(visible[3] > 0)
+    //if(visible[1] > 0) // ? face
+        //quad(v1r[0]*cons/(cons+v1r[2]),v1r[1]*cons/(cons+v1r[2]),v2r[0]*cons/(cons+v2r[2]),v2r[1]*cons/(cons+v2r[2]),v6r[0]*cons/(cons+v6r[2]),v6r[1]*cons/(cons+v6r[2]),v5r[0]*cons/(cons+v5r[2]),v5r[1]*cons/(cons+v5r[2]));
+    if(visible[3] > 0) // left face
         quad(v2r[0]*cons/(cons+v2r[2]),v2r[1]*cons/(cons+v2r[2]),v3r[0]*cons/(cons+v3r[2]),v3r[1]*cons/(cons+v3r[2]),v7r[0]*cons/(cons+v7r[2]),v7r[1]*cons/(cons+v7r[2]),v6r[0]*cons/(cons+v6r[2]),v6r[1]*cons/(cons+v6r[2]));
-    if(visible[4] > 0)
-        quad(v3r[0]*cons/(cons+v3r[2]),v3r[1]*cons/(cons+v3r[2]),v4r[0]*cons/(cons+v4r[2]),v4r[1]*cons/(cons+v4r[2]),v8r[0]*cons/(cons+v8r[2]),v8r[1]*cons/(cons+v8r[2]),v7r[0]*cons/(cons+v7r[2]),v7r[1]*cons/(cons+v7r[2]));
+    //if(visible[4] > 0) // ? face
+        //quad(v3r[0]*cons/(cons+v3r[2]),v3r[1]*cons/(cons+v3r[2]),v4r[0]*cons/(cons+v4r[2]),v4r[1]*cons/(cons+v4r[2]),v8r[0]*cons/(cons+v8r[2]),v8r[1]*cons/(cons+v8r[2]),v7r[0]*cons/(cons+v7r[2]),v7r[1]*cons/(cons+v7r[2]));
     pop();
 
 }
 function drawBox2() {
     let x_len = 20;
-    let y_len = 40;
-    let z_len = 60;
+    let y_len = 60;
+    let z_len = 40;
     let x_dis = dotX*scaling;
     let y_dis = dotY*scaling;
     let x_rot = 0;
-    let y_rot = dotU*5;
+    let y_rot = -angle[0];
     let z_rot = dotA;
-    // compute SE3 transformation matrix
-    let tra = math.matrix([[cos(y_rot)*cos(z_rot), sin(x_rot)*sin(y_rot)*cos(z_rot)-cos(x_rot)*sin(z_rot), cos(x_rot)*sin(y_rot)*cos(z_rot)+sin(x_rot)*sin(z_rot), dotX*scaling], 
-                            [cos(y_rot)*sin(z_rot), sin(x_rot)*sin(y_rot)*sin(z_rot)+cos(x_rot)*cos(z_rot), cos(x_rot)*sin(y_rot)*sin(z_rot)-sin(x_rot)*cos(z_rot), dotY*scaling], 
-                            [-sin(y_rot), sin(x_rot)*cos(y_rot), cos(x_rot)*cos(y_rot), 0], [0,0,0,1]]);
+    let rot = math.matrix([[cos(y_rot)*cos(z_rot), sin(x_rot)*sin(y_rot)*cos(z_rot)-cos(x_rot)*sin(z_rot), cos(x_rot)*sin(y_rot)*cos(z_rot)+sin(x_rot)*sin(z_rot)], 
+                            [cos(y_rot)*sin(z_rot), sin(x_rot)*sin(y_rot)*sin(z_rot)+cos(x_rot)*cos(z_rot), cos(x_rot)*sin(y_rot)*sin(z_rot)-sin(x_rot)*cos(z_rot)], 
+                            [-sin(y_rot), sin(x_rot)*cos(y_rot), cos(x_rot)*cos(y_rot)]]);
     // coordinate of vertices
-    var v1 = math.matrix([x_len, y_len, z_len, 1]);
-    var v2 = math.matrix([-x_len, y_len, z_len, 1]);
-    var v3 = math.matrix([-x_len, -y_len, z_len, 1]);
-    var v4 = math.matrix([x_len, -y_len, z_len, 1]);
-    var v5 = math.matrix([x_len, y_len, -z_len, 1]);
-    var v6 = math.matrix([-x_len, y_len, -z_len, 1]);
-    var v7 = math.matrix([-x_len, -y_len, -z_len, 1]);
-    var v8 = math.matrix([x_len, -y_len, -z_len, 1]);
+    var v1 = math.matrix([x_len*0.5, y_len, z_len]);
+    var v2 = math.matrix([-x_len*0.5, y_len, z_len]);
+    var v3 = math.matrix([-x_len*0.5, -y_len, z_len]);
+    var v4 = math.matrix([x_len*0.5, -y_len, z_len]);
+    var v5 = math.matrix([x_len, y_len, -z_len]);
+    var v6 = math.matrix([-x_len, y_len, -z_len]);
+    var v7 = math.matrix([-x_len, -y_len, -z_len]);
+    var v8 = math.matrix([x_len, -y_len, -z_len]);
     // coordinates of vertices from origin
-    var v1r = math.multiply(tra, v1)._data;
-    var v2r = math.multiply(tra, v2)._data;
-    var v3r = math.multiply(tra, v3)._data;
-    var v4r = math.multiply(tra, v4)._data;
-    var v5r = math.multiply(tra, v5)._data;
-    var v6r = math.multiply(tra, v6)._data;
-    var v7r = math.multiply(tra, v7)._data;
-    var v8r = math.multiply(tra, v8)._data;
+    var v1r = math.multiply(rot, v1)._data;
+    var v2r = math.multiply(rot, v2)._data;
+    var v3r = math.multiply(rot, v3)._data;
+    var v4r = math.multiply(rot, v4)._data;
+    var v5r = math.multiply(rot, v5)._data;
+    var v6r = math.multiply(rot, v6)._data;
+    var v7r = math.multiply(rot, v7)._data;
+    var v8r = math.multiply(rot, v8)._data;
+    // compute visible faces
+    let cons = 2*(math.sqrt(2)+1)*40; // perspective constant
+    let dot = (a, b) => a.map((x, i) => a[i] * b[i]).reduce((m, n) => m + n);
+    let cull = (x) => Math.sign(-cons*dot(rot._data[2],x)-(dot(rot._data[0],x)**2+dot(rot._data[1],x)**2+dot(rot._data[2],x)**2));
+    //let visible = [cull([1,0,0]),cull([0,1,0]),cull([0,0,1]),cull([-1,0,0]),cull([0,-1,0]),cull([0,0,-1])];
+    let angle1 = Math.acos(x_len/4/z_len);
+    let visible = [cull([x_len*sin(angle1),0,0.5*z_len*cos(angle1)]),cull([0,y_len,0]),cull([0,0,z_len]),cull([-x_len*sin(angle1),0,0.5*z_len*cos(angle1)]),cull([0,-y_len,0]),cull([0,0,-z_len])];
     // draw faces
-    stroke('blue');
+    push();
+    translate(x_dis, y_dis);
+    strokeWeight(1);
+    stroke('black');
     fill('blue');
-    quad(v5r[0],v5r[1],v6r[0],v6r[1],v7r[0],v7r[1],v8r[0],v8r[1]);
-    quad(v1r[0],v1r[1],v2r[0],v2r[1],v3r[0],v3r[1],v4r[0],v4r[1]);
-    quad(v1r[0],v1r[1],v5r[0],v5r[1],v8r[0],v8r[1],v4r[0],v4r[1]);
-    quad(v1r[0],v1r[1],v2r[0],v2r[1],v6r[0],v6r[1],v5r[0],v5r[1]);
-    quad(v2r[0],v2r[1],v3r[0],v3r[1],v7r[0],v7r[1],v6r[0],v6r[1]);
-    quad(v3r[0],v3r[1],v4r[0],v4r[1],v8r[0],v8r[1],v7r[0],v7r[1]);
+    line(60*cos(angle[1]), 120+60*sin(angle[1]), -60*cos(angle[1]), 120-60*sin(angle[1])); // handle test
+    fill(50, 55, 100);
+    if(visible[5] > 0) // top face
+        quad(v5r[0]*cons/(cons+v5r[2]),v5r[1]*cons/(cons+v5r[2]),v6r[0]*cons/(cons+v6r[2]),v6r[1]*cons/(cons+v6r[2]),v7r[0]*cons/(cons+v7r[2]),v7r[1]*cons/(cons+v7r[2]),v8r[0]*cons/(cons+v8r[2]),v8r[1]*cons/(cons+v8r[2]));
+    fill('blue');
+    if(visible[0] > 0) // right face
+        quad(v1r[0]*cons/(cons+v1r[2]),v1r[1]*cons/(cons+v1r[2]),v5r[0]*cons/(cons+v5r[2]),v5r[1]*cons/(cons+v5r[2]),v8r[0]*cons/(cons+v8r[2]),v8r[1]*cons/(cons+v8r[2]),v4r[0]*cons/(cons+v4r[2]),v4r[1]*cons/(cons+v4r[2]));
+    if(visible[3] > 0) // left face
+        quad(v2r[0]*cons/(cons+v2r[2]),v2r[1]*cons/(cons+v2r[2]),v3r[0]*cons/(cons+v3r[2]),v3r[1]*cons/(cons+v3r[2]),v7r[0]*cons/(cons+v7r[2]),v7r[1]*cons/(cons+v7r[2]),v6r[0]*cons/(cons+v6r[2]),v6r[1]*cons/(cons+v6r[2]));
+    pop();
 }
 function drawBox3() { // draws a box with the dimensions, displacements and rotations specified.
     let x_len = 20;
@@ -1100,9 +1116,9 @@ function handleMouseMove(e) {
         var scaledMovementX;
         var scaledMovementY;
         //inactivity = 0;
-        scaledMovementX = e.movementX/500;
+        scaledMovementX = e.movementX/64*yawTorque;
         angleV1 += scaledMovementX;
-        angleV1 = fixBetween(angleV1, -maxA, +maxA);
+        //angleV1 = fixBetween(angleV1, -maxA, +maxA);
     }
 }
 function handleMouseMove1(e) {
@@ -1110,9 +1126,9 @@ function handleMouseMove1(e) {
         var scaledMovementX;
         var scaledMovementY;
         //inactivity = 0;
-        scaledMovementX = e.movementX/500;
+        scaledMovementX = e.movementX/64*rolTorque;
         angleV2 += scaledMovementX;
-        angleV2 = fixBetween(angleV1, -maxA, +maxA);
+        //angleV2 = fixBetween(angleV1, -maxA, +maxA);
     }
 }
 function handleMouseMove2(e) {
@@ -1120,12 +1136,12 @@ function handleMouseMove2(e) {
         var scaledMovementX;
         var scaledMovementY;
         //inactivity = 0;
-        scaledMovementX = e.movementX/500;
-        scaledMovementY = e.movementY/500;
+        scaledMovementX = e.movementX/64*yawTorque;
+        scaledMovementY = e.movementY/64*rolTorque;
         angleV1 += scaledMovementX;
-        angleV1 = fixBetween(angleV1, -maxA, +maxA);
+        //angleV1 = fixBetween(angleV1, -maxA, +maxA);
         angleV2 += scaledMovementY;
-        angleV2 = fixBetween(angleV2, -maxA, +maxA);
+        //angleV2 = fixBetween(angleV2, -maxA, +maxA);
     }
 }
 function handleTiltKeyDown(e) {
@@ -1200,9 +1216,8 @@ function startGame() {
     rolTorque = Number(values[1].value)/60;
     var b_candidates = [[[1,1],[1,-1]], [[1,1],[-1,1]], [[1,1],[-1,-1]]];
     b_val = b_candidates[Number(values[2].value)];
-    //tilt_mode = Number(values[3].value);
-    tilt_mode = 3
-    console.log(values);
+    tilt_mode = Number(values[3].value);
+    //tilt_mode = 3
     
     cnv = createCanvas(windowWidth, windowHeight);
     cnv.parent("container-exp");
