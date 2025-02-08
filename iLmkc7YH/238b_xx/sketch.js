@@ -15,8 +15,8 @@ let trainBlocks = [4,5];
 let totalTrainBlocks;
 //let amplitudes = [[1/2,1/4,1/16,1/8,-1/16,-1/32,1/64,1/32],[0,1/4,1/16,1/8,-1/16,-1/32,1/64,1/32]];
 //let frequency = [[1/24,1/6,2/6,3/6,5/6,7/6,8/6,12/6],[1/24,1/6,2/6,3/6,5/6,7/6,8/6,12/6]];
-let amplitudes = [[1/2,1/4,1/16],[0,1/4,1/16]];
-let frequency = [[1/24,1/6,2/6],[1/24,1/6,2/6]];
+let amplitudes = [[1/2,1/4,1/16,1/8,-1/16],[0,1/4,1/16,1/8,-1/16]];
+let frequency = [[1/24,1/6,2/6,3/6,5/6],[1/24,1/6,2/6,3/6,5/6]];
 let frameNum = 0; // Number of frames in the current session
 var dotX;
 var dotY;
@@ -602,9 +602,10 @@ function draw() {
         textSize(12);
         strokeWeight(1);
         text("FPS: "+frBuffer, maxY*scaling-50, -(maxY-dotY)*scaling+10);
-        text("ang: "+angle[0].toFixed(2)+" "+angle[1].toFixed(2), maxY*scaling-50, -(maxY-dotY)*scaling+20); // debug
-        text("dtA: "+angle[2].toFixed(2)+" "+angle[3].toFixed(2), maxY*scaling-50, -(maxY-dotY)*scaling+30);
-        text("ddA: "+dotU[0].toFixed(2)+" "+dotU[1].toFixed(2), maxY*scaling-50, -(maxY-dotY)*scaling+40);
+        text("ϕ δ: "+angle[0].toFixed(2)+" "+angle[1].toFixed(2), maxY*scaling-100, -(maxY-dotY)*scaling+20); // debug
+        text("dq : "+angle[2].toFixed(2)+" "+angle[3].toFixed(2), maxY*scaling-100, -(maxY-dotY)*scaling+30);
+        text("u  : "+dotU[0].toFixed(2)+" "+dotU[1].toFixed(2), maxY*scaling-100, -(maxY-dotY)*scaling+50);
+        text("x ψ: "+dotX.toFixed(2)+" "+dotA.toFixed(2), maxY*scaling-100, -(maxY-dotY)*scaling+60);
         if(freeze<1) { 
             fps += fr;
             frameNum++;
