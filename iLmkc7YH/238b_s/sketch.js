@@ -357,7 +357,7 @@ function sessionInfo() {
             ];
             // layout
             var layout = {
-                title: 'States',
+                title: 'States (position & heading/tilt/handlebar angle)',
                 yaxis: {rangemode: "tozero"},
                 grid: {rows: 3, columns: 3, pattern: 'independent'},
             };
