@@ -100,8 +100,20 @@ var b_val;
 var tilt_mode;
 var keyState;
 
-const A_mat = [[1.0,0.0,0.01666667,0],[0,1,0,0.01666667],[0.13860977,-0.47791902,0.98796909,-0.03447076],[0.22055914,-0.96991869,0.36958883,0.69334504]];
-const B_mat = [[0,0,],[0,0],[0.00049015,-0.00235801],[-0.00235801,0.07243802]];
+var A_mat;
+var B_mat;
+
+// 2*mass
+//const A_mat = [[1.0,0.0,0.01666667,0],[0,1,0,0.01666667],[0.15621111,-0.54357766,0.99077902,-0.03025695],[0.21999441,-0.39504269,0.34793208,0.64038676]];
+//const B_mat = [[0,0,],[0,0],[0.00015281,-0.00180728],[-0.00180728,0.06819338]];
+
+// .5*mass
+//const A_mat = [[1.0,0.0,0.01666667,0],[0,1,0,0.01666667],[0.15829999,-0.54618288,0.98695242,-0.0375896],[0.18299894,-0.844848,0.38108019,0.72382222]];
+//const B_mat = [[0,0,],[0,0],[0.00055419,-0.00255728],[-0.00255728,0.07469029]];
+
+// decoupled
+//const A_mat = [[1.0,0.0,0.01666667,0],[0,1,0,0.01666667],[0.13860977,0.0,0.98796909,0.0],[0.0,-0.96991869,0.0,0.69334504]];
+//const B_mat = [[0,0,],[0,0],[0.00049015,0.0],[0.0,0.07243802]];
 
 //const A_mat = [[1.0,0.0,0.01666667,0],[0,1,0,0.01666667],[0.15816291,-0.54424403,0.98944776,-0.03305154],[0.19532461,-0.66788316,0.36768052,0.69151345]];
 //const B_mat = [[0,0,],[0,0],[0.01593498,-0.12409203],[-0.12409203,4.32384018]];
@@ -112,6 +124,8 @@ var angle;
 var dotAng;
 var yawTorque;
 var rolTorque;
+var yawGain;
+var rolGain;
 function setup() {
     isDraw = false;
     frameRate(60);
@@ -199,6 +213,7 @@ function startSession() {
     act = [];
     vDist = [];
     nse = [];
+    q = [[],[],[],[]];
     maxPoints = 0;
     if(sessionsType[currentSession] < 2) { // empty session
         isTest = false;
@@ -299,6 +314,10 @@ function sessionInfo() {
             a: ang,
             u: act,
             n: nse,
+            q1: q[0],
+            q2: q[1],
+            q3: q[2],
+            q4: q[3],
             per: perturbDir,
             num: sessionComplete,
             type: sessionsType[currentSession-1],
@@ -429,6 +448,10 @@ function draw() {
             ang.push(dotA);
             act.push([angleV1, angleV2]);
             nse.push(noise);
+            q[0].push(angle[0]);
+            q[1].push(angle[1]);
+            q[2].push(angle[2]);
+            q[3].push(angle[3]);
             if(lines==null) {
                 if(movin) {
                     inactivity++;
@@ -534,18 +557,18 @@ function draw() {
             dotA += (6*angle[1]+0.08*angle[3])*0.0155401391551;
             if(dotA < -maxA) {
                 dotA = -maxA;
-                angle[1] = 0;
-                angle[3] = Math.max(0, angle[3]);
+                //angle[1] = 0;
+                //angle[3] = Math.max(0, angle[3]);
             } else if(dotA > maxA) {
                 dotA = maxA;
-                angle[1] = 0;
-                angle[3] = Math.min(0, angle[3]);
+                //angle[1] = 0;
+                //angle[3] = Math.min(0, angle[3]);
             } if(angle[0] < -maxA) {
                 angle[0] = -maxA;
-                angle[2] = 0;
+                //freeze = freeze_time;
             } else if(angle[0] > maxA) {
                 angle[0] = maxA;
-                angle[2] = 0;
+                //freeze = freeze_time;
             }
             
             /*if(angle[0] < -maxA*0.9) { // falls over
@@ -869,6 +892,10 @@ function drawBox() {
         quad(v1r[0]*cons/(cons+v1r[2]),v1r[1]*cons/(cons+v1r[2]),v5r[0]*cons/(cons+v5r[2]),v5r[1]*cons/(cons+v5r[2]),v8r[0]*cons/(cons+v8r[2]),v8r[1]*cons/(cons+v8r[2]),v4r[0]*cons/(cons+v4r[2]),v4r[1]*cons/(cons+v4r[2]));
     if(visible[3] > 0) // left face
         quad(v2r[0]*cons/(cons+v2r[2]),v2r[1]*cons/(cons+v2r[2]),v3r[0]*cons/(cons+v3r[2]),v3r[1]*cons/(cons+v3r[2]),v7r[0]*cons/(cons+v7r[2]),v7r[1]*cons/(cons+v7r[2]),v6r[0]*cons/(cons+v6r[2]),v6r[1]*cons/(cons+v6r[2]));
+    
+    // draw arrows
+    line(0, 0, angle[2]*50, 0);
+    line(0, -60, angle[3]*50, -60);
     pop();
 
 }
@@ -1107,9 +1134,17 @@ function startGame() {
     beta = Number(values[5].value); */
     yawTorque = Number(values[0].value);
     rolTorque = Number(values[1].value);
+    yawGain = Number(values[2].value);
+    rolGain = Number(values[3].value);
+    //A_mat = [[1.0,0.0,0.01666667,0],[0,1,0,0.01666667],[0.13860977,-0.47791902*rolGain,0.98796909,-0.03447076*rolGain],[0.22055914*yawGain,-0.96991869,0.36958883*yawGain,0.69334504]];
+    //B_mat = [[0,0,],[0,0],[0.00049015,-0.00235801*rolGain],[-0.00235801*yawGain,0.07243802]];
+    A_mat = [[1.0,0.0,0.01666667,0],[0,1,0,0.01666667],[0.15816291,-0.54424403*rolGain,0.98944776,-0.03305154*rolGain],[0.19532461*yawGain,-0.66788316,0.36768052*yawGain,0.69151345]];
+    B_mat = [[0,0,],[0,0],[0.00026558,-0.0020682*rolGain],[-0.0020682*yawGain,0.072064]];
+    //A_mat = [[1.0,0.0,0.01666667,0],[0,1,0,0.01666667],[0.16092399,-0.55506117*rolGain,0.99278081,-0.03609265*rolGain],[0.11003513*yawGain,-0.29229215,0.20387766*yawGain,0.74140705]];
+    //B_mat = [[0,0,],[0,0],[0.00024422,-0.00141493*rolGain],[-0.00141493*yawGain,0.03995926]];
     var b_candidates = [[[1,1],[1,-1]], [[1,1],[-1,1]], [[1,1],[-1,-1]]];
-    b_val = b_candidates[Number(values[2].value)];
-    tilt_mode = Number(values[3].value);
+    b_val = b_candidates[Number(values[4].value)];
+    tilt_mode = Number(values[5].value);
     //tilt_mode = 3
     
     cnv = createCanvas(windowWidth, windowHeight);
