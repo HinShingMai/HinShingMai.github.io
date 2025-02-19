@@ -99,6 +99,9 @@ var v_scale;
 var b_val;
 var tilt_mode;
 var keyState;
+var freeze_mode;
+var action_mode;
+var yaw_stiffness;
 
 var A_mat;
 var B_mat;
@@ -221,7 +224,7 @@ function startSession() {
     maxPoints = 0;
     if(sessionsType[currentSession] < 2) { // empty session
         isTest = false;
-        maxPoints = 3600;
+        maxPoints = 7200;
         blanknum = 0;
         maxY = width_x*0.625; //150
         maxX = maxY;
@@ -510,6 +513,7 @@ function draw() {
                     dotX = (dotX+lines[-dotY])/2.0;
                     freeze = freeze_time;
                     freeze_margin = 0;
+                    freeze_mode = 1;
                 }
                 if(dotX < -maxX) {
                     dotX = -maxX;
@@ -521,6 +525,7 @@ function draw() {
                     dotX = (dotX+lines[-dotY])/2.0;
                     freeze = freeze_time;
                     freeze_margin = 0;
+                    freeze_mode = 1;
                 }
                 if(dotX > maxX) {
                     dotX = maxX;
@@ -529,30 +534,53 @@ function draw() {
             } else if(freeze_margin > 0)
                 freeze_margin -= 1;
             
-            if(tilt_mode == 3) {
-                angleV1 = 0;
-                if(keyState['.'])
-                    angleV1 += -yawTorque;
-                if(keyState['/'])
-                    angleV1 += yawTorque;
-            } else if(tilt_mode == 2) {
-                angleV1 = 0;
-                if(keyState['z'])
-                    angleV1 += -yawTorque;
-                if(keyState['x'])
-                    angleV1 += yawTorque;
-            } if(tilt_mode%2 == 1) {
+            if(action_mode == 0) {
+                if(tilt_mode == 3) {
+                    angleV1 = 0;
+                    if(keyState['.'])
+                        angleV1 += -1;
+                    if(keyState['/'])
+                        angleV1 += 1;
+                } else if(tilt_mode == 2) {
+                    angleV1 = 0;
+                    if(keyState['z'])
+                        angleV1 += -1;
+                    if(keyState['x'])
+                        angleV1 += 1;
+                } if(tilt_mode%2 == 1) {
+                    angleV2 = 0;
+                    if(keyState['z'])
+                        angleV2 += -1;
+                    if(keyState['x'])
+                        angleV2 += 1;
+                }
+                
+                dotU[0] = fixBetween(angleV2, -1, 1)*rolTorque;
+                dotU[1] = (b_val[offset][1]*angleV1 - yaw_stiffness*angle[1])*yawTorque;
+                angleV1 = 0; // test
                 angleV2 = 0;
-                if(keyState['z'])
-                    angleV2 += -rolTorque;
-                if(keyState['x'])
-                    angleV2 += rolTorque;
+            } else {
+                if(tilt_mode == 3) {
+                    if(keyState['.'])
+                        angleV1 += -0.01;
+                    if(keyState['/'])
+                        angleV1 += 0.01;
+                } else if(tilt_mode == 2) {
+                    if(keyState['z'])
+                        angleV1 += -0.01;
+                    if(keyState['x'])
+                        angleV1 += 0.01;
+                } if(tilt_mode%2 == 1) {
+                    if(keyState['z'])
+                        angleV2 += -0.01;
+                    if(keyState['x'])
+                        angleV2 += 0.01;
+                }
+                angleV2 = fixBetween(angleV2, -1, 1);
+                angleV1 = fixBetween(b_val[offset][1]*angleV1, -1, 1) - yaw_stiffness*angle[1];
+                dotU[0] = angleV2*rolTorque;
+                dotU[1] = angleV1*yawTorque;
             }
-            
-            dotU[0] = angleV2;
-            dotU[1] = b_val[offset][1]*angleV1;
-            angleV1 = 0; // test
-            angleV2 = 0;
             
             /*dotAng = math.multiply(M_mat, (math.subtract(dotU, math.multiply(C_mat,angle))));
 
@@ -575,11 +603,17 @@ function draw() {
                 //angle[3] = Math.min(0, angle[3]);
             } if(angle[0] < -maxA) {
                 angle[0] = -maxA;
-                //freeze = freeze_time;
+                freeze = freeze_time;
+                freeze_mode = 2;
             } else if(angle[0] > maxA) {
                 angle[0] = maxA;
-                //freeze = freeze_time;
+                freeze = freeze_time;
+                freeze_mode = 2;
             }
+            
+            angle[1] = fixBetween(angle[1],-maxA/2,maxA/2);
+            angle[2] = fixBetween(angle[2],-maxA/2,maxA/2);
+            angle[3] = fixBetween(angle[3],-maxA/4,maxA/4);
             
             /*if(angle[0] < -maxA*0.9) { // falls over
                 freeze_margin += 2;
@@ -642,6 +676,12 @@ function draw() {
         if(freeze<1) { 
             fps += fr;
             frameNum++;
+        } else {
+            let msg = ["","Drift","Fall"];
+            stroke('red');
+            fill('red');
+            textSize(30);
+            text(msg[freeze_mode], 0, -(maxY/2-dotY)*scaling);
         }
     }
 }
@@ -886,14 +926,29 @@ function drawBox() {
     push();
     translate(x_dis, y_dis);
     stroke('black');
-    // draw handlebar
+    // draw handlebar and front wheel
     var v9 = math.matrix([60*cos(angle[1]), 60*sin(angle[1])-y_len, -z_len*0.75]);
     var v10 = math.matrix([-60*cos(angle[1]), -60*sin(angle[1])-y_len, -z_len*0.75]);
     var v9r = math.multiply(rot, v9)._data;
     var v10r = math.multiply(rot, v10)._data;
     line(v9r[0]*cons/(cons+v9r[2]),v9r[1]*cons/(cons+v9r[2]), v10r[0]*cons/(cons+v10r[2]),v10r[1]*cons/(cons+v10r[2]));
     
-    strokeWeight(1);
+    if(action_mode == 1) {
+        // draw roll/yaw slide bars
+        line(-120,120,120,120);
+        line(0, 110, 0, 130);
+        line(-120,150,120,150);
+        line(0, 140, 0, 160);
+        strokeWeight(1);
+        stroke('blue');
+        fill('blue');
+        ellipse(120*angleV2,120,20,20);
+        stroke('red');
+        fill('red');
+        ellipse(120*angleV1,150,20,20);
+        stroke('black');
+    } else
+        strokeWeight(1);
     fill(50, 55, 100);
     if(visible[5] > 0) // top face
         quad(v5r[0]*cons/(cons+v5r[2]),v5r[1]*cons/(cons+v5r[2]),v6r[0]*cons/(cons+v6r[2]),v6r[1]*cons/(cons+v6r[2]),v7r[0]*cons/(cons+v7r[2]),v7r[1]*cons/(cons+v7r[2]),v8r[0]*cons/(cons+v8r[2]),v8r[1]*cons/(cons+v8r[2]));
@@ -1042,32 +1097,32 @@ function startBackTimer() { // starts inactivity background timer
     timer = setTimeout(inactivityTimer, 60000);
 }
 function handleMouseMove(e) {
-    if(movin) {
+    if(movin&&freeze<1) {
         var scaledMovementX;
         var scaledMovementY;
         //inactivity = 0;
-        scaledMovementX = e.movementX/64*yawTorque;
+        scaledMovementX = e.movementX/1024;
         angleV1 += scaledMovementX;
         //angleV1 = fixBetween(angleV1, -maxA, +maxA);
     }
 }
 function handleMouseMove1(e) {
-    if(movin) {
+    if(movin&&freeze<1) {
         var scaledMovementX;
         var scaledMovementY;
         //inactivity = 0;
-        scaledMovementX = e.movementX/64*rolTorque;
+        scaledMovementX = e.movementX/1024;
         angleV2 += scaledMovementX;
         //angleV2 = fixBetween(angleV1, -maxA, +maxA);
     }
 }
 function handleMouseMove2(e) {
-    if(movin) {
+    if(movin&&freeze<1) {
         var scaledMovementX;
         var scaledMovementY;
         //inactivity = 0;
-        scaledMovementX = e.movementX/64*yawTorque;
-        scaledMovementY = e.movementY/64*rolTorque;
+        scaledMovementX = e.movementX/1024;
+        scaledMovementY = e.movementY/1024;
         angleV1 += scaledMovementX;
         //angleV1 = fixBetween(angleV1, -maxA, +maxA);
         angleV2 += scaledMovementY;
@@ -1146,6 +1201,7 @@ function startGame() {
     rolTorque = Number(values[1].value);
     yawGain = Number(values[2].value);
     rolGain = Number(values[3].value);
+    yaw_stiffness = Number(values[4].value);
     //A_mat = [[1.0,0.0,0.01666667,0],[0,1,0,0.01666667],[0.13860977,-0.47791902*rolGain,0.98796909,-0.03447076*rolGain],[0.22055914*yawGain,-0.96991869,0.36958883*yawGain,0.69334504]];
     //B_mat = [[0,0,],[0,0],[0.00049015,-0.00235801*rolGain],[-0.00235801*yawGain,0.07243802]];
     A_mat = [[1.0,0.0,0.01666667,0],[0,1,0,0.01666667],[0.15816291,-0.54424403*rolGain,0.98944776,-0.03305154*rolGain],[0.19532461*yawGain,-0.66788316,0.36768052*yawGain,0.69151345]];
@@ -1153,9 +1209,9 @@ function startGame() {
     //A_mat = [[1.0,0.0,0.01666667,0],[0,1,0,0.01666667],[0.16092399,-0.55506117*rolGain,0.99278081,-0.03609265*rolGain],[0.11003513*yawGain,-0.29229215,0.20387766*yawGain,0.74140705]];
     //B_mat = [[0,0,],[0,0],[0.00024422,-0.00141493*rolGain],[-0.00141493*yawGain,0.03995926]];
     var b_candidates = [[[1,1],[1,-1]], [[1,1],[-1,1]], [[1,1],[-1,-1]]];
-    b_val = b_candidates[Number(values[4].value)];
     tilt_mode = Number(values[5].value);
-    //tilt_mode = 3
+    action_mode = Number(values[6].value);
+    b_val = b_candidates[0];
     
     cnv = createCanvas(windowWidth, windowHeight);
     cnv.parent("container-exp");
