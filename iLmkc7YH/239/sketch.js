@@ -3,7 +3,7 @@ let cnv;
 let dpi = -1;
 let currentTrainBlock = 0;
 //let trainBlocks = [6, 4, 4, 4, 4, -3, 4, 4, 7, 5, 5, -3, 5, 5, 5, 5];
-let trainBlocks = [4];
+let trainBlocks = [4,5];
 /*
 -n: n-minutes break
 0: no path normal familiarization block
@@ -243,7 +243,7 @@ function startSession() {
             else
                 blank = shuffle([1/30,1/15,0.1,2/15,0.2,1/3,0.5,112/150,1]);
         } else {
-            maxPoints = 2400;
+            maxPoints = 600;
             blanknum = 0;
             maxY = width_x*0.625; //150
             maxX = maxY;
@@ -251,7 +251,8 @@ function startSession() {
             blank = [1]; // num of sub-sessions
         }
         if(sessionsType[currentSession]>3) {
-            lines = sinuousCurve(maxPoints, isTest);
+            //lines = sinuousCurve(maxPoints, isTest);
+            lines = generatePath(maxPoints, isTest);
             perturbation = -1;
             perturbDir = null;
             perturbCoord = null;
@@ -264,7 +265,8 @@ function startSession() {
             for(let i=1; i<perturbCount; i++)
                 perturbCoord.push(perturbation*i + 1);
         }
-        dotX = lines[0];
+        dotX = lines[0].x;
+        dotY = lines[0].y
     }
     clear();
     frameNum = 0;
@@ -491,8 +493,8 @@ function draw() {
                 //pause();
             }
             // motion model
-            dotX  = dotX + b_val[offset][0]*Math.tan(dotA);
-            dotY -= 1;
+            dotX += b_val[offset][0]*Math.sin(dotA);
+            dotY -= Math.cos(dotA);
             var v;
             if(v_scale)
                 v = Math.sqrt(Math.tan(dotA)**2+1);
@@ -543,8 +545,8 @@ function draw() {
                     if(keyState['x'])
                         angleV2 += actGain;
                 }
-                angleV2 = fixBetween(b_val[offset][1]*angleV2, -1, 1);
-                dotU = angleV2*rolTorque;
+                angleV2 = fixBetween(angleV2, -1, 1);
+                dotU = b_val[offset][1]*angleV2*rolTorque;
             }
             
             /*dotAng = math.multiply(M_mat, (math.subtract(dotU, math.multiply(C_mat,angle))));
@@ -558,7 +560,7 @@ function draw() {
             angle = math.add(math.multiply(A_mat,angle),math.multiply(B_mat,[dotU,0]));
             //angle[1] =0; // disable roll
             dotA += (6*angle[1]+0.08*angle[3])*0.0155401391551;
-            if(dotA < -maxA) {
+            /*if(dotA < -maxA) {
                 dotA = -maxA;
                 //angle[1] = 0;
                 //angle[3] = Math.max(0, angle[3]);
@@ -566,7 +568,7 @@ function draw() {
                 dotA = maxA;
                 //angle[1] = 0;
                 //angle[3] = Math.min(0, angle[3]);
-            } if(angle[0] < -maxA) {
+            }*/ if(angle[0] < -maxA) {
                 angle[0] = -maxA;
                 freeze = freeze_time;
                 freeze_mode = 2;
@@ -618,10 +620,11 @@ function draw() {
         stroke('black');
         strokeWeight(4);
         noFill();
-        let high = int(maxY*blank[blanknum]-dotY);
-        translate(windowWidth/2, windowHeight*2/3 - dotY*scaling);
+        //let high = int(maxY*blank[blanknum]-dotY);
+        translate(windowWidth/2 - dotX*scaling, windowHeight/2 - dotY*scaling);
         //rect(-maxX*scaling, -(maxY-dotY)*scaling, maxX*scaling*2, maxY*scaling*1.5);
-        drawCurve(lines, -dotY-1-pathWidth, min(high+pathWidth,(blanknum+1)*plen));
+        //drawCurve(lines, -dotY-1-pathWidth, min(high+pathWidth,(blanknum+1)*plen));
+        drawCurve();
         //drawBike();
         drawBox();
         drawTrace();
@@ -652,7 +655,7 @@ function draw() {
 }
 function resetAndUnfreeze() {
     //dotX = (dotX+lines[-dotY])/2.0;
-    dotA = 0;
+    //dotA = 0;
     angleV2 = 0;
     dotU = 0;
     yaw = 0;
@@ -686,7 +689,7 @@ function distToPath() { // squared distance to path, approximate
     if(endFix > lines.length)
         endFix = lines.length;
     for(let i = startFix+1; i<endFix; i++) {
-        let dist = distToSegmentSquared({x: dotX, y: -dotY}, {x: lines[i-1], y: (i-1)}, {x: lines[i], y:i});
+        let dist = distToSegmentSquared({x: dotX, y: -dotY}, {x: lines[i-1].x, y: lines[i-1].y}, {x: lines[i].x, y:lines[i].y});
         if(dist < minDist)
             minDist = dist;
     }
@@ -751,29 +754,61 @@ function sinuousCurve(len, isTest) { // generate trajectory
     }
     return paths;
 }
-/*function sinuousCurve(len) {
-    var points = [];
-    path = [];
-    let lPath = [];
-    let rPath = [];
+function generatePath(len, isTest) { // generate trajectory
     let start = 0;
+    var ampl;
+    var freq;
+    var repeat;
+    if(isTest) {
+        ampl = amplitudes[1];
+        freq = frequency[1];
+        repeat = blank.length;
+    } else {
+        ampl = amplitudes[0];
+        freq = frequency[0];
+        repeat = blank.length;
+    }
+    var points = [];
+    var lPath = [];
+    var rPath = [];
     for(let i=0; i<len; i++) {
         var X = 0;
+        var Y = 0;
         var X2 = 0;
-        for(let j=0; j<max_amplitudes.length; j++) {
-            X += width_x/2*max_amplitudes[j]*sin(2*PI*start*frequency[j]);
-            X2 += 2*PI*frequency[j]*0.01*width_x/2*max_amplitudes[j]*cos(2*PI*start*frequency[j]);
-        }
-        points.push(X);
-        let n = sqrt(X2**2 + 1); // normalizing constant
-        lPath.push({x: -1*pathWidth/n + X, y: X2*pathWidth/n + i});
-        rPath.push({x: 1*pathWidth/n + X, y: -X2*pathWidth/n + i});
-        start += 0.01; // 0.02
+        var Y2 = 0;
+        /*for(let j=0; j<ampl.length; j++) {
+            X += width_x/2*ampl[j]*sin(2*PI*start*freq[j]);
+            X2 += 2*PI*freq[j]*0.01*width_x/2*ampl[j]*cos(2*PI*start*freq[j]);
+        }*/
+        X = width_x/2*sin(2*PI*start);
+        X2 = 2*PI*1/len*width_x/2*cos(2*PI*start);
+        Y = width_x/2*cos(2*PI*start);
+        Y2 = -2*PI*1/len*width_x/2*sin(2*PI*start);
+        
+        points.push({x: X, y: Y});
+        let n = sqrt(X2**2 + Y2**2); // normalizing constant
+        lPath.push({x: -Y2*pathWidth/n + X, y: X2*pathWidth/n + Y});
+        rPath.push({x: Y2*pathWidth/n + X, y: -X2*pathWidth/n + Y});
+        start += 1/len; // 0.01
     }
-    path.push(lPath);
-    path.push(rPath);
-    return points;
-}*/
+    var paths = [];
+    pathEdges = [];
+    pOffsets = {startpos:[]};
+    for(let i=0; i<repeat; i++) { // generate each sub-trajectory
+        let offset = int(random()*points.length);
+        pOffsets.startpos.push(offset);
+        var path = arrayRotate(points.slice(0), offset); // randomize starting position for each sub-trajectory
+        var lp = arrayRotate(lPath.slice(0), offset);
+        var rp = arrayRotate(rPath.slice(0), offset);
+        //paths = paths.concat(Array(straightLen).fill(path[0]).concat(path));
+        //pathEdges.push(Array(straightLen).fill({x: path[0]-pathWidth, y: 0}).concat(lp));
+        //pathEdges.push(Array(straightLen).fill({x: path[0]+pathWidth, y: 0}).concat(rp));
+        paths = path;
+        pathEdges.push(lp);
+        pathEdges.push(rp);
+    }
+    return paths;
+}
 function randTargets(num) { // generate random points for familiarization session
     famTargets = Array(num).fill().map(() => [(random()-0.5)*width_x, 0]);
     for(let i=0;i<num;i++)
@@ -785,24 +820,24 @@ function arrayRotate(arr, count) { // rotates array, ex. arrayRotate([0, 1, 2, 3
     arr.push(...arr.splice(0, (-count % len + len) % len))
     return arr
 }
-function drawCurve(coords, start, end) {
+function drawCurve0(coords, start, end) {
     if(coords!==null) {
         noFill();
-        let startFix = start;
+        let startFix = Math.floor(start);
         if(startFix < 0)
             startFix = 0;
-        let endFix = end;
+        let endFix = Math.ceil(end);
         if(endFix > coords.length)
             endFix = coords.length;
         stroke('grey');
         strokeWeight(6);
         for(let i = startFix+1; i<endFix; i++)
-            line(coords[i-1]*scaling, (1-i)*scaling, coords[i]*scaling, -i*scaling);
+            line(coords[i-1].x*scaling, (1-coords[i-1].y)*scaling, coords[i].x*scaling, (-coords[i].y)*scaling);
         stroke('lightgrey');
         strokeWeight(4);
         for(let i = startFix+1; i<endFix; i++) {
             for(let j of pathEdges) {
-                line(j[i-1].x*scaling, (1-j[i-1].y-i)*scaling, j[i].x*scaling, (-j[i].y-i)*scaling);
+                line(j[i-1].x*scaling, (1-j[i-1].y)*scaling, j[i].x*scaling, (-j[i].y)*scaling);
             }
             //let j = path[0];
             //line(j[i-1].x*scaling*scaling_x, -j[i-1].y*scaling*scaling_y, j[i].x*scaling*scaling_x, -j[i].y*scaling*scaling_y);
@@ -814,6 +849,64 @@ function drawCurve(coords, start, end) {
             fill('grey');
             rect(-maxX*scaling+2, (dotY-maxY)*scaling, 2*maxX*scaling-4, maxY*(1-blank[blanknum])*scaling);
         }
+    } else {
+        for(let i=0;i<famTargets.length;i++) {
+            if(famTargetState[i]==1) {
+                stroke('blue');
+                fill('blue');
+            }
+            else {
+                stroke('grey');
+                fill('grey');
+            }
+            //ellipse(famTargets[i][0]*scaling, -famTargets[i][1]*scaling, 10*scaling, 10*scaling);
+            rect((famTargets[i][0]-10)*scaling, -(famTargets[i][1]+10)*scaling, 20*scaling, 20*scaling);
+        }
+        stroke('black');
+        fill('black');
+        textSize(24);
+        strokeWeight(1);
+        textAlign(CENTER);
+        var remain = Math.floor((plen*(blank.length)+dotY)/60);
+        text("Move the cursor left or right to swing the tail.\nThe the more curled up the tail, the faster the fish will turn.\nThe fish will stop turning when the tail is straight.\nTry to touch the falling gray boxes. Score: "+famScore+" / "+famTargets.length+"\n"+
+                "\nRemaining time: "+String(remain).padStart(2,'0'), 0, -(maxY*2/3-dotY)*scaling);
+        
+    }
+}
+function drawCurve() {
+    if(lines!==null) {
+        //let high = int(maxY*blank[blanknum]-dotY);
+        //translate(windowWidth/2, windowHeight*2/3 - dotY*scaling);
+        //rect(-maxX*scaling, -(maxY-dotY)*scaling, maxX*scaling*2, maxY*scaling*1.5);
+        //drawCurve(lines, -dotY-1-pathWidth, min(high+pathWidth,(blanknum+1)*plen));
+        let leftEdge = dotX - maxX;
+        let rigtEdge = dotX + maxX;
+        let topEdge = -dotY - maxY;
+        let botEdge = -dotY + maxY;
+        let onScreen = (a) => a.x>leftEdge && a.x<rigtEdge && a.y>topEdge && a.y<botEdge;
+        noFill();
+        stroke('grey');
+        strokeWeight(6);
+        for(let i = 1; i<lines.length; i++)
+            if(onScreen(lines[i-1]) || onScreen(lines[i]))
+                line(lines[i-1].x*scaling, (1-lines[i-1].y)*scaling, lines[i].x*scaling, (-lines[i].y)*scaling);
+        stroke('lightgrey');
+        strokeWeight(4);
+        for(let i = 1; i<lines.length; i++) {
+            for(let j of pathEdges) {
+                if(onScreen(j[i-1]) || onScreen(j[i]))
+                    line(j[i-1].x*scaling, (1-j[i-1].y)*scaling, j[i].x*scaling, (-j[i].y)*scaling);
+            }
+            //let j = path[0];
+            //line(j[i-1].x*scaling*scaling_x, -j[i-1].y*scaling*scaling_y, j[i].x*scaling*scaling_x, -j[i].y*scaling*scaling_y);
+        }
+        /*noStroke();
+        fill('lightgray')
+        rect(-maxX*scaling+2, (maxY/2+dotY)*scaling, 2*maxX*scaling-4, (2-maxY/2)*scaling);
+        if(blank[blanknum]<0.9) {
+            fill('grey');
+            rect(-maxX*scaling+2, (dotY-maxY)*scaling, 2*maxX*scaling-4, maxY*(1-blank[blanknum])*scaling);
+        }*/
     } else {
         for(let i=0;i<famTargets.length;i++) {
             if(famTargetState[i]==1) {
@@ -891,9 +984,9 @@ function drawBox0() {
     pop();
 }
 function drawBox() {
-    let x_len = 10;
-    let y_len = 60;
-    let z_len = 40;
+    let x_len = 5;
+    let y_len = 30;
+    let z_len = 20;
     let x_dis = dotX*scaling;
     let y_dis = dotY*scaling;
     let x_rot = 0;
@@ -930,8 +1023,8 @@ function drawBox() {
     translate(x_dis, y_dis);
     stroke('black');
     // draw handlebar and front wheel
-    var v9 = math.matrix([60*cos(angle[1]), 60*sin(angle[1])-y_len, -z_len*0.75]);
-    var v10 = math.matrix([-60*cos(angle[1]), -60*sin(angle[1])-y_len, -z_len*0.75]);
+    var v9 = math.matrix([y_len*cos(angle[1]), y_len*sin(angle[1])-y_len, -z_len*0.75]);
+    var v10 = math.matrix([-y_len*cos(angle[1]), -y_len*sin(angle[1])-y_len, -z_len*0.75]);
     var v9r = math.multiply(rot, v9)._data;
     var v10r = math.multiply(rot, v10)._data;
     line(v9r[0]*cons/(cons+v9r[2]),v9r[1]*cons/(cons+v9r[2]), v10r[0]*cons/(cons+v10r[2]),v10r[1]*cons/(cons+v10r[2]));
@@ -957,8 +1050,8 @@ function drawBox() {
         quad(v2r[0]*cons/(cons+v2r[2]),v2r[1]*cons/(cons+v2r[2]),v3r[0]*cons/(cons+v3r[2]),v3r[1]*cons/(cons+v3r[2]),v7r[0]*cons/(cons+v7r[2]),v7r[1]*cons/(cons+v7r[2]),v6r[0]*cons/(cons+v6r[2]),v6r[1]*cons/(cons+v6r[2]));
     
     // draw arrows
-    line(0, 0, angle[2]*50, 0);
-    line(0, -60, angle[3]*50, -60);
+    //line(0, 0, angle[2]*50, 0);
+    //line(0, -60, angle[3]*50, -60);
     pop();
 
 }
@@ -1180,6 +1273,11 @@ function startGame() {
     tilt_mode = Number(values[5].value);
     action_mode = Number(values[6].value);
     b_val = b_candidates[0];
+    let nor = Number(values[7].value);
+    if(nor == 0)
+        trainBlocks = [4];
+    else
+        trainBlocks = [5];
     
     cnv = createCanvas(windowWidth, windowHeight);
     cnv.parent("container-exp");

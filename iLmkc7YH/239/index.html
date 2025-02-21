@@ -14,13 +14,13 @@
         <div>
             <form id="cover-form1">
                 <label for="rtor">roll torque (N, between 1 and 1800):</label></br>
-                <input type="number" id="rtor" name="cover-select" value="200" min="1" max="1800"></br>
+                <input type="number" id="rtor" name="cover-select" value="50" min="1" max="1800"></br>
                 <label for="ygan">yaw gain (between 0 and 1):</label></br>
                 <input type="number" id="ygan" name="cover-select" value="1" min="0" max="1"></br>
                 <label for="rgan">roll gain (between 0 and 1):</label></br>
                 <input type="number" id="rgan" name="cover-select" value="1" min="0" max="1"></br>
                 <label for="stif">action gain (between 0.001 and 1):</label></br>
-                <input type="number" id="stif" name="cover-select" value="0.01" min="0.001" max="1"></br>
+                <input type="number" id="stif" name="cover-select" value="0.04" min="0.001" max="1"></br>
                 <label for="pWid">path width (between 10 and 100):</label></br>
                 <input type="number" id="pWid" name="cover-select" value="50" min="10" max="100"></br>
                 <!--<label for="rControl">if reverse, reverse control type:</label></br>
@@ -38,6 +38,11 @@
                 <select id="PoC" name="cover-select">
                 <option value='0'>pulse</option>
                 <option value='1' selected>continuous</option>
+                </select></br>
+                <label for="nor">normal or reverse control:</label></br>
+                <select id="nor" name="cover-select">
+                <option value='0' selected>normal</option>
+                <option value='1'>reverse</option>
                 </select></br>
                 <!--<label for="beta">k value:</label></br>
                 <select id="beta" name="cover-select">
