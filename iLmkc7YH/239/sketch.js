@@ -528,22 +528,32 @@ function draw() {
                 freeze_margin -= 1;*/
             
             if(action_mode == 0) {
-                if(tilt_mode%2 == 1) {
+                if(tilt_mode > 2) {
                     angleV2 = 0;
                     if(keyState['z'])
                         angleV2 += -1;
-                    if(keyState['x'])
-                        angleV2 += 1;
+                    if(tilt_mode == 3) {
+                        if(keyState['x'])
+                            angleV2 += 1;
+                    } else {
+                        if(keyState['.'])
+                            angleV2 += 1;
+                    }
                 }
                 
                 dotU = fixBetween(b_val[offset][1]*angleV2, -1, 1)*rolTorque;
                 angleV2 = 0;
             } else {
-                if(tilt_mode%2 == 1) {
+                if(tilt_mode > 2) {
                     if(keyState['z'])
                         angleV2 += -actGain;
-                    if(keyState['x'])
-                        angleV2 += actGain;
+                    if(tilt_mode == 3) {
+                        if(keyState['x'])
+                            angleV2 += actGain;
+                    } else {
+                        if(keyState['.'])
+                            angleV2 += actGain;
+                    }
                 }
                 angleV2 = fixBetween(angleV2, -1, 1);
                 dotU = b_val[offset][1]*angleV2*rolTorque;
