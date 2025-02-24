@@ -3,21 +3,72 @@
   <head>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/9.3.2/math.js"></script> 
     <link rel="stylesheet" type="text/css" href="style.css">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   </head>
   <body>
-    <div id="instrDiv" class="center_div">
-        <div id="startInstr" style="position: absolute;width:100%;height:50%;top: 0;"><br>Press Button to start game.</div>
+    <div id="cover">
+        <div>
+            <form id="cover-form1">
+                <label for="rtor">roll torque (N, between 1 and 1800):</label></br>
+                <input type="number" id="rtor" name="cover-select" value="200" min="1" max="1800"></br>
+                <label for="ygan">yaw gain (between 0 and 1):</label></br>
+                <input type="number" id="ygan" name="cover-select" value="1" min="0" max="1"></br>
+                <label for="rgan">roll gain (between 0 and 1):</label></br>
+                <input type="number" id="rgan" name="cover-select" value="1" min="0" max="1"></br>
+                <label for="stif">action gain (between 0.001 and 1):</label></br>
+                <input type="number" id="stif" name="cover-select" value="0.01" min="0.001" max="1"></br>
+                <label for="pWid">path width (between 10 and 100):</label></br>
+                <input type="number" id="pWid" name="cover-select" value="50" min="10" max="100"></br>
+                <!--<label for="rControl">if reverse, reverse control type:</label></br>
+                <select id="rControl" name="cover-select">
+                <option value='0' selected>+-</option>
+                <option value='1'>-+</option>
+                <option value='2'>--</option>
+                </select></br>-->
+                <label for="tilt">controls mode:</label></br>
+                <select id="tilt" name="cover-select">
+                <option value='2'>cursor</option>
+                <option value='3' selected>z/x key</option>
+                </select></br>
+                <label for="PoC">pulse or continuous action:</label></br>
+                <select id="PoC" name="cover-select">
+                <option value='0'>pulse</option>
+                <option value='1' selected>continuous</option>
+                </select></br>
+                <!--<label for="beta">k value:</label></br>
+                <select id="beta" name="cover-select">
+                <option value='0.01'>0.01</option>
+                <option value='0.02'>0.02</option>
+                <option value='0.04'>0.04</option>
+                <option value='0.05'>0.05</option>
+                <option value='0.08'>0.08</option>
+                <option value='0.1' selected>0.10</option>
+                <option value='0.2'>0.20</option>
+                <option value='0.3'>0.30</option>
+                <option value='0.5'>0.50</option>
+                <option value='1'>1.00</option>
+                </select></br>-->
+            </form>
+        </div>
+        <center>
+            <button type="button" id="next0" class="btn btn-primary btn-lg" onClick="startGame();">
+             Next
+            </button>
+        </center>
+    </div>
+    <div id="instrDiv" class="center_div" style="display:none">
+        <div id="startInstr" style="position: absolute;width:100%;height:50%;top: 0;"><br>Alpha = 0.01</div>
         <button id="CoverBt" class="button button" onclick="startGame()">Start</button>
     </div>
     <div id="container-exp" class="exp" style="display:none"></div>
     <div id="endDiv" class="center_div" style="display:none">
-        <div id="endInstr" style="position: absolute;width:100%;height:50%;top: 0;"></div>
-        <button id="startBt" class="button button">Continue</button>
-        <div id="plot" style="position: absolute;width:100%;height:50%;bottom: 0;"></div>
+        <!-- <div id="endInstr" style="position: absolute;width:100%;height:50%;top: 0;"></div>
+        button id="startBt" class="button button">Continue</button> -->
+        <div id="plot" style="position: absolute;width:100%;height:100%;top: 0;"></div>
     </div>
     <div id="container-failed" style="display:none">
         <div class="media-left pull-left" href="#">

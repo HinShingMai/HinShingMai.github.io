@@ -2,7 +2,7 @@ let ver = 0.3;
 let cnv;
 let dpi = -1;
 let currentTrainBlock = 0;
-let trainBlocks = [0, 6, -1, 4];
+let trainBlocks = [4,5];
 /*
 -n: n-minutes break
 0: no path normal familiarization block
@@ -125,7 +125,7 @@ function sessionNext() {
     clear();
     currentSession++;
     sessionComplete++;
-    sessionInfo();
+    //sessionInfo();
 }
 function startSession() {
     dotY = 0;
@@ -145,7 +145,7 @@ function startSession() {
     maxPoints = 0;
     if(sessionsType[currentSession] < 2) { // empty session
         isTest = false;
-        maxPoints = 2400;
+        maxPoints = 3600;
         blanknum = 0;
         maxY = width_x*0.625; //150
         maxX = maxY;
@@ -300,34 +300,41 @@ function sessionInfo() {
     mse = mse.toFixed();
     select('#container-exp').hide()
     let button = document.getElementById("startBt");
+    timer = setTimeout(()=>{select('#endInstr-span').html("Are you still there? Please click the button now or you will be disconnected due to inactivity.");document.getElementById("endInstr-span").style.color = "red";
+                            timer = setTimeout(()=>{forceQuit(2);},60000);},60000);
     if(currentSession < sessions) { // proceed to next session
         offset = sessionsType[currentSession]%2;
         testTrain = sessionsType[currentSession]%4 > 1? 1: 0;
         let color = offset==0? "blue":"red";
         let desc;
         if(sessionsType[currentSession] == 0)
-            desc = "First, please take some time to familiarize yourself with the controls."
-        else if(testTrain==0)
-            desc = highscore[offset]<0? "Test: try to follow the black path as closely as posible":"Test: now it is time to see if you have improved!";
+            desc = `<span style="color:${color};">First, please take some time to familiarize yourself with the controls.</span><br>`
+        else if(testTrain==0) {
+            if(highscore[offset]<0) {
+                desc = offset==0? `<span style="color:${color};">Test: try to follow the black path as closely as posible</span><br>` : `Now we will introduce the <span style=\"color:red;\">Red Fish!</span><br>The Red fish may not behave in an intuitive way at first. But if you keep on trying to follow the grey path, you will see that your performance will improve.`;
+            } else
+                desc = `<span style="color:${color};">Test: now it is time to see if you have improved!</span><br>`;
+        }
         else
-            desc = "Train: time to learn how to do the task!";
+            desc = `<span style="color:${color};">Train: time to learn how to do the task!</span><br>`;
         if(mse < 0)
-            instr.html(`<br><span style="color:${color};">${desc}</span><br><br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br><br>Click the Continue button to proceed.`);
+            instr.html(`<br>${desc}</br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br><br><span id="endInstr-span">Click the Continue button to proceed.</span>`);
         else
-            instr.html(`<br><span style="color:${color};">${desc}</span><br><br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br>Average Error: ${mse}<br>Click the Continue button to proceed.`);
-        button.onclick = ()=>{plot.hide();select('#endDiv').hide();startSession();};
+            instr.html(`<br>${desc}</br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br>Average Error: ${mse}<br><span id="endInstr-span">Click the Continue button to proceed.</span>`);
+        butfunc = ()=>{plot.hide();select('#endDiv').hide();startSession();};
     } else { // end of a block
         if(currentTrainBlock+1 < totalTrainBlocks){ // proceed to next block
             if(mse < 0)
-                instr.html(`<br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br><br><br>Click the Continue button to proceed to next training block.`);
+                instr.html(`<br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br><br><br><span id="endInstr-span">Click the Continue button to proceed to next training block.</span>`);
             else
-                instr.html(`<br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br>Average Error: ${mse}<br><br>Click the Continue button to proceed to next training block.`);
-            button.onclick = ()=>{plot.hide();select('#endDiv').hide(); currentTrainBlock++; trainBlockStart();};
+                instr.html(`<br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br>Average Error: ${mse}<br><br><span id="endInstr-span">Click the Continue button to proceed to next training block.</span>`);
+            butfunc = ()=>{plot.hide();select('#endDiv').hide(); currentTrainBlock++; trainBlockStart();};
         } else { // Final block, end game
-            instr.html(`<br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br>Average Error: ${mse}<br><br>Click the Continue button to proceed.`);
-            button.onclick = ()=>{plot.hide();select('#endDiv').hide(); currentTrainBlock++; endGame();};
+            instr.html(`<br>Current Progress: ${sessionComplete} / ${sessionTotal} completed. ${int(sessionComplete/sessionTotal*100)}%<br>Average Error: ${mse}<br><br><span id="endInstr-span">Click the Continue button to proceed.</span>`);
+            butfunc = ()=>{plot.hide();select('#endDiv').hide(); currentTrainBlock++; endGame();};
         }
     }
+    button.onclick = ()=>{clearTimeout(timer);butfunc();};
 }
 function draw() {
     if(isDraw) {
@@ -339,7 +346,10 @@ function draw() {
                 angAcc = 0.0;
                 movin=false;
             } else {
+                console.log("draw end: "+isDraw)
+                isDraw = false;
                 sessionNext();
+                sessionInfo();
                 return;
             }
         } else if(!movin && -dotY>=plen*blanknum+straightLen*0.75) // enable controls after a short freeze at the beginning
@@ -353,9 +363,14 @@ function draw() {
         ang.push(dotA);
         act.push(angAcc);
         nse.push(noise);
-        var pathError = linearError();
-        if(pathError > pathWidth)
-            inactivity++;
+        if(lines==null)
+            if(movin)
+                inactivity++;
+        else {
+            var pathError = linearError();
+            if(pathError > pathWidth)
+                inactivity++;
+        }
         if(frameNum%5 == 0) {
             if(traceBuffer != null)
                 trace.push(traceBuffer);
@@ -365,7 +380,7 @@ function draw() {
         }
             
         if(inactivity > 100) {
-            //pause();
+            pause();
         }
         // motion model
         if(offset == 0)
@@ -519,8 +534,9 @@ function drawCurve(coords, start, end) {
         strokeWeight(1);
         textAlign(CENTER);
         var remain = Math.floor((plen*(blank.length)+dotY)/60);
-        text("Move the cursor left or right to swing the tail.\nThe larger the tail angle, the faster the fish will turn.\nThe fish will stop turning when the tail is straight.\n"+
-            "\nDo not worry if you are struggling, there will be more training sessions in the future.\nRemaining time: "+String(remain).padStart(2,'0'), 0, -(maxY*2/3-dotY)*scaling);
+        text("Move the cursor left or right to swing the tail.\nThe the more curled up the tail, the faster the fish will turn.\nThe fish will stop turning when the tail is straight.\n"+
+                "\nRemaining time: "+String(remain).padStart(2,'0'), 0, -(maxY*2/3-dotY)*scaling);
+        
     }
 }
 function drawBike() {
@@ -571,8 +587,11 @@ function pause() { // pause due to inactivity
     select('#container-exp').hide()
     document.getElementById("container-exp").onmousemove = null;
     let button = document.getElementById("startBt");
-    instr.html(`<br>Are you still there?<br><br>The experiment has been paused because we cannot detect any cursor movement for a few seconds.<br><br>Click the Continue button when you are ready to resume.`);
-    button.onclick = ()=>{select('#endDiv').hide();resume();};
+    instr.html(`<br>Are you still there?<br><br>The experiment has been paused because we cannot detect any cursor movement for a few seconds.<br><br><span id="endInstr-span">Click the Continue button to return to the experiment.</span>`);
+    timer = setTimeout(()=>{select('#endInstr-span').html("Please click the button now or you will be disconnected due to inactivity.");document.getElementById("endInstr-span").style.color = "red";
+                            timer = setTimeout(()=>{forceQuit(2);},60000);},120000);
+    butfunc = ()=>{select('#endDiv').hide();resume();};
+    button.onclick = ()=>{clearTimeout(timer);butfunc();};
 }
 function resume() {
     isDraw = true;
@@ -588,30 +607,38 @@ function startBreak(len) { // len-minutes break
     let instr = select('#endInstr');
     htmlDiv.show();
     timerCount = 60*len;
-    graceTime = 60; // participants have 420 seconds to click next button after break timer runs out
+    graceTime = 120; // participants have 120 seconds to click next button after break timer runs out
     instr.html(`<br>Let's take a ${len} minute break.<br><br>${len} : 00`);
     select('#startBt').hide();
-    timer = setInterval(countDown, 1000);
-    
+    timer = setInterval(breakCountDown, 1000);
 }
-function countDown() { // timer countdown for break
-    if(--timerCount>0) {
-        select('#endInstr').html(`<br>Let's take a ${-trainBlocks[currentTrainBlock]} minute break.<br><br>${Math.floor(timerCount/60)} : ${String(timerCount%60).padStart(2,'0')}`);
+function breakCountDown() { // timer countdown for break
+    timerCount--;
+    if(timerCount>0) {
+        select('#endInstr').html(`<br>Let's take a ${-trainBlocks[currentTrainBlock]} minute break.<br>Please come back within ${-trainBlocks[currentTrainBlock]+graceTime/60} minutes or you will be disconnected due to inactivity.
+                                    <br>${Math.floor(timerCount/60)} : ${String(timerCount%60).padStart(2,'0')}`);
     } else if(timerCount == 0) {
         let btn = document.getElementById("startBt");
         select('#endInstr').html(`<br>Now we will introduce the <span style="color:red;">Red Fish!</span><br>At each test, you will be tested on both blue and red fish.
                                     <br>The Red fish may not behave in an intuitive way at first. But if you keep on trying to follow the grey path, you will see that your performance will improve
-                                    <br><span style="color:red;">Please click the button and proceed with the experiment before the timer runs out.</span><br><span style="color:red;">${Math.floor((graceTime+timerCount)/60)} : ${String((graceTime+timerCount)%60).padStart(2,'0')}</span>`);
+                                    <br>Please click the button and proceed with the experiment.<br>`);
         btn.style.display = 'block';
-        btn.onclick = ()=>{select('#endDiv').hide(); currentTrainBlock++; trainBlockStart();clearInterval(timer);sessionComplete++;};
-    } else if(graceTime+timerCount>=0){
-        select('#endInstr').html(`<br>Now we will introduce the <span style="color:red;">Red Fish!</span><br>At each test, you will be tested on both blue and red fish.
-                                    <br>The Red fish may not behave in an intuitive way at first. But if you keep on trying to follow the grey path, you will see that your performance will improve
-                                    <br><span style="color:red;">Please click the button and proceed with the experiment before the timer runs out.</span><br><span style="color:red;">${Math.floor((graceTime+timerCount)/60)} : ${String((graceTime+timerCount)%60).padStart(2,'0')}</span>`);
-    } else { // timeout
-        clearInterval(timer);
-        forceQuit(2);
+        btn.onclick = ()=>{select('#endDiv').hide(); currentTrainBlock++; clearInterval(timer);sessionComplete++; trainBlockStart();};
+    } else {
+        if(graceTime+timerCount==60) {
+            select('#endInstr').html(`<br>Now we will introduce the <span style="color:red;">Red Fish!</span><br>At each test, you will be tested on both blue and red fish.
+                                        <br>The Red fish may not behave in an intuitive way at first. But if you keep on trying to follow the grey path, you will see that your performance will improve
+                                        <br><span style="color:red;">Are you still there? Please click the button now or you will be disconnected due to inactivity.</span>`); // show timer : <br><span style="color:red;">${Math.floor((graceTime+timerCount)/60)} : ${String((graceTime+timerCount)%60).padStart(2,'0')}</span>
+        } else if(graceTime+timerCount==-1) { // timeout
+            clearInterval(timer);
+            butfunc = ()=>{select('#endDiv').hide(); currentTrainBlock++; sessionComplete++; trainBlockStart();};
+            forceQuit(2);
+        }
     }
+}
+function startBackTimer() { // starts inactivity background timer
+    timerCount = 120;
+    timer = setTimeout(inactivityTimer, 60000);
 }
 function handleMouseMove(e) {
     if(movin) {
@@ -643,11 +670,18 @@ function computeSessionTotal() {
 function forceQuit(reason) { // force quit experiment because of : 1. low frame rate 2. taken a break too long
     select('#endDiv').hide();
     select('#failed-'+reason).show();
-    remove();
     show('container-failed', 'container-exp');
     document.getElementById("container-exp").onmousemove = null;
     document.body.style.overflow = 'auto';
-    helpEnd();
+    if(reason == 2) {
+        timerCount = 120;
+        timer = setTimeout(()=>{show('failed-2-disqualify', 'failed-2-return');remove();helpEnd();}, timerCount*1000);
+        let btn = document.getElementById("returnBt");
+        btn.onclick = ()=>{select('#failed-2').hide();show('container-exp', 'container-failed');document.body.style.overflow = 'hidden';clearTimeout(timer);butfunc();};
+    } else {
+        remove();
+        helpEnd();
+    }
 }
 function startGame() {
     cnv = createCanvas(windowWidth, windowHeight);
@@ -673,15 +707,18 @@ function endGame() {
     document.body.style.overflow = 'auto';
 }
 function windowResized() {
+    console.log("resized1 "+isDraw);
     resizeCanvas(windowWidth, windowHeight);
     // set scaling depending on screen size
     let sx = windowWidth/width_x*0.8;
     let sy = windowHeight/width_x/0.75*0.8;
     scaling_base = sx < sy? sx:sy;
+    scaling = scaling_base;
+    console.log("resized2 "+isDraw);
 }
-function show(shown, hidden) {
+function show(shown, hide) {
     document.getElementById(shown).style.display = 'block';
-    document.getElementById(hidden).style.display = 'none';
+    document.getElementById(hide).style.display = 'none';
     document.body.scrollTop = 0; // For Safari
     document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
     return false;
