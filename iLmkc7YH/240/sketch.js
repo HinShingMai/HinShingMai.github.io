@@ -1122,6 +1122,11 @@ function startGame() {
     tilt_mode = Number(values[5].value);
     action_mode = Number(values[6].value);
     b_val = b_candidates[0];
+    let nor = Number(values[7].value);
+    if(nor == 0)
+        trainBlocks = [4];
+    else
+        trainBlocks = [5];
     
     cnv = createCanvas(windowWidth, windowHeight);
     cnv.parent("container-exp");
