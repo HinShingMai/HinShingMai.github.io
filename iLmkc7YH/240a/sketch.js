@@ -511,7 +511,11 @@ function draw() {
             if(pathError > pathWidth) {
                 freeze_margin += 1;
                 if(lines!=null&&freeze_margin>60) {
-                    stateX = (stateX+lines[-stateY])/2.0;
+                    //stateX = (stateX+lines[-stateY])/2.0;
+                    if(stateX > lines[-stateY])
+                        stateX = lines[-stateY]+pathWidth;
+                    else
+                        stateX = lines[-stateY]-pathWidth;
                     freeze = freeze_time;
                     freeze_margin = 0;
                     freeze_mode = 1;
