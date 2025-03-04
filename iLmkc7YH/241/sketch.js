@@ -477,7 +477,6 @@ function draw() {
         strokeWeight(4);
         noFill();
         let high = int(maxY*blank[blanknum]-dotY);
-        console.log(dotU)
         translate(windowWidth/2, windowHeight*2/3 - dotY*scaling);
         rect(-maxX*scaling, -(maxY-dotY)*scaling, maxX*scaling*2, maxY*scaling*1.5);
         drawCurve(lines, -dotY-1, min(high,(blanknum+1)*plen));
@@ -641,7 +640,7 @@ function drawBike() {
             let d = 0;
             stroke('grey');
             fill('grey');
-            nostroke();
+            noStroke();
             ellipse(dotX*scaling, dotY*scaling, 20,20);
             strokeWeight(3);
             /*triangle(x+15*sin(heading+A), y-15*cos(heading+A), x+6*cos(heading+A), y+6*sin(heading+A), x-6*cos(heading+A), y-6*sin(heading+A));
@@ -651,7 +650,7 @@ function drawBike() {
     } else {
         stroke(color);
         fill(color);
-        nostroke();
+        noStroke();
         ellipse(dotX*scaling, dotY*scaling, 20,20);
         /*strokeWeight(3);
         let heading = dotA;
