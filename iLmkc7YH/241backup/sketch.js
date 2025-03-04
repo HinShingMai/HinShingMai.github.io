@@ -183,8 +183,8 @@ function startSession() {
         if(isTest) {
             maxPoints = 600;
             blanknum = 0;
-            maxY = width_x; //240
-            maxX = maxY/2;
+            maxY = width_x*0.625; //150
+            maxX = maxY;
             scaling = scaling_base;
             if(highscore[offset]<0) // don't shuffle for the first test
                 blank = [1/30,1/15,0.1,2/15,0.2,1/3,0.5,112/150,1]; // 9 sub-sessions
@@ -193,8 +193,8 @@ function startSession() {
         } else {
             maxPoints = 2400;
             blanknum = 0;
-            maxY = width_x; //240
-            maxX = maxY/2;
+            maxY = width_x*0.625; //150
+            maxX = maxY;
             scaling = scaling_base;
             blank = [1,1,1,1]; // 4 sub-sessions
         }
@@ -514,7 +514,7 @@ function draw() {
         fill('black');
         textSize(12);
         strokeWeight(1);
-        text("FPS: "+frBuffer, maxX*scaling-50, -(maxY-dotY)*scaling+10);
+        text("FPS: "+frBuffer, maxY*scaling-50, -(maxY-dotY)*scaling+10);
         if(freeze<1) { 
             fps += fr;
             frameNum++;
@@ -826,20 +826,13 @@ function forceQuit(reason) { // force quit experiment because of : 1. low frame 
     }
 }
 function startGame() {
-    var values = document.getElementsByName('cover-select');
-    let nor = Number(values[0].value);
-    if(nor == 0)
-        trainBlocks = [4];
-    else
-        trainBlocks = [5];
-    
     cnv = createCanvas(windowWidth, windowHeight);
     console.log(cnv.size());
     cnv.parent("container-exp");
     document.body.style.overflow = 'hidden';
     h = min(windowHeight*1/6, 100);
-    let sx = windowWidth/width_x;
-    let sy = windowHeight/width_x/1.5;
+    let sx = windowWidth/width_x*0.8;
+    let sy = windowHeight/width_x/0.75*0.8;
     scaling_base = sx < sy? sx:sy;
     select('#instrDiv').hide();
     totalTrainBlocks = trainBlocks.length;
@@ -863,8 +856,8 @@ function windowResized() {
     console.log("resized1 "+isDraw);
     resizeCanvas(windowWidth, windowHeight, true);
     // set scaling depending on screen size
-    let sx = windowWidth/width_x;
-    let sy = windowHeight/width_x/1.5;
+    let sx = windowWidth/width_x*0.8;
+    let sy = windowHeight/width_x/0.75*0.8;
     scaling_base = sx < sy? sx:sy;
     scaling = scaling_base;
     console.log("resized2 "+isDraw);
