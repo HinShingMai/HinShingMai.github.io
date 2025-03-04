@@ -440,7 +440,8 @@ function draw() {
             }
             // motion model
             //dotX  = dotX + Math.tan(dotA);
-            dotX = dotX + fixBetween(dotU[0],-30,30)*maxV[0]/30;
+            var b = offset==0? 1: -1;
+            dotX = dotX + b*fixBetween(dotU[0],-30,30)*maxV[0]/30;
             if(dotX < -maxX*0.9) { // hits edge
                 freeze_margin += 1;
                 if(lines!=null&&freeze_margin>60) {
@@ -485,7 +486,7 @@ function draw() {
             }*/
             
             //dotY -= 1;
-            dotY = dotY - fixBetween(dotU[1],-30,30)*maxV[1]/30;
+            dotY = dotY + b*fixBetween(dotU[1],-30,30)*maxV[1]/30;
             if(movin)
                 error += pathError;
         } else {
@@ -493,7 +494,7 @@ function draw() {
             if(freeze == 0)
                 resetAndUnfreeze();
         }
-        dotU = [0,30]; // 0,0
+        dotU = [0,0]; // 0,0
         // draw
         clear();
         background('white');
