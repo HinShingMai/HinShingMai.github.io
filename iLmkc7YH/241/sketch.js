@@ -817,13 +817,13 @@ function forceQuit(reason) { // force quit experiment because of : 1. low frame 
     if(reason == 2) {
         timerCount = 120;
         //show('failed-2-return', 'failed-2-disqualify');
-        timer = setTimeout(()=>{show('failed-2-disqualify', 'failed-2-return');remove();window.fullscreen(false);screen.orientation.unlock();helpEnd();}, timerCount*1000);
+        timer = setTimeout(()=>{show('failed-2-disqualify', 'failed-2-return');remove();window.fullscreen(false);helpEnd();}, timerCount*1000);
         let btn = document.getElementById("returnBt");
         btn.onclick = ()=>{select('#failed-2').hide();show('container-exp', 'container-failed');document.body.style.overflow = 'hidden';clearTimeout(timer);butfunc();};
     } else {
         remove();
         window.fullscreen(false);
-        screen.orientation.unlock();
+        //screen.orientation.unlock();
         helpEnd();
     }
 }
@@ -836,7 +836,7 @@ function startGame() {
         trainBlocks = [5];
     
     cnv = createCanvas(windowWidth, windowHeight);
-    console.log(cnv.size());
+    //console.log(cnv.size());
     cnv.parent("container-exp");
     document.body.style.overflow = 'hidden';
     h = min(windowHeight*1/6, 100);
@@ -850,7 +850,7 @@ function startGame() {
     highscore = [-1,-1];
     sessionTotal = computeSessionTotal();
     window.fullscreen(true);
-    screen.orientation.lock("portrait");
+    //screen.orientation.lock("portrait");
     trainBlockStart();
 }
 // Function that ends the game appropriately after the experiment has been completed
@@ -858,7 +858,7 @@ function endGame() {
     select('#container-exp').hide();
     remove();
     window.fullscreen(false);
-    screen.orientation.unlock()
+    //screen.orientation.unlock()
     //document.getElementById("container-exp").onmousemove = null;
     //document.body.style.overflow = 'auto';
     window.removeEventListener("deviceorientationabsolute", handleDeviceOrientation);
