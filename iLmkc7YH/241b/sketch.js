@@ -1,5 +1,7 @@
 let ver = 0.40;
 let cnv;
+var cnv_hei;
+var cnv_wid;
 let dpi = -1;
 let currentTrainBlock = 0;
 //let trainBlocks = [6, 4, 4, 4, 4, -3, 4, 4, 7, 5, 5, -3, 5, 5, 5, 5];
@@ -502,7 +504,7 @@ function draw() {
         strokeWeight(4);
         noFill();
         let high = int(maxY*blank[blanknum]-dotY);
-        translate(windowWidth/2, windowHeight*2/3 - dotY*scaling);
+        translate(cnv_wid/2, cnv_hei*2/3 - dotY*scaling);
         rect(-maxX*scaling, -(maxY-dotY)*scaling, maxX*scaling*2, maxY*scaling*1.5);
         drawCurve(lines[blanknum], -dotY-1, min(high,plen));
         drawBike();
@@ -835,13 +837,16 @@ function startGame() {
     else
         trainBlocks = [5];
     
-    cnv = createCanvas(windowWidth, windowHeight);
+    
+    cnv_hei = window.innerHeight;
+    cnv_wid = window.innerWidth;
+    cnv = createCanvas(cnv_wid, cnv_hei);
     //console.log(cnv.size());
     cnv.parent("container-exp");
     document.body.style.overflow = 'hidden';
-    h = min(windowHeight*1/6, 100);
-    let sx = windowWidth/width_x;
-    let sy = windowHeight/width_x/1.5;
+    h = min(cnv_hei*1/6, 100);
+    let sx = cnv_wid/width_x;
+    let sy = cnv_hei/width_x/1.5;
     scaling_base = sx < sy? sx:sy;
     select('#instrDiv').hide();
     totalTrainBlocks = trainBlocks.length;
@@ -864,14 +869,16 @@ function endGame() {
     window.removeEventListener("deviceorientationabsolute", handleDeviceOrientation);
 }
 function windowResized() {
-    console.log("resized1 "+isDraw);
-    resizeCanvas(windowWidth, windowHeight, true);
+    //console.log("resized1 "+isDraw);
+    cnv_hei = window.innerHeight;
+    cnv_wid = window.innerWidth;
+    resizeCanvas(cnv_wid, cnv_hei, true);
     // set scaling depending on screen size
-    let sx = windowWidth/width_x;
-    let sy = windowHeight/width_x/1.5;
+    let sx = cnv_wid/width_x;
+    let sy = cnv_hei/width_x/1.5;
     scaling_base = sx < sy? sx:sy;
     scaling = scaling_base;
-    console.log("resized2 "+isDraw);
+    //console.log("resized2 "+isDraw);
 }
 function show(shown, hide) {
     document.getElementById(shown).style.display = 'block';
