@@ -849,7 +849,7 @@ function startGame() {
     maxA = PI/3;
     highscore = [-1,-1];
     sessionTotal = computeSessionTotal();
-    window.fullscreen(true);
+    //window.fullscreen(true);
     //screen.orientation.lock("portrait");
     trainBlockStart();
 }
