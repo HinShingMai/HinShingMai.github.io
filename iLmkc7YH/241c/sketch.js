@@ -836,8 +836,8 @@ function startGame() {
         DeviceOrientationEvent.requestPermission()
         .then(permissionState => {
             if (permissionState === 'granted') {
-                //window.addEventListener('deviceorientation', () => {});
-                window.addEventListener("deviceorientationabsolute", handleDeviceOrientation, false);
+                window.addEventListener('deviceorientation', handleDeviceOrientation);
+                //window.addEventListener("deviceorientationabsolute", handleDeviceOrientation, false);
             } else {
                 return;
             }
