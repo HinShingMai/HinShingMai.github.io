@@ -830,14 +830,16 @@ function forceQuit(reason) { // force quit experiment because of : 1. low frame 
     }
 }
 function startGame() {
-    DeviceOrientationEvent.requestPermission()
-        .then(response => {
-            if (response == 'granted') {
-                /*window.addEventListener('deviceorientation', (e) => {
-                    // do something with e
-                })*/
+    if(typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission()
+        .then(permissionState => {
+            if (permissionState === 'granted') {
+                //window.addEventListener('deviceorientation', () => {});
+            } else {
+                return;
             }
-        }).catch(console.error)
+        }).catch(console.error);
+    }
     var values = document.getElementsByName('cover-select');
     let nor = Number(values[0].value);
     if(nor == 0)
