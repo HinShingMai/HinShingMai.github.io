@@ -134,7 +134,8 @@ function sessionNext() {
     //isdraw = false;
     //document.getElementById("container-exp").onmousemove = null;
     //document.exitPointerLock();
-    window.removeEventListener("deviceorientationabsolute", handleDeviceOrientation);
+    
+    //window.removeEventListener("deviceorientationabsolute", handleDeviceOrientation);
     noLoop();
     clear();
     currentSession++;
@@ -151,7 +152,8 @@ function startSession() {
     select('#container-exp').show()
     //document.getElementById("container-exp").onmousemove = handleMouseMove;
     //document.getElementById("container-exp").requestPointerLock();
-    window.addEventListener("deviceorientationabsolute", handleDeviceOrientation, false);
+    
+    //window.addEventListener("deviceorientationabsolute", handleDeviceOrientation, false);
     dis = []; 
     ang = [];
     act = [];
@@ -725,7 +727,7 @@ function pause() { // pause due to inactivity
     htmlDiv.show();
     select('#container-exp').hide()
     //document.getElementById("container-exp").onmousemove = null;
-    window.removeEventListener("deviceorientationabsolute", handleDeviceOrientation);
+    //window.removeEventListener("deviceorientationabsolute", handleDeviceOrientation);
     let button = document.getElementById("startBt");
     instr.html(`<br>Are you still there?<br><br>The experiment has been paused because we cannot detect any cursor movement for a few seconds.<br><br><span id="endInstr-span">Click the Continue button to return to the experiment.</span>`);
     timer = setTimeout(()=>{select('#endInstr-span').html("Please click the button now or the experiment will terminate.");document.getElementById("endInstr-span").style.color = "red";
@@ -739,7 +741,7 @@ function resume() {
     select('#container-exp').show()
     //document.getElementById("container-exp").onmousemove = handleMouseMove;
     //document.getElementById("container-exp").requestPointerLock();
-    window.addEventListener("deviceorientationabsolute", handleDeviceOrientation, false);
+    //window.addEventListener("deviceorientationabsolute", handleDeviceOrientation, false);
     clear();
     loop();
 }
@@ -814,7 +816,7 @@ function forceQuit(reason) { // force quit experiment because of : 1. low frame 
     select('#failed-'+reason).show();
     show('container-failed', 'container-exp');
     //document.getElementById("container-exp").onmousemove = null;
-    window.removeEventListener("deviceorientationabsolute", handleDeviceOrientation);
+    //window.removeEventListener("deviceorientationabsolute", handleDeviceOrientation);
     document.body.style.overflow = 'auto';
     if(reason == 2) {
         timerCount = 120;
@@ -835,10 +837,13 @@ function startGame() {
         .then(permissionState => {
             if (permissionState === 'granted') {
                 //window.addEventListener('deviceorientation', () => {});
+                window.addEventListener("deviceorientationabsolute", handleDeviceOrientation, false);
             } else {
                 return;
             }
         }).catch(console.error);
+    } else {
+        window.addEventListener("deviceorientationabsolute", handleDeviceOrientation, false);
     }
     var values = document.getElementsByName('cover-select');
     let nor = Number(values[0].value);
@@ -876,7 +881,7 @@ function endGame() {
     //screen.orientation.unlock()
     //document.getElementById("container-exp").onmousemove = null;
     //document.body.style.overflow = 'auto';
-    window.removeEventListener("deviceorientationabsolute", handleDeviceOrientation);
+    //window.removeEventListener("deviceorientationabsolute", handleDeviceOrientation);
 }
 function windowResized() {
     //console.log("resized1 "+isDraw);
