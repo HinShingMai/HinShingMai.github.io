@@ -790,8 +790,8 @@ function handleMouseMove(e) {
 }
 function handleDeviceOrientation(e) {
     if(movin) {
-        dotU[1] = event.beta;
-        dotU[0] = event.gamma;
+        dotU[1] = e.beta;
+        dotU[0] = e.gamma;
     }
 }
 function moveNoise(mode) {
