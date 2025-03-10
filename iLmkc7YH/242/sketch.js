@@ -392,6 +392,7 @@ function draw() {
                 angAcc = 0.0;
                 //movin=false;
                 freeze = tailLen;
+                trace = [];
                 frameNum = 0;
             } else {
                 //console.log("draw end: "+isDraw)
