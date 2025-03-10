@@ -492,7 +492,7 @@ function draw() {
             }*/
             
             //dotY -= 1;
-            dotY = dotY + b*fixBetween(dotU[1],-30,30)*maxV[1]/30;
+            dotY = dotY - b*fixBetween(dotU[1],-30,30)*maxV[1]/30;
             dotY = fixBetween(dotY, -maxY, maxY);
             if(movin)
                 error += pathError;
@@ -695,7 +695,7 @@ function drawTrace() { // draw trace behind triangle
         baseColor.setAlpha(transparency);
         stroke(baseColor);
         fill(baseColor);
-        ellipse(trace[i].x*scaling, trace[i].y*scaling, 2, 2);
+        ellipse(trace[i].x*scaling, -trace[i].y*scaling, 2, 2);
         transparency += increment;
     }
 }
