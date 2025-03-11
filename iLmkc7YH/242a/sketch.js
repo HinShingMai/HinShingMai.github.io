@@ -49,6 +49,7 @@ var maxPoints;
 var time;
 var fps;
 var error;
+var errors;
 var susE;
 var goodjob;
 var noiseM;
@@ -140,7 +141,7 @@ function sessionNext() {
     
     //window.removeEventListener("deviceorientationabsolute", handleDeviceOrientation);
     noLoop();
-    endNoSleep();
+    //endNoSleep();
     clear();
     currentSession++;
     sessionComplete++;
@@ -226,6 +227,7 @@ function startSession() {
     clear();
     frameNum = 0;
     error = 0.0;
+    errors = [];
     susE = 0;
     goodjob = 0;
     noiseM = 0.0;
@@ -242,7 +244,7 @@ function startSession() {
     freeze = tailLen;
     freeze_margin = 0;
     loop();
-    noSleep();
+    //noSleep();
 }
 function sessionInfo() {
     let htmlDiv = select('#endDiv');
@@ -251,7 +253,7 @@ function sessionInfo() {
     var mse;
     htmlDiv.show();
     if(lines!=null && currentSession > 0) { // handles data
-        mse = error/dis.length;
+        mse = average(errors);
         blockErr.push(mse);
         let isTrain = sessionsType[currentSession-1]%4 > 1;
         blockNam.push((isTrain?"Train":"Test")+sessionComplete);
@@ -295,7 +297,7 @@ function sessionInfo() {
                 {x: blockErrn_x, y: blockErrn, type: 'scatter', mode: 'markers', marker: {color: 'blue', size: 10}, name: 'Normal'},
                 {x: blockErrr_x, y: blockErrr, type: 'scatter', mode: 'markers', marker: {color: 'red', size: 10}, name: 'Reverse'},
                 //{x: Array.from(Array(act.length).keys()), y: act, xaxis: 'x2', yaxis: 'y2', type: 'scatter', mode: 'lines', line: {color: 'black', width: 3}, name: 'Actions'},
-                {x: idx, y: lines[0], xaxis: 'x2', yaxis: 'y2', type: 'scatter', mode: 'lines', line: {color: 'black', width: 3}, name: 'Path'},
+                {x: lines[0].map(x => x[0]), y: lines[0].map(x => x[1]), xaxis: 'x2', yaxis: 'y2', type: 'scatter', mode: 'lines', line: {color: 'black', width: 3}, name: 'Path'},
                 {x: vDist[0], y: dis[0], xaxis: 'x2', yaxis: 'y2', type: 'scatter', mode: 'lines', line: {color: 'blue', width: 3}, name: 'You'},
             ];
             // layout
@@ -384,6 +386,7 @@ function draw() {
             ang.push(ang_temp);
             act.push(act_temp);
             nse.push(nse_temp);
+            errors.push(error/frameNum);
             dis_temp = []; 
             ang_temp = [];
             act_temp = [];
@@ -400,6 +403,7 @@ function draw() {
                 tailLen = maxTailLen*blank[blanknum];
                 freeze = tailLen;
                 frameNum = 0;
+                error = 0.0;
             } else {
                 //console.log("draw end: "+isDraw)
                 isDraw = false;
@@ -432,7 +436,7 @@ function draw() {
                     }
                 }
             } else {
-                var pathError = sqError;//linearError();
+                var pathError = sqError();//linearError();
                 /*if(angAcc==act[act.length-2]) {
                     if(pathError>pathWidth)
                         inactivity += 1;
@@ -554,10 +558,12 @@ function linearError() { // horizontal distance to trajectory
         return 0;
     return Math.abs(dotX-lines[blanknum][-Math.floor(dotY)]);
 }
+const average = array => array.reduce((a, b) => a + b) / array.length; // compute array mean
 function sqError() {
     if(lines==null || frameNum<0 || frameNum>maxPoints)
         return 0;
-    return (dotX - lines[blanknum][0])**2 + (dotY - lines[blanknum][1])**2;
+    var target = lines[blanknum][frameNum-tailLen];
+    return (dotX - target[0])**2 + (dotY - target[1])**2;
 }
 function sinuousCurve(len, isTest) { // generate trajectory
     let start = 0;
@@ -708,7 +714,7 @@ function drawTrace() { // draw trace behind triangle
 function pause() { // pause due to inactivity
     //document.exitPointerLock();
     noLoop();
-    endNoSleep();
+    //endNoSleep();
     clear();
     //isdraw = false;
     let htmlDiv = select('#endDiv');
@@ -733,7 +739,7 @@ function resume() {
     //window.addEventListener("deviceorientationabsolute", handleDeviceOrientation, false);
     clear();
     loop();
-    noSleep();
+    //noSleep();
 }
 function noSleep() {
     if(!noSleepState) {
@@ -864,9 +870,9 @@ function startGame() {
     var values = document.getElementsByName('cover-select');
     let nor = Number(values[0].value);
     if(nor == 0)
-        trainBlocks = [6];
+        trainBlocks = [4];
     else
-        trainBlocks = [7];
+        trainBlocks = [5];
     
     
     cnv_hei = window.innerHeight;
