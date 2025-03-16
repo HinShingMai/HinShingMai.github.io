@@ -95,6 +95,9 @@ var maxV = [1.8,1.8];
 var maxTailLen = 120;
 var tailLen;
 var noSleepState = false;
+var blankvideo;
+const mp4Src = "data:video/mp4;base64,AAAAHGZ0eXBpc29tAAACAGlzb21pc28ybXA0MQAAAyBtb292AAAAbG12aGQAAAAAAAAAAAAAAAAAAAPoAAAAGwABAAABAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAACSnRyYWsAAABcdGtoZAAAAAMAAAAAAAAAAAAAAAEAAAAAAAAAGwAAAAAAAAAAAAAAAQEAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAACRlZHRzAAAAHGVsc3QAAAAAAAAAAQAAABoAAAgAAAEAAAAAAcJtZGlhAAAAIG1kaGQAAAAAAAAAAAAAAAAAAKxEAAAEgFXEAAAAAAAxaGRscgAAAAAAAAAAc291bgAAAAAAAAAAAAAAAENvcmUgTWVkaWEgQXVkaW8AAAABaW1pbmYAAAAQc21oZAAAAAAAAAAAAAAAJGRpbmYAAAAcZHJlZgAAAAAAAAABAAAADHVybCAAAAABAAABLXN0YmwAAAB7c3RzZAAAAAAAAAABAAAAa21wNGEAAAAAAAAAAQAAAAAAAAAAAAIAEAAAAACsRAAAAAAAM2VzZHMAAAAAA4CAgCIAAQAEgICAFEAVAAAAAAJ/9wACf/cFgICAAhIQBoCAgAECAAAAFGJ0cnQAAAAAAAJ/9wACf/cAAAAgc3R0cwAAAAAAAAACAAAAAwAABAAAAAABAAAAgAAAABxzdHNjAAAAAAAAAAEAAAABAAAABAAAAAEAAAAkc3RzegAAAAAAAAAAAAAABAAAAXMAAAF0AAABcwAAAXQAAAAUc3RjbwAAAAAAAAABAAADTAAAABpzZ3BkAQAAAHJvbGwAAAACAAAAAf//AAAAHHNiZ3AAAAAAcm9sbAAAAAEAAAAEAAAAAQAAAGJ1ZHRhAAAAWm1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAALWlsc3QAAAAlqXRvbwAAAB1kYXRhAAAAAQAAAABMYXZmNTguNzYuMTAwAAAACGZyZWUAAAXWbWRhdCERRQAUUAFG//EKWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaXemCFLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS8IRFFABRQAUb/8QpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpd6aIUtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS8IRFFABRQAUb/8QpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpd6YIUtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLwhEUUAFFABRv/xClpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWl3pohS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLw="
+const webmSrc = "data:video/webm;base64,GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQRChYECGFOAZwEAAAAAAANXEU2bdLpNu4tTq4QVSalmU6yBoU27i1OrhBZUrmtTrIHYTbuMU6uEElTDZ1OsggE/TbuMU6uEHFO7a1OsggNB7AEAAAAAAABZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVSalmsirXsYMPQkBNgI1MYXZmNTguNzYuMTAwV0GNTGF2ZjU4Ljc2LjEwMESJiEBBAAAAAAAAFlSua+KuAQAAAAAAAFnXgQFzxYjHh4Jmxpm3C5yBACK1nIN1bmSGhkFfT1BVU1aqg2MuoFa7hATEtACDgQLhkZ+BArWIQOdwAAAAAABiZIEYY6KTT3B1c0hlYWQBAjgBgLsAAAAAABJUw2dB03NzAQAAAAAAAQ5jwIBnyAEAAAAAAAAVRaOLTUFKT1JfQlJBTkREh4RxdCAgZ8gBAAAAAAAAFEWjjU1JTk9SX1ZFUlNJT05Eh4EwZ8gBAAAAAAAAG0WjkUNPTVBBVElCTEVfQlJBTkRTRIeEcXQgIGfIAQAAAAAAABlFo4hUSU1FQ09ERUSHizAwOjAwOjAwOjAwZ8gBAAAAAAAAKkWjn0NPTS5BUFBMRS5RVUlDS1RJTUUuRElTUExBWU5BTUVEh4VlbXB0eWfIAQAAAAAAACRFo5lDT00uQVBQTEUuUVVJQ0tUSU1FLlRJVExFRIeFZW1wdHlnyAEAAAAAAAAaRaOHRU5DT0RFUkSHjUxhdmY1OC43Ni4xMDBzcwEAAAAAAACxY8CLY8WIx4eCZsaZtwtnyAEAAAAAAAAiRaOMSEFORExFUl9OQU1FRIeQQ29yZSBNZWRpYSBBdWRpb2fIAQAAAAAAABtFo4lWRU5ET1JfSUREh4xbMF1bMF1bMF1bMF1nyAEAAAAAAAAjRaOHRU5DT0RFUkSHlkxhdmM1OC4xMzQuMTAwIGxpYm9wdXNnyKJFo4hEVVJBVElPTkSHlDAwOjAwOjAwLjAzNDAwMDAwMAAAH0O2daTngQCjh4EAAID8//6gAQAAAAAAAA+hh4EAFQD8//51ooNwiJgcU7trkbuPs4EAt4r3gQHxggMY8IED"
 function setup() {
     isDraw = false;
     frameRate(60);
@@ -200,12 +203,12 @@ function startSession() {
             else
                 blank = shuffle([1/12, 1/6, 1/3, 2/3, 1]);
         } else {
-            maxPoints = 2400;
+            maxPoints = 2400*4;
             blanknum = 0;
             maxY = width_x*0.75; //180
             maxX = width_x/2; // 120
             scaling = scaling_base;
-            blank = [1,1,1,1]; // 4 sub-sessions
+            blank = [1]; // 1 sub-sessions
         }
         if(sessionsType[currentSession]>3) {
             lines = sinuousCurve(maxPoints, isTest);
@@ -520,7 +523,10 @@ function draw() {
         strokeWeight(4);
         noFill();
         //let high = int(maxY*blank[blanknum]-dotY);
-        translate(cnv_wid/2, cnv_hei/2);
+        //translate(cnv_wid/2, cnv_hei/2);
+        translate(window.innerWidth/2, window.innerHeight/2);
+        rotate(-screen.orientation.angle/180*PI);
+        //console.log(screen.orientation.angle);
         rect(-maxX*scaling, -maxY*scaling, maxX*scaling*2, maxY*scaling*2);
         drawCurve(lines[blanknum], frameNum);
         drawBike();
@@ -743,23 +749,23 @@ function resume() {
 }
 function noSleep() {
     if(!noSleepState) {
-        var audio = document.getElementById('silenceAudio');
-        if (typeof audio.loop == 'boolean') { // loop supported
-            audio.loop = true;
+        //var blankvideo = document.getElementById('silenceAudio');
+        if (typeof blankvideo.loop == 'boolean') { // loop supported
+            blankvideo.loop = true;
         } else { // loop property not supported
-            audio.addEventListener('ended', AudioSelfLoop, false);
+            blankvideo.addEventListener('ended', AudioSelfLoop, false);
         }
         //...
-        audio.play();
+        blankvideo.play();
     }
 }
 function endNoSleep() {
     if(noSleepState) {
-        var audio = document.getElementById('silenceAudio');
-        if (typeof audio.loop == 'boolean') { // loop supported
-            audio.loop = false;
+        //var blankvideo = document.getElementById('silenceAudio');
+        if (typeof blankvideo.loop == 'boolean') { // loop supported
+            blankvideo.loop = false;
         } else { // loop property not supported
-            audio.addEventListener('ended', AudioSelfLoop);
+            blankvideo.addEventListener('ended', AudioSelfLoop);
         }
     }
 }
@@ -870,18 +876,22 @@ function startGame() {
     var values = document.getElementsByName('cover-select');
     let nor = Number(values[0].value);
     if(nor == 0)
-        trainBlocks = [4];
+        trainBlocks = [6]; // 4
     else
         trainBlocks = [5];
     
     
-    cnv_hei = window.innerHeight;
-    cnv_wid = window.innerWidth;
-    cnv = createCanvas(cnv_wid, cnv_hei);
+    cnv = createCanvas(window.innerWidth, window.innerHeight);
     //console.log(cnv.size());
     cnv.parent("container-exp");
     document.body.style.overflow = 'hidden';
-    h = min(cnv_hei*1/6, 100);
+    if(screen.orientation.angle%180 == 0) {
+        cnv_hei = window.innerHeight;
+        cnv_wid = window.innerWidth;
+    } else {
+        cnv_hei = window.innerWidth;
+        cnv_wid = window.innerHeight;
+    }
     let sx = cnv_wid/width_x;
     let sy = cnv_hei/width_x/1.5;
     scaling_base = sx < sy? sx:sy;
@@ -893,6 +903,22 @@ function startGame() {
     sessionTotal = computeSessionTotal();
     //window.fullscreen(true);
     //screen.orientation.lock("portrait");
+    
+    // Initialize video element
+    blankvideo = document.createElement("video")
+    blankvideo.setAttribute("playsinline", "")
+
+    // Add mp4 source
+    let source = document.createElement("source")
+    source.src = mp4Src
+    source.type = "video/mp4"
+    blankvideo.append(source)
+
+    // Add webm source
+    source = document.createElement("source")
+    source.src = webmSrc
+    source.type = "video/webm"
+    blankvideo.append(source)
     trainBlockStart();
 }
 // Function that ends the game appropriately after the experiment has been completed
@@ -907,9 +933,14 @@ function endGame() {
 }
 function windowResized() {
     //console.log("resized1 "+isDraw);
-    cnv_hei = window.innerHeight;
-    cnv_wid = window.innerWidth;
-    resizeCanvas(cnv_wid, cnv_hei, true);
+    resizeCanvas(window.innerWidth, window.innerHeight, true);
+    if(screen.orientation.angle%180 == 0) {
+        cnv_hei = window.innerHeight;
+        cnv_wid = window.innerWidth;
+    } else {
+        cnv_hei = window.innerWidth;
+        cnv_wid = window.innerHeight;
+    }
     // set scaling depending on screen size
     let sx = cnv_wid/width_x;
     let sy = cnv_hei/width_x/1.5;
