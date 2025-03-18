@@ -5,7 +5,7 @@ var cnv_wid;
 let dpi = -1;
 let currentTrainBlock = 0;
 //let trainBlocks = [6, 4, 4, 4, 4, -3, 4, 4, 7, 5, 5, -3, 5, 5, 5, 5];
-let trainBlocks = [4,5];
+let trainBlocks = [4,-1,5];
 /*
 -n: n-minutes break
 0: no path normal familiarization block
@@ -77,6 +77,7 @@ var blanknum;
 var blank;
 var pOffsets;
 var highscore;
+var firstTrial = [true, true];
 var timer;
 var timerCount;
 var movin;
@@ -92,7 +93,7 @@ var freeze_time = 200;
 var freeze_margin;
 var dotU = [0,0];
 var maxV = [1.8,1.8];
-var maxTailLen = 120;
+var maxTailLen = 60;
 var tailLen;
 var noSleepState = false;
 var wakeLock;
@@ -238,8 +239,8 @@ function startSession() {
     movin = true;
     fps = 0.0;
     frBuffer = 60.0;
-    plen = maxPoints+tailLen;
-    freeze = tailLen;
+    plen = maxPoints+maxTailLen;
+    freeze = maxTailLen;
     freeze_margin = 0;
     runDraw();
     //noSleep();
@@ -343,12 +344,11 @@ function sessionInfo() {
         let desc;
         if(sessionsType[currentSession] == 0)
             desc = `<span style="color:${color};">First, please take some time to familiarize yourself with the controls.</span><br>`
-        else if(testTrain==0) {
-            if(highscore[offset]<0) {
-                desc = offset==0? `<span style="color:${color};">Test: try to follow the black path as closely as posible</span><br>` : `Now we will introduce the <span style=\"color:red;\">Red Fish!</span><br>The Red fish may not behave in an intuitive way at first. But if you keep on trying to follow the grey path, you will see that your performance will improve.`;
-            } else
-                desc = `<span style="color:${color};">Test: now it is time to see if you have improved!</span><br>`;
-        }
+        else if(firstTrial[offset]) {
+            desc = offset==0? `<span style="color:${color};">Try to stay near the grey ball as closely as posible</span><br>` : `Now we will introduce the <span style=\"color:red;\">Red Ball!</span><br>The Red Ball may not behave in an intuitive way at first. But if you keep on trying to follow the grey path, you will see that your performance will improve.`;
+            firstTrial[offset] = false;
+        } else if(testTrain==0)
+            desc = `<span style="color:${color};">Test: now it is time to see if you have improved!</span><br>`;
         else
             desc = `<span style="color:${color};">Train: time to learn how to do the task!</span><br>`;
         if(mse < 0)
@@ -372,7 +372,7 @@ function sessionInfo() {
 }
 function draw() {
     if(isDraw) {
-        if(frameNum >= maxPoints+tailLen) {
+        if(frameNum >= maxPoints+maxTailLen) {
             // record final trajectories
             dis_temp.push(dotX);
             vDist_temp.push(dotY);
@@ -399,7 +399,7 @@ function draw() {
                 //movin=false;
                 trace = [];
                 tailLen = maxTailLen*blank[blanknum];
-                freeze = tailLen;
+                freeze = maxTailLen;
                 frameNum = 0;
                 error = 0.0;
             } else {
@@ -481,24 +481,6 @@ function draw() {
                 }
             } else if(freeze_margin > 0)
                 freeze_margin -= 1;
-            
-            /*if(offset == 0)
-                dotU = angAcc;
-            else
-                dotU = -angAcc;
-            
-            //dotA = dotA + dotU;
-            //dotA = dotA + (2/(1+Math.exp(-64*dotU))-1)*maxA/20;
-            dotA = dotA + maxA/20/8*Math.log2((9.5*dotU+0.5)/(1-9.5*dotU-0.5));
-            if(dotA < -maxA) {
-                dotA = -maxA;
-                angAcc = 0;
-                dotU = 0;
-            } else if(dotA > maxA) {
-                dotA = maxA;
-                angAcc = 0;
-                dotU = 0;
-            }*/
             
             //dotY -= 1;
             dotY = dotY - b*fixBetween(dotU[1],-30,30)*maxV[1]/30;
@@ -591,34 +573,40 @@ function sinuousCurve(len, isTest) { // generate trajectory
     var ampl;
     var freq;
     var repeat;
-    var offset;
+    var offset = [];
     if(isTest) {
         ampl = amplitudes[1];
         freq = frequency[1];
-        offset = Array(freq.length).fill(0);
         repeat = blank.length;
+        let offset_t = Array(freq.length).fill(0);
+        for(let i=0;i<repeat; i++)
+            offset.push(offset_t);
     } else {
         ampl = amplitudes[0];
         freq = frequency[0];
-        offset = [];
-        for(let i=0; i<freq.length; i++)
-            offset.push(Math.random()*2*PI);
         repeat = blank.length;
-    }
-    var points = [];
-    for(let i=0; i<len; i++) {
-        X = 0;
-        Y = 0;
-        for(let j=0; j<ampl.length; j++) {
-            X += maxX/1.5*ampl[j]*sin(2*PI*start*freq[j] + offset[j]);
-            Y += maxY/1.5*ampl[j]*cos(2*PI*start*freq[j] + offset[j]);
+        for(let i=0;i<repeat; i++) {
+            let offset_t = [];
+            for(let i=0; i<freq.length; i++)
+                offset_t.push(random()*2*PI);
+            offset.push(offset_t);
         }
-        points.push([X, Y]);
-        start += 0.01;
     }
     var paths = [];
     pOffsets = {startpos:[], offsets:offset};
-    for(let i=0; i<repeat; i++) { // generate each sub-trajectory
+    for(let k=0; k<repeat; k++) {
+        let points = [];
+        for(let i=0; i<len; i++) {
+            X = 0;
+            Y = 0;
+            for(let j=0; j<ampl.length; j++) {
+                X += maxX/1.5*ampl[j]*sin(2*PI*start*freq[j] + offset[k][j]);
+                Y += maxY/1.5*ampl[j]*cos(2*PI*start*freq[j] + offset[k][j]);
+            }
+            points.push([X, Y]);
+            start += 0.01;
+        }
+    //for(let i=0; i<repeat; i++) { // generate each sub-trajectory
         let sPos = int(random()*points.length);
         pOffsets.startpos.push(sPos);
         var path = arrayRotate(points.slice(0), sPos); // randomize starting position for each sub-trajectory
@@ -638,9 +626,10 @@ function arrayRotate(arr, count) { // rotates array, ex. arrayRotate([0, 1, 2, 3
     arr.push(...arr.splice(0, (-count % len + len) % len))
     return arr
 }
-function drawCurve(coords, time) {
+function drawCurve(coords, framenum) {
     if(coords!==null) {
         noFill();
+        let time = Math.max(framenum-maxTailLen+tailLen, 0)
         let start = Math.max(time - tailLen, 0);
         stroke('lightgray');
         strokeWeight(6);
@@ -843,12 +832,11 @@ function forceQuit(reason) { // force quit experiment because of : 1. low frame 
     if(reason == 2) {
         timerCount = 120;
         //show('failed-2-return', 'failed-2-disqualify');
-        timer = setTimeout(()=>{show('failed-2-disqualify', 'failed-2-return');remove();window.fullscreen(false);helpEnd();}, timerCount*1000);
+        timer = setTimeout(()=>{show('failed-2-disqualify', 'failed-2-return');remove();helpEnd();}, timerCount*1000);
         let btn = document.getElementById("returnBt");
         btn.onclick = ()=>{select('#failed-2').hide();show('container-exp', 'container-failed');document.body.style.overflow = 'hidden';clearTimeout(timer);butfunc();};
     } else {
         remove();
-        window.fullscreen(false);
         //screen.orientation.unlock();
         helpEnd();
     }
@@ -870,7 +858,7 @@ function startGame() {
     var values = document.getElementsByName('cover-select');
     let nor = Number(values[0].value);
     if(nor == 0)
-        trainBlocks = [6]; // 4
+        trainBlocks = [4, -1, 5]; // 4
     else
         trainBlocks = [5];
     
@@ -919,7 +907,6 @@ function startGame() {
 function endGame() {
     select('#container-exp').hide();
     remove();
-    window.fullscreen(false);
     //screen.orientation.unlock()
     //document.getElementById("container-exp").onmousemove = null;
     //document.body.style.overflow = 'auto';
