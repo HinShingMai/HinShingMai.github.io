@@ -196,7 +196,7 @@ function startSession() {
             maxX = width_x/2; //120
             scaling = scaling_base;
             if(highscore[offset]<0) // don't shuffle for the first test
-                blank = [0]; // 1 sub-sessions
+                blank = [1]; // 1 sub-sessions
             else
                 blank = shuffle([0]);
         } else {
@@ -205,7 +205,7 @@ function startSession() {
             maxY = width_x*0.75; //180
             maxX = width_x/2; // 120
             scaling = scaling_base;
-            blank = [0,0,0]; // 3 sub-sessions
+            blank = [1,1,1]; // 3 sub-sessions
         }
         if(sessionsType[currentSession]>3) {
             lines = sinuousCurve(maxPoints, isTest);
