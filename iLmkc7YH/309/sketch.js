@@ -72,7 +72,11 @@ var butfunc;
 var keyfunc;
 var rank;
 var ding = [new Audio('./ding-1-c.mp3'), new Audio('./ding-13-c.mp3'), null, new Audio('./ding-25-c.mp3')];
+var startVertex;
 var vertexTouched;
+var curVertex;
+var nextVertex;
+var vertexTouchTime = 6;
 function setup() {
     ding[2] = ding[1];
     isDraw = false;
@@ -157,6 +161,9 @@ function startSession() {
         pLines.push(star(0, 0, 6, 50-pathWidth, 100-pathWidth*2));
     }
     vertexTouched = Array(lines.length).fill(0);
+    startVertex = 0;
+    curVertex = startVertex;
+    nextVertex = [1, lines.length-1];
     blank = modes.length;
     clear();
     dis_instr = 1;
@@ -301,6 +308,9 @@ function draw() {
                     dotB = 0.0;
                     error = [];
                     vertexTouched = Array(lines.length).fill(0);
+                    startVertex = 0;
+                    curVertex = startVertex;
+                    nextVertex = [1, lines.length-1];
                     frameNum = 0;
                     return;
                 }
@@ -360,8 +370,8 @@ function draw() {
                     delay -= 1;
                 else if(delay==0) {
                     if(blanknum < blank) {
-                        dotX = lines[0].x;
-                        dotY = lines[0].y;
+                        dotX = lines[startVertex].x;
+                        dotY = lines[startVertex].y;
                         dis_temp = [];
                         vDis_temp = [];
                         SAT1_score = [0.0,0.0,0];
@@ -377,8 +387,8 @@ function draw() {
                         return;
                     }
                 } else {
-                    let x = dotX - lines[0].x;
-                    let y = dotY - lines[0].y;
+                    let x = dotX - lines[startVertex].x;
+                    let y = dotY - lines[startVertex].y;
                     if(x>-10 && x<10 && y>-10 && y<10) 
                         delay = 30;
                 }
@@ -470,17 +480,24 @@ function pesudoRandom(num, len, perLen, defaul, special, noFirst) {
     return arr;
 }
 function checkAllVertexTouched() {
-    var numtouched = 0;
-    // first, update vertex touched
-    for(let i=0; i<lines.length; i++) {
-        if(vertexTouched[i]==1)
-            numtouched += 1;
-        else if((dotX-lines[i].x)**2+(dotY-lines[i].y)**2 < (2*pathWidth)**2)
-            vertexTouched[i] = 1;
-    }
-    if(numtouched > lines.length-3) { // pass if 4 points touched
-        if((dotX-lines[0].x)**2+(dotY-lines[0].y)**2 < (2*pathWidth)**2) // and if returned to starting position
-            return true;
+    for(let i=0; i<nextVertex.length; i++) {
+        if((dotX-lines[nextVertex[i]].x)**2+(dotY-lines[nextVertex[i]].y)**2 < (2*pathWidth)**2) {
+            vertexTouched[nextVertex[i]] += 1;
+            if(vertexTouched[nextVertex[i]] > vertexTouchTime) {
+                if(nextVertex[i] == startVertex)
+                    return true;
+                let left = (nextVertex[i]+vertexTouched.length-1)%vertexTouched.length;
+                let right = (nextVertex[i]+1)%vertexTouched.length;
+                let nextVertex_new = [];
+                if(left!== curVertex && vertexTouched[left] <= vertexTouchTime)
+                    nextVertex_new.push(left);
+                if(right!== curVertex && vertexTouched[right] <= vertexTouchTime)
+                    nextVertex_new.push(right);
+                curVertex = nextVertex[i];
+                nextVertex = nextVertex_new;
+            }
+        } else
+            vertexTouched[nextVertex[i]] = Math.max(vertexTouched[nextVertex[i]]-1,0);
     }
     return false;
 }
@@ -503,13 +520,15 @@ function star(x, y, num_points, inner_radius, outer_radius) {
     return vertices;
 }
 function drawStar(state) {
-    /*for(let j=0; j<pLines.length; j++) {
+    stroke('gray');
+    for(let j=0; j<pLines.length; j++) {
         beginShape();
         for(let i = 0; i<pLines[j].length; i++) {
             vertex(pLines[j][i].x*scaling, pLines[j][i].y*scaling);
         }
         endShape(CLOSE);
-    }*/
+    }
+    stroke('lightgray');
     beginShape();
     for(let i = 0; i<lines.length; i++) {
         vertex(lines[i].x*scaling, lines[i].y*scaling);
@@ -517,7 +536,7 @@ function drawStar(state) {
     endShape(CLOSE);
     if(delay == -1) {
         for(let i=0; i<lines.length; i++) {
-            if(movin<1 || vertexTouched[i] == 1) {
+            if(movin<1 || vertexTouched[i] > vertexTouchTime) {
                 if(state) {
                     fill('blue');
                     stroke('blue');
@@ -526,12 +545,16 @@ function drawStar(state) {
                     fill('red');
                 }
                 ellipse(lines[i].x*scaling, lines[i].y*scaling, pathWidth*2, pathWidth*2);
-            } else {
-                stroke('gray');
+            } else if(nextVertex.includes(i)) {
+                stroke('lightgray');
+                noFill();
+                ellipse(lines[i].x*scaling, lines[i].y*scaling, pathWidth*8*(1-vertexTouched[i]/vertexTouchTime), pathWidth*8*(1-vertexTouched[i]/vertexTouchTime));
+            }/*else {
+                stroke('lightgray');
                 //fill('gray');
                 noFill();
                 ellipse(lines[i].x*scaling, lines[i].y*scaling, pathWidth*8, pathWidth*8);
-            }
+            }*/
         }
         fill('white');
         stroke('white');
@@ -634,7 +657,7 @@ function drawReturnCursor() {
             stroke('lightgray');
             fill('lightgray');
             //rect(-maxX*scaling, -coverHeight*scaling, maxX*scaling*2, coverHeight*0.6*scaling);
-            rect((lines[0].x-10)*scaling, (lines[0].y-10)*scaling, 20*scaling, 20*scaling);
+            rect((lines[startVertex].x-10)*scaling, (lines[startVertex].y-10)*scaling, 20*scaling, 20*scaling);
             ellipse(dotX*scaling, dotY*scaling, 20, 20);
             //stroke('blue');
             //line(maxX*scaling,dotY*scaling,maxX*scaling,0);
@@ -642,7 +665,7 @@ function drawReturnCursor() {
         } else {
             stroke('blue');
             fill('blue');
-            rect((lines[0].x-10)*scaling, (lines[0].y-10)*scaling, 20*scaling, 20*scaling);
+            rect((lines[startVertex].x-10)*scaling, (lines[startVertex].y-10)*scaling, 20*scaling, 20*scaling);
             ellipse(dotX*scaling, dotY*scaling, 20, 20);
         }
         if(frameNum > 600) {
@@ -758,7 +781,7 @@ function handleCalibrationKey(e) { // handles key pressed during calibration
                 dotB = 0;
                 return;
             }
-            speed_scale = dotB/400;
+            speed_scale = dotB/200;
             console.log(speed_scale);
             document.getElementById("container-exp").onmousemove = handleMouseMove;
             document.onkeyup = null;
