@@ -66,8 +66,8 @@ var score_max;
 var score_base;
 var speed_scale;
 var dis_instr;
-var feedback_sc;
 var feedback_rk;
+var giveFeedback = 1;
 var butfunc;
 var keyfunc;
 var rank;
@@ -163,7 +163,7 @@ function startSession() {
     vertexTouched = Array(lines.length).fill(0);
     startVertex = 0;
     curVertex = startVertex;
-    nextVertex = [1, lines.length-1];
+    nextVertex = [lines.length-1]; // [1, lines.length-1];
     blank = modes.length;
     clear();
     dis_instr = 1;
@@ -271,38 +271,40 @@ function draw() {
                 //actx.push(dotA);
                 //acty.push(dotB);
                 //nse.push(noise);
-                var inPath = true;
                 var pathError = distToPath();
-                //inPath = pathError < pathWidth**2;
+                var inPath = pathError < pathWidth**2;
                 error.push(pathError);
                 if(checkAllVertexTouched()) {
                     dis.push(dis_temp);
                     vDis.push(vDis_temp);
                     errors.push(error);
-                    if(false) { // TODO feedback
-                        let mean_speed = SAT1_score[0]/SAT1_score[2]; // SAT_score = [sum of speed, sum of error, n]
-                        let mean_error = SAT1_score[1]/SAT1_score[2];
+                    if(giveFeedback > 0) { // feedback
+                        //let mean_speed = SAT1_score[0]/SAT1_score[2];
+                        let mean_error = SAT1_score[1]/SAT1_score[2]; // SAT_score = [sum of speed, sum of error, n]
+                        console.log(mean_error);
                         movin = -120;
-                        let score = 400/(mean_error+400)-0.05;
+                        let score = 400/(mean_error+400);
                         scores.push(score);
                         score_max = fixBetween(score*100, 0, 100).toFixed(0);
-                        feedback_sc = fixBetween(Math.floor((score-0.05)/0.15), 0, 5);
-                        if(scores.length<5) // compute current score relative to last 20 trials after 5 trials
+                        if(scores.length<5) { // compute current score relative to last 20 trials after 5 trials
                             feedback_rk = -1;
-                        else {
+                            ding[1].play();
+                        } else {
                             let startpos = Math.max(0, scores.length-20);
                             let meanStd = getMeanStd(scores.slice(startpos, scores.length)); // [mean, std]
-                            feedback_rk = fixBetween(Math.floor((score-meanStd[0])/meanStd[1]/0.66)+2, 0, 3);
-                            ding[feedback_rk].play();
+                            /*feedback_rk = fixBetween(Math.floor((score-meanStd[0])/meanStd[1]/0.66)+2, 0, 3);
+                            feedback_rk = 1;
+                            ding[feedback_rk].play();*/
+                            feedback_rk = -1;
+                            ding[1].play();
                         }
-                    } else if(false) {
-                        let mean_speed = SAT1_score[0]/SAT1_score[2];
+                    } else { // nofeedback
+                        //let mean_speed = SAT1_score[0]/SAT1_score[2];
                         let mean_error = SAT1_score[1]/SAT1_score[2];
                         movin = -60;
                         let score = 400/(mean_error+400)-0.05;
                         scores.push(score);
-                    } else
-                        movin = -60;
+                    }
                     blanknum++;
                     dotA = 0.0;
                     dotB = 0.0;
@@ -310,7 +312,7 @@ function draw() {
                     vertexTouched = Array(lines.length).fill(0);
                     startVertex = 0;
                     curVertex = startVertex;
-                    nextVertex = [1, lines.length-1];
+                    nextVertex = [lines.length-1]; // [1, lines.length-1];
                     frameNum = 0;
                     return;
                 }
@@ -319,13 +321,11 @@ function draw() {
                 dotX = fixBetween(dotX + offsets[offset]*dotA, -maxX, maxX);
                 dotB = fixBetween(dotB,-100,100);
                 dotY = fixBetween(dotY + dotB, -maxY, maxY);
-                /*//update SAT feedback
+                //update SAT feedback
                 let v = Math.sqrt(dotA**2+dotB**2);
-                if(mode == 0 || mode > 4) {
-                    SAT1_score[0] += v*dotB;
-                    SAT1_score[1] += pathError*dotB;
-                    SAT1_score[2] += dotB;
-                }*/
+                SAT1_score[0] += v;
+                SAT1_score[1] += pathError*v;
+                SAT1_score[2] += v;
             } else {
                 delay -= 1;
                 heading = 0;
@@ -363,8 +363,8 @@ function draw() {
                 movin += 1;
             else if(movin<0) {
                 movin += 1;
-                dotY = -40;
-                dotX = 0;
+                dotY = lines[startVertex].y+20;
+                dotX = lines[startVertex].x;
             } else if(movin==0) {
                 if(delay > 0)
                     delay -= 1;
@@ -420,14 +420,8 @@ function distToSegmentSquared(p, v, w) { // squared distance from point to line 
 //function distToSegment(p, v, w) { return Math.sqrt(distToSegmentSquared(p, v, w)); }
 function distToPath() { // squared distance to path, approximate
     var minDist = 4 * maxX*maxX;
-    let startFix = int(-dotY - pathWidth*100);
-    if(startFix < 0)
-        startFix = 0;
-    let endFix = int(-dotY + pathWidth*100);
-    if(endFix > lines.length)
-        endFix = lines.length;
-    for(let i = startFix+1; i<endFix; i++) {
-        let dist = distToSegmentSquared({x: dotX, y: -dotY}, {x: lines[i-1], y: (i-1)}, {x: lines[i], y:i});
+    for(let i = 1; i<lines.length; i++) {
+        let dist = distToSegmentSquared({x: dotX, y: -dotY}, lines[i-1], lines[i]);
         if(dist < minDist)
             minDist = dist;
     }
@@ -481,7 +475,7 @@ function pesudoRandom(num, len, perLen, defaul, special, noFirst) {
 }
 function checkAllVertexTouched() {
     for(let i=0; i<nextVertex.length; i++) {
-        if((dotX-lines[nextVertex[i]].x)**2+(dotY-lines[nextVertex[i]].y)**2 < (2*pathWidth)**2) {
+        if((dotX-lines[nextVertex[i]].x)**2+(dotY-lines[nextVertex[i]].y)**2 < pathWidth**2) {
             vertexTouched[nextVertex[i]] += 1;
             if(vertexTouched[nextVertex[i]] > vertexTouchTime) {
                 if(nextVertex[i] == startVertex)
@@ -548,7 +542,7 @@ function drawStar(state) {
             } else if(nextVertex.includes(i)) {
                 stroke('lightgray');
                 noFill();
-                ellipse(lines[i].x*scaling, lines[i].y*scaling, pathWidth*8*(1-vertexTouched[i]/vertexTouchTime), pathWidth*8*(1-vertexTouched[i]/vertexTouchTime));
+                ellipse(lines[i].x*scaling, lines[i].y*scaling, pathWidth*2*(1-vertexTouched[i]/vertexTouchTime)*scaling, pathWidth*2*(1-vertexTouched[i]/vertexTouchTime)*scaling);
             }/*else {
                 stroke('lightgray');
                 //fill('gray');
@@ -556,11 +550,13 @@ function drawStar(state) {
                 ellipse(lines[i].x*scaling, lines[i].y*scaling, pathWidth*8, pathWidth*8);
             }*/
         }
-        fill('white');
-        stroke('white');
-        strokeWeight(1);
-        textSize(Math.floor(10*scaling));
-        text("Start!", 0, 0);
+        if(movin>0) {
+            fill('white');
+            stroke('white');
+            strokeWeight(1);
+            textSize(Math.floor(10*scaling));
+            text("Start!", 0, 0);
+        }
     }
 }
 function drawGoal() {
@@ -671,7 +667,7 @@ function drawReturnCursor() {
         if(frameNum > 600) {
             stroke('lightgray');
             fill('lightgray');
-            textSize(Math.floor(12*scaling));
+            textSize(Math.floor(10*scaling));
             strokeWeight(1);
             textAlign(CENTER,CENTER);
             text("Move the dot into the box.", 0, 0);
@@ -688,23 +684,19 @@ function drawReturnCursor() {
             //drawGoal();
             drawStar(offset==0);
             drawTrace(offset==0);
-            if(mode == 0 || mode == 6) {
+            if(giveFeedback > 0) {
                 strokeWeight(1);
                 textAlign(CENTER,CENTER);
-                textSize(Math.floor(12*scaling));
-                if(feedback_sc>=0) {
-                    //let msg = ["Be More Accurate!","Be More Accurate!","Nice!","Nice!","Good!","Very Good!"];
-                    let colors_list = ["orange","lightgray","lightgray","green"];
-                    var choice;
-                    if(feedback_rk < 0) choice = 1;
-                    else choice = feedback_rk;
-                    stroke(colors_list[choice]);
-                    fill(colors_list[choice]);
-                    //stroke("lightgray");
-                    //fill("lightgray");
-                    let percentage = score_max;
-                    text(`\nYour Score: ${percentage}`, 0, 0);
-                }
+                textSize(Math.floor(10*scaling));
+                 //let msg = ["Be More Accurate!","Be More Accurate!","Nice!","Nice!","Good!","Very Good!"];
+                 let colors_list = ["orange","lightgray","lightgray","green"];
+                 var choice;
+                 if(feedback_rk < 0) choice = 1;
+                 else choice = feedback_rk;
+                 stroke(colors_list[choice]);
+                 fill(colors_list[choice]);
+                 let percentage = score_max;
+                 text(`\nYour Score: ${percentage}`, 0, 0);
             }
         }
     }
@@ -757,7 +749,7 @@ function handleMouseMove(e) {
             dotB += scaledMovementY;
         }
     } else {
-        dotX = fixBetween(dotX+e.movementX/speed_scale,-maxX,maxX);
+        //dotX = fixBetween(dotX+e.movementX/speed_scale,-maxX,maxX);
         dotY = fixBetween(dotY+e.movementY/speed_scale,-maxY,maxY);
     }
 }
