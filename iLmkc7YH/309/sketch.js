@@ -3,7 +3,7 @@ let cnv;
 let dpi = -1;
 let currentTrainBlock = 0;
 //let trainBlocks = [0,1,-1,1,-1,1,-1,1,-1,1,-10,1,2,0];
-let trainBlocks = [0, 2];
+let trainBlocks = [0, 2, 1];
 /*
 -n: n-minutes break
 0: no path normal familiarization block
@@ -125,7 +125,7 @@ function startSession() {
     maxY = maxX;
     scaling = scaling_base;
     dotX = 0;
-    dotY = -maxY/2;
+    dotY = maxY/2;
     lines = [];
     pLines = [];
     if(sessionsType[currentSession] == 0) { // familiarization session
@@ -148,7 +148,7 @@ function startSession() {
         document.getElementById("container-exp").onmousemove = handleMouseMove;
         mode = -1;
         if(sessionsType[currentSession] == 1) { // baseline block
-            modes = Array(10).fill(0);
+            modes = Array(5).fill(0);
             offset = 0;
         } else { // mirror block
             modes = Array(10).fill(1);
@@ -163,7 +163,7 @@ function startSession() {
     vertexTouched = Array(lines.length).fill(0);
     startVertex = 0;
     curVertex = startVertex;
-    nextVertex = [lines.length-1]; // [1, lines.length-1];
+    nextVertex = [1]; // [1, lines.length-1];
     blank = modes.length;
     clear();
     dis_instr = 1;
@@ -267,7 +267,7 @@ function draw() {
             if(delay == -1) {
                 // record trajectory
                 dis_temp.push(dotX);
-                vDis_temp.push(-dotY);
+                vDis_temp.push(dotY);
                 //actx.push(dotA);
                 //acty.push(dotB);
                 //nse.push(noise);
@@ -280,10 +280,9 @@ function draw() {
                     errors.push(error);
                     if(giveFeedback > 0) { // feedback
                         //let mean_speed = SAT1_score[0]/SAT1_score[2];
-                        let mean_error = SAT1_score[1]/SAT1_score[2]; // SAT_score = [sum of speed, sum of error, n]
-                        console.log(mean_error);
+                        let mean_error = SAT1_score[1]/SAT1_score[2]; // SAT_score = [time taken, sum of error, n]
                         movin = -120;
-                        let score = 400/(mean_error+400);
+                        let score = 400/(mean_error+400)*2000/(SAT1_score[0]+2000);
                         scores.push(score);
                         score_max = fixBetween(score*100, 0, 100).toFixed(0);
                         if(scores.length<5) { // compute current score relative to last 20 trials after 5 trials
@@ -302,7 +301,7 @@ function draw() {
                         //let mean_speed = SAT1_score[0]/SAT1_score[2];
                         let mean_error = SAT1_score[1]/SAT1_score[2];
                         movin = -60;
-                        let score = 400/(mean_error+400)-0.05;
+                        let score = 400/(mean_error+400)*2000/(SAT1_score[0]+2000);
                         scores.push(score);
                     }
                     blanknum++;
@@ -312,7 +311,7 @@ function draw() {
                     vertexTouched = Array(lines.length).fill(0);
                     startVertex = 0;
                     curVertex = startVertex;
-                    nextVertex = [lines.length-1]; // [1, lines.length-1];
+                    nextVertex = [1]; // [1, lines.length-1];
                     frameNum = 0;
                     return;
                 }
@@ -323,7 +322,7 @@ function draw() {
                 dotY = fixBetween(dotY + dotB, -maxY, maxY);
                 //update SAT feedback
                 let v = Math.sqrt(dotA**2+dotB**2);
-                SAT1_score[0] += v;
+                SAT1_score[0] += 1;
                 SAT1_score[1] += pathError*v;
                 SAT1_score[2] += v;
             } else {
@@ -363,7 +362,7 @@ function draw() {
                 movin += 1;
             else if(movin<0) {
                 movin += 1;
-                dotY = lines[startVertex].y+20;
+                dotY = lines[startVertex].y-20;
                 dotX = lines[startVertex].x;
             } else if(movin==0) {
                 if(delay > 0)
@@ -419,12 +418,14 @@ function distToSegmentSquared(p, v, w) { // squared distance from point to line 
 }
 //function distToSegment(p, v, w) { return Math.sqrt(distToSegmentSquared(p, v, w)); }
 function distToPath() { // squared distance to path, approximate
-    var minDist = 4 * maxX*maxX;
+    /*var minDist = 4 * maxX*maxX;
     for(let i = 1; i<lines.length; i++) {
         let dist = distToSegmentSquared({x: dotX, y: -dotY}, lines[i-1], lines[i]);
         if(dist < minDist)
             minDist = dist;
-    }
+    }*/
+    var minDist = distToSegmentSquared({x: dotX, y: dotY}, lines[curVertex], lines[nextVertex[0]]);
+    //console.log(minDist);
     return minDist;
 }
 function linearError() { // horizontal distance to trajectory
@@ -518,14 +519,14 @@ function drawStar(state) {
     for(let j=0; j<pLines.length; j++) {
         beginShape();
         for(let i = 0; i<pLines[j].length; i++) {
-            vertex(pLines[j][i].x*scaling, pLines[j][i].y*scaling);
+            vertex(pLines[j][i].x*scaling, -pLines[j][i].y*scaling);
         }
         endShape(CLOSE);
     }
     stroke('lightgray');
     beginShape();
     for(let i = 0; i<lines.length; i++) {
-        vertex(lines[i].x*scaling, lines[i].y*scaling);
+        vertex(lines[i].x*scaling, -lines[i].y*scaling);
     }
     endShape(CLOSE);
     if(delay == -1) {
@@ -538,11 +539,11 @@ function drawStar(state) {
                     stroke('red');
                     fill('red');
                 }
-                ellipse(lines[i].x*scaling, lines[i].y*scaling, pathWidth*2, pathWidth*2);
+                ellipse(lines[i].x*scaling, -lines[i].y*scaling, pathWidth*2, pathWidth*2);
             } else if(nextVertex.includes(i)) {
                 stroke('lightgray');
                 noFill();
-                ellipse(lines[i].x*scaling, lines[i].y*scaling, pathWidth*2*(1-vertexTouched[i]/vertexTouchTime)*scaling, pathWidth*2*(1-vertexTouched[i]/vertexTouchTime)*scaling);
+                ellipse(lines[i].x*scaling, -lines[i].y*scaling, pathWidth*2*(1-vertexTouched[i]/vertexTouchTime)*scaling, pathWidth*2*(1-vertexTouched[i]/vertexTouchTime)*scaling);
             }/*else {
                 stroke('lightgray');
                 //fill('gray');
@@ -558,28 +559,6 @@ function drawStar(state) {
             text("Start!", 0, 0);
         }
     }
-}
-function drawGoal() {
-    if(movin > 0) {
-        fill('white');
-        stroke('white');
-        rect(-maxX*scaling, -(maxY+sMargin)*scaling, 2*maxX*scaling, sMargin*scaling); // draw goal area
-        stroke('blue');
-        line(maxX*scaling,0,maxX*scaling,dotY*scaling);
-        line(-maxX*scaling,0,-maxX*scaling,dotY*scaling);
-    } else {
-        fill('blue');
-        stroke('blue');
-        rect(-maxX*scaling, -(maxY+sMargin)*scaling, 2*maxX*scaling, sMargin*scaling); // draw goal area
-        line(maxX*scaling,0,maxX*scaling,-maxY*scaling);
-        line(-maxX*scaling,0,-maxX*scaling,-maxY*scaling);
-    }
-    /*if(mode == 4) {
-        stroke('blue');
-        strokeWeight(8);
-        line(maxX*scaling,0,maxX*scaling,dotY*scaling);
-        line(-maxX*scaling,0,-maxX*scaling,dotY*scaling);
-    }*/
 }
 function drawInstr() {
     fill('white');
@@ -609,9 +588,7 @@ function drawCursor(state) { // state: true/false = inPath/outOfPath
         fill('blue');
     }
     strokeWeight(3);
-    let x = dotX*scaling;
-    let y = dotY*scaling;
-    ellipse(dotX*scaling, dotY*scaling, 20, 20);
+    ellipse(dotX*scaling, -dotY*scaling, 20, 20);
     noFill();
 }
 function drawTrace(state) { // draw trace behind triangle, state: true/false = inPath/outOfPath
@@ -654,7 +631,7 @@ function drawReturnCursor() {
             fill('lightgray');
             //rect(-maxX*scaling, -coverHeight*scaling, maxX*scaling*2, coverHeight*0.6*scaling);
             rect((lines[startVertex].x-10)*scaling, (lines[startVertex].y-10)*scaling, 20*scaling, 20*scaling);
-            ellipse(dotX*scaling, dotY*scaling, 20, 20);
+            ellipse(dotX*scaling, -dotY*scaling, 20, 20);
             //stroke('blue');
             //line(maxX*scaling,dotY*scaling,maxX*scaling,0);
             //line(-maxX*scaling,dotY*scaling,-maxX*scaling,0);
@@ -662,7 +639,7 @@ function drawReturnCursor() {
             stroke('blue');
             fill('blue');
             rect((lines[startVertex].x-10)*scaling, (lines[startVertex].y-10)*scaling, 20*scaling, 20*scaling);
-            ellipse(dotX*scaling, dotY*scaling, 20, 20);
+            ellipse(dotX*scaling, -dotY*scaling, 20, 20);
         }
         if(frameNum > 600) {
             stroke('lightgray');
@@ -681,7 +658,6 @@ function drawReturnCursor() {
             textSize(Math.floor(10*scaling));
             text(`Move the dot into the box.\nThen, draw the star as fast and as accurately as you can.`, 0, 0);
         } else {
-            //drawGoal();
             drawStar(offset==0);
             drawTrace(offset==0);
             if(giveFeedback > 0) {
@@ -746,11 +722,11 @@ function handleMouseMove(e) {
             var scaledMovementX = e.movementX/speed_scale;
             var scaledMovementY = e.movementY/speed_scale;
             dotA += scaledMovementX;
-            dotB += scaledMovementY;
+            dotB -= scaledMovementY;
         }
     } else {
         //dotX = fixBetween(dotX+e.movementX/speed_scale,-maxX,maxX);
-        dotY = fixBetween(dotY+e.movementY/speed_scale,-maxY,maxY);
+        dotY = fixBetween(dotY-e.movementY/speed_scale,-maxY,maxY);
     }
 }
 function handleKeyReleased(e) {
