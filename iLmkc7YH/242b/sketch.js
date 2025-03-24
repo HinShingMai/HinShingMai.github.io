@@ -92,7 +92,7 @@ var freeze;
 var freeze_time = 200;
 var freeze_margin;
 var dotU = [0,0];
-var maxV = [1.8,1.8];
+var maxV = [3,3];
 var maxTailLen = 60;
 var tailLen;
 var noSleepState = false;

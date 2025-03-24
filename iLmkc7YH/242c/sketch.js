@@ -1,4 +1,4 @@
-let ver = 0.42;
+let ver = 0.51;
 let cnv;
 var cnv_hei;
 var cnv_wid;
@@ -34,12 +34,13 @@ var dis;
 var ang;
 var act;
 var nse;
-var blockErr = [];
-var blockErrn_x = [];
-var blockErrn = [];
-var blockErrr_x = [];
-var blockErrr = [];
-var blockNam = [];
+//var blockErr = [];
+//var blockErrn_x = [];
+//var blockErrn = [];
+//var blockErrr_x = [];
+//var blockErrr = [];
+//var blockNam = [];
+var isTest;
 var maxPoints;
 var time;
 var fps;
@@ -155,24 +156,11 @@ function startSession() {
     if(sessionsType[currentSession]>3) {
         lines = sinuousCurve(maxPoints, isTest);
     }
-    //tailLen = maxTailLen*blank[0];//
-    //dotX = 0;//
-    //dotY = 0;//
-    //dotU = [0,0];
-    //frameNum = 0;//
-    //error = 0.0;//
     errors = [];
-    //trace = [];
-    //traceBuffer = null;
-    //inactivity = 0;
-    //movin=false;
     movin = true;
     fps = 0.0;
     frBuffer = 60.0;
-    //erBuffer = '\n';
-    fbMsg = '\n';
-    //freeze = maxTailLen;
-    //freeze_margin = 0;
+    fbMsg = ' ';
     startTrial();
     runDraw();
     //noSleep();
@@ -185,16 +173,15 @@ function sessionInfo() {
     htmlDiv.show();
     if(lines!=null && currentSession > 0) { // handles data
         mse = average(errors);
-        blockErr.push(mse);
-        let isTrain = sessionsType[currentSession-1]%4 > 1;
-        blockNam.push((isTrain?"Train":"Test")+sessionComplete);
+        /*blockErr.push(mse);
+        blockNam.push((isTest?'Test':'Train')+sessionComplete);
         if(offset == 0) {
             blockErrn.push(mse);
-            blockErrn_x.push((isTrain?"Train":"Test")+sessionComplete);
+            blockErrn_x.push((isTest?'Test':'Train')+sessionComplete);
         } else {
             blockErrr.push(mse);
-            blockErrr_x.push((isTrain?"Train":"Test")+sessionComplete);
-        }
+            blockErrr_x.push((isTest?'Test':'Train')+sessionComplete);
+        }*/
         // Record data
         let avgfps = fps/dis.length;
         let blockData = {
@@ -216,31 +203,10 @@ function sessionInfo() {
         console.log(blockData)
         //recordTrialSession(trialcollection, blockData);
         //subject.progress++;
-        if(sessionComplete<4&&avgfps<50) { // Screen out participants
+        /*if(sessionComplete<4&&avgfps<50) { // Screen out participants
             forceQuit(1);
-        }
-        if(isTrain) {
-            // Define Data for plotting
-            const idx = Array.from(Array((maxPoints+maxTailLen)*(blank.length)).keys());
-            let data = [
-                {x: blockNam, y: blockErr, type: 'scatter', mode: 'lines', line: {color: 'green', width: 3}, name: 'Error'},
-                {x: blockErrn_x, y: blockErrn, type: 'scatter', mode: 'markers', marker: {color: 'blue', size: 10}, name: 'Normal'},
-                {x: blockErrr_x, y: blockErrr, type: 'scatter', mode: 'markers', marker: {color: 'red', size: 10}, name: 'Reverse'},
-                //{x: Array.from(Array(act.length).keys()), y: act, xaxis: 'x2', yaxis: 'y2', type: 'scatter', mode: 'lines', line: {color: 'black', width: 3}, name: 'Actions'},
-                {x: lines[0].map(x => x[0]), y: lines[0].map(x => x[1]), xaxis: 'x2', yaxis: 'y2', type: 'scatter', mode: 'lines', line: {color: 'black', width: 3}, name: 'Path'},
-                {x: vDist[0], y: dis[0], xaxis: 'x2', yaxis: 'y2', type: 'scatter', mode: 'lines', line: {color: 'blue', width: 3}, name: 'You'},
-            ];
-            // layout
-            var layout = {
-                title: 'Average Error and Trajectory',
-                yaxis: {rangemode: "tozero"},
-                grid: {rows: 1, columns: 2, pattern: 'independent'},
-            };
-            // Display using Plotly
-            plot.show();
-            plot.html("");
-            Plotly.newPlot("plot", data, layout, {responsive: true});
-        } else {
+        }*/
+        if(isTest) {
             let msg;
             let color = offset==0? "blue":"red";
             if(highscore[offset]<0) {
@@ -258,6 +224,23 @@ function sessionInfo() {
             }
             plot.show();
             plot.html(msg);
+        } else {
+            // Define Data for plotting
+            let data = [
+                {x: lines[0].map(x => x[0]), y: lines[0].map(x => x[1]), type: 'scatter', mode: 'lines', line: {color: 'black', width: 3}, name: 'Path'},
+                {x: vDist[0], y: dis[0], type: 'scatter', mode: 'lines', line: {color: 'blue', width: 3}, name: 'You'},
+            ];
+            // layout
+            var layout = {
+                title: 'Trajectory',
+            };
+            let size = Math.min(document.getElementById('endMsg').offsetWidth, document.getElementById('endMsg').offsetHeight);
+            document.getElementById('plot').style.height = size+'px';
+            document.getElementById('plot').style.width = size+'px';
+            // Display using Plotly
+            plot.show();
+            plot.html("");
+            Plotly.newPlot("plot", data, layout, {responsive: true});
         }
     } else {
         mse = -1.0;
@@ -305,11 +288,10 @@ function draw() {
     if(isDraw) {
         if(frameNum >= maxPoints+maxTailLen) {
             // record final trajectories
-            let mean_err = Math.sqrt(error/frameNum);
+            let mean_err = error/frameNum;
             dis_temp.push(dotX);
             vDist_temp.push(dotY);
             act_temp.push(dotU);
-            nse_temp.push(noise);
             dis.push(dis_temp);
             vDist.push(vDist_temp);
             act.push(act_temp);
@@ -322,7 +304,7 @@ function draw() {
             nse_temp = [];
             if(blanknum < blank.length-1) { // next sub-session
                 blanknum++;
-                fbMsg = 'Average Error: '+mean_err.toFixed();
+                fbMsg = 'Average Score: '+(100000/(1000+mean_err)).toFixed();
                 startTrial();
             } else {
                 //console.log("draw end: "+isDraw)
@@ -333,13 +315,10 @@ function draw() {
         } /*else if(!movin && dotY>=plen*blanknum+straightLen*0.75) // enable controls after a short freeze at the beginning
             movin=true;*/
         if(freeze<1) {
-            //var noise = moveNoise(sessionsType[currentSession]);
-            var noise = 0;
             // record trajectory
             dis_temp.push(dotX);
             vDist_temp.push(dotY);
             act_temp.push(dotU);
-            nse_temp.push(noise);
             if(lines!=null) {
                 var pathError = sqError();
                 if(act_temp.length > 1) {
@@ -359,10 +338,13 @@ function draw() {
                 if(trace.length > traceLen)
                     trace.shift();
                 traceBuffer = {x: dotX, y: dotY};
-                erBuffer = "Error: "+Math.sqrt(pathError).toFixed();
+                erBuffer = "Score: "+(100000/(1000+pathError)).toFixed();
             }
             if(inactivity > 100) {
                 pause();
+            }
+            if(frameNum > 240) {
+                fbMsg = ' ';
             }
             // motion model
             var b = offset==0? 1: -1;
@@ -420,7 +402,7 @@ function draw() {
         strokeWeight(1);
         text("FPS: "+frBuffer, maxX*scaling-30, -maxY*scaling+10);
         textSize(Math.floor(10*scaling));
-        text(fbMsg+"\n"+erBuffer, 0, 0);
+        text(fbMsg+"\n\n"+erBuffer, 0, 0);
         
         drawCurve(lines[blanknum], frameNum);
         drawBike();
@@ -443,13 +425,12 @@ function startTrial() {
     tailLen = maxTailLen*blank[blanknum];
     freeze = maxTailLen;
     frameNum = 0;
-    erBuffer = '\n';
+    erBuffer = ' ';
     error = 0.0;
 }
 function resetAndUnfreeze() {
     //dotX = (dotX+lines[-dotY])/2.0;
     dotU = [0,0];
-    fbMsg = '\n';
 }
 function runDraw() {
     clear();
@@ -694,12 +675,6 @@ function handleDeviceOrientation(e) {
 function handleOrientationChange(e) {
     console.log(e.target.angle);
     windowResized();
-}
-function moveNoise(mode) {
-    return 0;
-    /*const mean = 0;
-    const std = 0.05;
-    return randomGaussian(mean, std);*/
 }
 function computeSessionTotal() {
     var t=0;

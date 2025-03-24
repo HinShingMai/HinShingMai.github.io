@@ -20,7 +20,7 @@ html, body {
     height: 100%;
     background: white;
     text-align: center;
-    font-size: 4vh;
+    font-size: 4vmin;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -34,7 +34,7 @@ html, body {
     text-align: center;
     text-decoration: none;
     display: inline-block;
-    font-size: 16px;
+    font-size: 5vmin;
     margin: 0;
     position: absolute;
     top: 50%;
