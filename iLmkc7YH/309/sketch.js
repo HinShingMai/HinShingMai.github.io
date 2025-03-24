@@ -76,7 +76,7 @@ var startVertex;
 var vertexTouched;
 var curVertex;
 var nextVertex;
-var vertexTouchTime = 6;
+var vertexTouchTime = 3;
 function setup() {
     ding[2] = ding[1];
     isDraw = false;

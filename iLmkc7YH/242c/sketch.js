@@ -325,7 +325,7 @@ function draw() {
                     let prev_dotU = act_temp[act_temp.length-2];
                     if(dist2(dotU, prev_dotU) < maxV[0]*0.01) {
                         if(pathError>pathWidth**2)
-                            ;//inactivity += 1;
+                            inactivity += 1;
                     } else if(inactivity > 0)
                         inactivity -= 1;
                     /*if(pathError > pathWidth)
