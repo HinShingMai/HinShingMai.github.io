@@ -18,7 +18,7 @@ const database = firebase.database();
 function recordTrialSession(session) {
     if (noSave)
         return null;
-    let dat_id = "star_"+id+"_"+session.day+"_"+session.num+"_"+session.type;
+    let dat_id = 'star/'ver+'/'+id+'_'+session.day+'_'+session.num+'_'+session.type;
     /*return collection.doc(id).set(session)
         .then(function() {
             return true;

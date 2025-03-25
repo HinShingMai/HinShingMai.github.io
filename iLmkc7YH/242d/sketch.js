@@ -25,7 +25,7 @@ const database = firebase.database();
 function recordTrialSession(session) {
     if (noSave)
         return null;
-    let dat_id = "denovo_"+id+"_"+session.day+"_"+session.num+"_"+session.type;
+    let dat_id = 'denovo/'+ver+'/'+id+'_'+session.day+'_'+session.num+'_'+session.type;
     /*return collection.doc(id).set(session)
         .then(function() {
             return true;
@@ -45,7 +45,7 @@ function recordTrialSession(session) {
 }
 
 var noSave = false;
-let ver = 0.51;
+let ver = 'denovo-0.51';
 let cnv;
 var cnv_hei;
 var cnv_wid;
@@ -722,6 +722,11 @@ function forceQuit(reason) { // force quit experiment because of : 1. low frame 
     }
 }
 function startGame() {
+    var values = document.getElementsByName('cover-select');
+    if(!values[0].value) {
+        alert('The id cannot be empty!');
+        return;
+    }
     if(typeof DeviceOrientationEvent.requestPermission === 'function') {
         DeviceOrientationEvent.requestPermission()
         .then(permissionState => {
@@ -732,7 +737,6 @@ function startGame() {
             }
         }).catch(console.error);
     }
-    var values = document.getElementsByName('cover-select');
     id = values[0].value;
     let nor = Number(values[1].value);
     if(nor == 0)

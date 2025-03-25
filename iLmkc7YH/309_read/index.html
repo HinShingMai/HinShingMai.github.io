@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <!-- Firebase Realtime Database -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  </head>
+  <body>
+    <div id="instrDiv">
+        <form id="cover-form1">
+            <label for="id">id:</label>
+            <input type="text" id="id" name="cover-select" value="star-0.2"><br><br>
+            <!--<label for="nor">normal or reverse control:</label></br>
+            <select id="nor" name="cover-select">
+            <option value='0' selected>normal</option>
+            <option value='1'>reverse</option>
+            </select></br>-->
+        </form>
+        <!--<div id="startInstr" style="position: absolute;width:100%;height:50%;top: 0;"><br>Press Button to start game.</div>-->
+        <button id="CoverBt" class="button button" onclick="startGame()">Start</button>
+    </div>
+    <main>
+    </main>
+    <script src="sketch.js"></script>
+  </body>
+</html>
