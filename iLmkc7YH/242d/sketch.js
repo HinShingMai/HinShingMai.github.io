@@ -20,7 +20,7 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 // Initialize Realtime Database and get a reference to the service
-const database = firebase.database();
+const database = database();
 // Function used to upload reach data in the database
 function recordTrialSession(collection, session) {
     if (noSave)
