@@ -22,10 +22,10 @@ const app = firebase.initializeApp(firebaseConfig);
 // Initialize Realtime Database and get a reference to the service
 const database = firebase.database();
 // Function used to upload reach data in the database
-function recordTrialSession(collection, session) {
+function recordTrialSession(session) {
     if (noSave)
         return null;
-    let id = "denovo_"+subject.id+"_"+session.day+"_"+session.num+"_"+session.type;
+    let dat_id = "denovo_"+id+"_"+session.day+"_"+session.num+"_"+session.type;
     /*return collection.doc(id).set(session)
         .then(function() {
             return true;
@@ -34,7 +34,7 @@ function recordTrialSession(collection, session) {
             console.error(err);
             throw err;
         });*/
-    firebase.database().ref(id).set(session)
+    firebase.database().ref(dat_id).set(session)
         .then(function() {
             return true;
         })
@@ -247,7 +247,7 @@ function sessionInfo() {
             scale: scaling
         }
         console.log(blockData)
-        //recordTrialSession(trialcollection, blockData);
+        recordTrialSession(blockData);
         //subject.progress++;
         /*if(sessionComplete<4&&avgfps<50) { // Screen out participants
             forceQuit(1);
@@ -739,6 +739,7 @@ function startGame() {
         trainBlocks = [4, -1, 5]; // 4
     else
         trainBlocks = [5];
+    exDay = 1;
     
     
     cnv = createCanvas(window.innerWidth, window.innerHeight);
