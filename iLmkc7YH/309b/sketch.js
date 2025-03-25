@@ -18,7 +18,7 @@ const database = firebase.database();
 function recordTrialSession(session) {
     if (noSave)
         return null;
-    let dat_id = "denovo_"+id+"_"+session.day+"_"+session.num+"_"+session.type;
+    let dat_id = "star_"+id+"_"+session.day+"_"+session.num+"_"+session.type;
     /*return collection.doc(id).set(session)
         .then(function() {
             return true;
@@ -37,6 +37,7 @@ function recordTrialSession(session) {
         });
 }
 let ver = 'star-0.2';
+var id;
 let cnv;
 let dpi = -1;
 let currentTrainBlock = 0;
@@ -70,7 +71,7 @@ var blockType;
 var isDraw;
 var dis;
 var vDis;
-var nse;
+var exDay = 1;
 var scores;
 var dis_temp;
 var vDis_temp;
@@ -236,16 +237,16 @@ function sessionInfo() {
             xh: lines,
             x: dis,
             y: vDis,
-            bNum: sessionComplete,
+            num: sessionComplete,
             type: sessionsType[currentSession-1],
             len: blank,
-            id: null,
+            id: id,
             fps: fps/dis.length,
             version: ver,
             scale: scaling,
             error: errors,
             score: scores.slice(scores.length-blank, scores.length),
-            baseSp: speed_scale
+            day: exDay
         }
         console.log(blockData)
         recordTrialSession(blockData);
