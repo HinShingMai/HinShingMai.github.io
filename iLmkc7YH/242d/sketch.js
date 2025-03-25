@@ -1,6 +1,6 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
-import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-database.js";
+//import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
+//import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-database.js";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -18,14 +18,14 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+const app = firebase.initializeApp(firebaseConfig);
 // Initialize Realtime Database and get a reference to the service
-const database = database();
+const database = firebase.database();
 // Function used to upload reach data in the database
 function recordTrialSession(collection, session) {
     if (noSave)
         return null;
-    let id = subject.id+"_"+session.day+"_"+session.num+"_"+session.type;
+    let id = "denovo_"+subject.id+"_"+session.day+"_"+session.num+"_"+session.type;
     /*return collection.doc(id).set(session)
         .then(function() {
             return true;
@@ -34,7 +34,7 @@ function recordTrialSession(collection, session) {
             console.error(err);
             throw err;
         });*/
-    firebase.database().ref('users/' + userId).set(session)
+    firebase.database().ref(id).set(session)
         .then(function() {
             return true;
         })
