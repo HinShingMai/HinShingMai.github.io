@@ -218,7 +218,7 @@ function sessionInfo() {
     var mse;
     htmlDiv.show();
     if(lines!=null && currentSession > 0) { // handles data
-        mse = average(errors);
+        mse = 100000/(1000+average(errors)); // average(errors)
         /*blockErr.push(mse);
         blockNam.push((isTest?'Test':'Train')+sessionComplete);
         if(offset == 0) {
@@ -240,6 +240,7 @@ function sessionInfo() {
             type: sessionsType[currentSession-1],
             hori: blank,
             offs: pOffsets,
+            err: errors,
             id: id,
             fps: fps/dis.length,
             time: new Date().toISOString(),
@@ -259,15 +260,15 @@ function sessionInfo() {
             if(highscore[offset]<0) {
                 highscore[offset] = mse;
                 //msg = `<br><br>Best performance error: ${highscore[offset].toFixed()}`;
-                msg = `<br><br>Best performance error: <span style="color:${color};">${highscore[offset].toFixed()}</span>`;
+                msg = `<br><br>Best performance score: <span style="color:${color};">${highscore[offset].toFixed()}</span>`;
             } 
-            else if(mse<highscore[offset]) {
+            else if(mse>highscore[offset]) {
                 highscore[offset] = mse;
                 //msg = `<br><br>Congratulations! Your score improved better! Keep it up!<br><br>Best performance error: ${highscore[offset].toFixed()}`;
-                msg = `<br><br>Congratulations! Your score improved better! Keep it up!<br><br>Best performance error: <span style="color:${color};">${highscore[offset].toFixed()}</span>`;
+                msg = `<br><br>Congratulations! Your score improved better! Keep it up!<br><br>Best performance score: <span style="color:${color};">${highscore[offset].toFixed()}</span>`;
             } else {
                 //msg = `<br><br>Your score was worse this time! Try to beat your score!<br><br>Best performance error: ${highscore[offset].toFixed()}`;
-                msg = `<br><br>Your score was worse this time! Try to beat your score!<br><br>Best performance error: <span style="color:${color};">${highscore[offset].toFixed()}</span>`;
+                msg = `<br><br>Your score was worse this time! Try to beat your score!<br><br>Best performance score: <span style="color:${color};">${highscore[offset].toFixed()}</span>`;
             }
             plot.show();
             plot.html(msg);
@@ -307,17 +308,17 @@ function sessionInfo() {
         if(mse < 0)
             instr.html(`</br>Experiment Progress: ${int(sessionComplete/sessionTotal*100)}%<br><br><span id="endInstr-span"> </span>`);
         else
-            instr.html(`</br>Experiment Progress: ${int(sessionComplete/sessionTotal*100)}%<br>Average Error: ${mse}<br><span id="endInstr-span"> </span>`);
+            instr.html(`</br>Experiment Progress: ${int(sessionComplete/sessionTotal*100)}%<br>Average Score: ${mse}<br><span id="endInstr-span"> </span>`);
         butfunc = ()=>{plot.hide();select('#endDiv').hide();startSession();};
     } else { // end of a block
         if(currentTrainBlock+1 < totalTrainBlocks){ // proceed to next block
             if(mse < 0)
                 instr.html(`<br>Experiment Progress: ${int(sessionComplete/sessionTotal*100)}%<br><br><br><span id="endInstr-span"> </span>`);
             else
-                instr.html(`<br>Experiment Progress: ${int(sessionComplete/sessionTotal*100)}%<br>Average Error: ${mse}<br><br><span id="endInstr-span"> </span>`);
+                instr.html(`<br>Experiment Progress: ${int(sessionComplete/sessionTotal*100)}%<br>Average Score: ${mse}<br><br><span id="endInstr-span"> </span>`);
             butfunc = ()=>{plot.hide();select('#endDiv').hide(); currentTrainBlock++; trainBlockStart();};
         } else { // Final block, end game
-            instr.html(`<br>Experiment Progress: ${int(sessionComplete/sessionTotal*100)}%<br>Average Error: ${mse}<br><br><span id="endInstr-span"> </span>`);
+            instr.html(`<br>Experiment Progress: ${int(sessionComplete/sessionTotal*100)}%<br>Average Score: ${mse}<br><br><span id="endInstr-span"> </span>`);
             butfunc = ()=>{plot.hide();select('#endDiv').hide(); currentTrainBlock++; endGame();};
         }
     }
