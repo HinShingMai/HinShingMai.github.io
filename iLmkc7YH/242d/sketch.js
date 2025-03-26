@@ -44,7 +44,7 @@ function recordTrialSession(session) {
         });
 }
 
-var noSave = false;
+var noSave = true;
 let ver = 'denovo-0.51';
 let cnv;
 var cnv_hei;
@@ -93,6 +93,7 @@ var exDay;
 var fps;
 var error;
 var errors;
+var prev_error;
 var path = null;
 var pathWidth = 15;
 var vDist;
@@ -360,8 +361,8 @@ function draw() {
                 if(act_temp.length > 1) {
                     let prev_dotU = act_temp[act_temp.length-2];
                     if(dist2(dotU, prev_dotU) < maxV[0]*0.01) {
-                        if(pathError>pathWidth**2)
-                            ;//inactivity += 1;
+                        if(pathError>prev_error*0.9)
+                            inactivity += 1;
                     } else if(inactivity > 0)
                         inactivity -= 1;
                     /*if(pathError > pathWidth)
@@ -392,6 +393,7 @@ function draw() {
             if(movin) {
                 error += pathError;
             }
+            prev_error = pathError;
         } else {
             freeze -= 1;
             if(freeze == 0)
@@ -443,6 +445,7 @@ function startTrial() {
     frameNum = 0;
     erBuffer = ' ';
     error = 0.0;
+    prev_error = 0.0;
 }
 function resetAndUnfreeze() {
     //dotX = (dotX+lines[-dotY])/2.0;
