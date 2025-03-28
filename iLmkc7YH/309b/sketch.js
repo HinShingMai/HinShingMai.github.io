@@ -1,4 +1,4 @@
-var noSave = false;
+var noSave = true;
 const firebaseConfig = {
   apiKey: "AIzaSyARetf_IrYgcWGB8StF5nhit9NaVQbdw88",
   authDomain: "bikesim-f46bc.firebaseapp.com",
@@ -18,7 +18,7 @@ const database = firebase.database();
 function recordTrialSession(session) {
     if (noSave)
         return null;
-    let dat_id = 'star/'ver+'/'+id+'_'+session.day+'_'+session.num+'_'+session.type;
+    let dat_id = 'star/'+ver+'/'+id+'_'+session.day+'_'+session.num+'_'+session.type;
     /*return collection.doc(id).set(session)
         .then(function() {
             return true;
@@ -36,13 +36,13 @@ function recordTrialSession(session) {
             throw err;
         });
 }
-let ver = 'star-0.2';
+let ver = 'star-0_2';
 var id;
 let cnv;
 let dpi = -1;
 let currentTrainBlock = 0;
 //let trainBlocks = [0,1,-1,1,-1,1,-1,1,-1,1,-10,1,2,0];
-let trainBlocks = [0, 2, 1];
+let trainBlocks = [0, 2,-1,2,-1,2, 1, 2,-1,2,-1,2, 1];
 /*
 -n: n-minutes break
 0: no path normal familiarization block
@@ -52,7 +52,8 @@ let trainBlocks = [0, 2, 1];
 7: reverse testing block
 */
 let totalTrainBlocks;
-let offsets = [1,-1];
+let mirrors = [[1,1], [-1,1], [1, 1], [-1, -1]];
+var mirror_mode;
 let frameNum = 0; // Number of frames in the current session
 var dotX;
 var dotY;
@@ -70,11 +71,11 @@ var sessions;
 var blockType;
 var isDraw;
 var dis;
-var vDis;
-var exDay = 1;
+var act;
+var exDay;
 var scores;
 var dis_temp;
-var vDis_temp;
+var act_temp;
 var h;
 var maxA;
 var maxPoints;
@@ -154,9 +155,9 @@ function startSession() {
     select('#container-exp').show()
     document.getElementById("container-exp").requestPointerLock({unadjustedMovement: true});
     dis = []; 
-    vDis = [];
+    act = [];
     dis_temp = [];
-    vDis_temp = [];
+    act_temp = [[0,0]];
     maxPoints = 0;
     maxPoints = 300;
     maxX = width_x*0.625; //150
@@ -170,14 +171,14 @@ function startSession() {
         if(currentTrainBlock==0) {
             document.onkeyup = handleCalibrationKey;
             mode = 2; // 0: normal, 1: mirrored, 2/3: mouse calibration, 4: no-feedback straight, 5: no-feedback trial, 6: traj feedback trial
-            modes = Array(5).fill(0);
+            modes = Array(3).fill(0);
             movin = -60; // 1: in trial, 0: awaiting cursor to move back to starting position(resetting), <0: inter-trial cooldown
         } else {
             mode = -1;
             modes = Array(5).fill(4);
             movin = -60;
         }
-        offset = 0;
+        mirror = 0;
         document.getElementById("container-exp").onmousemove = handleMouseMove;
         lines = star(0, 0, 6, 50, 100); // star(0, 0, 6, 115, 200);
         pLines.push(star(0, 0, 6, 50+pathWidth, 100+pathWidth*2));
@@ -186,11 +187,11 @@ function startSession() {
         document.getElementById("container-exp").onmousemove = handleMouseMove;
         mode = -1;
         if(sessionsType[currentSession] == 1) { // baseline block
-            modes = Array(5).fill(0);
-            offset = 0;
+            modes = Array(3).fill(0);
+            mirror = 0;
         } else { // mirror block
-            modes = Array(10).fill(1);
-            offset = 1;
+            modes = Array(2).fill(1);
+            mirror = mirror_mode;
         }
         //modes = Array(40).fill(0);
         movin = -60;
@@ -236,12 +237,13 @@ function sessionInfo() {
         let blockData = {
             xh: lines,
             x: dis,
-            y: vDis,
+            u: act,
             num: sessionComplete,
             type: sessionsType[currentSession-1],
             len: blank,
             id: id,
             fps: fps/dis.length,
+            time: new Date().toISOString(),
             version: ver,
             scale: scaling,
             error: errors,
@@ -274,9 +276,9 @@ function sessionInfo() {
                 desc = "Baseline: let's try the straight line track again."
         }
         else if(sessionsType[currentSession] == 1)
-            desc = "Train: time to learn how to do the task!";
+            desc = "Normal: let's draw the star without the mirror!";
         else
-            desc = "Test: now it is time to try a different track!";
+            desc = "Mirrored: now it is time to draw with the mirror!";
         instr.html(`<br><span style="color:${color};">${desc}</span><br><br><span id="endInstr-span">Press Space Bar to proceed.</span>`);
         butfunc = ()=>{plot.hide();select('#endDiv').hide();startSession();};
         //button.onclick = ()=>{clearTimeout(timer);butfunc();};
@@ -303,8 +305,8 @@ function draw() {
         if(movin>0) {
             if(delay == -1) {
                 // record trajectory
-                dis_temp.push(dotX);
-                vDis_temp.push(dotY);
+                dis_temp.push([dotX, dotY]);
+                //act_temp.push(dotY);
                 //actx.push(dotA);
                 //acty.push(dotB);
                 //nse.push(noise);
@@ -313,7 +315,7 @@ function draw() {
                 error.push(pathError);
                 if(checkAllVertexTouched()) {
                     dis.push(dis_temp);
-                    vDis.push(vDis_temp);
+                    act.push(act_temp);
                     errors.push(error);
                     if(giveFeedback > 0) { // feedback
                         //let mean_speed = SAT1_score[0]/SAT1_score[2];
@@ -354,11 +356,22 @@ function draw() {
                 }
                 // motion model
                 dotA = fixBetween(dotA,-100,100);
-                dotX = fixBetween(dotX + offsets[offset]*dotA, -maxX, maxX);
                 dotB = fixBetween(dotB,-100,100);
-                dotY = fixBetween(dotY + dotB, -maxY, maxY);
+                act_temp.push([dotA,dotB]);
+                let dotU = mirror_reflect(dotA, dotB, mirror);
+                var v = Math.sqrt(dotU[0]**2+dotU[1]**2);
+                dotX = fixBetween(dotX + dotU[0], -maxX, maxX);
+                dotY = fixBetween(dotY + dotU[1], -maxY, maxY);
+                /*if(mirror_mode > 2) { // +-45 degree mirror
+                    dotX = fixBetween(dotX + mirrors[mirror][0]*dotB, -maxX, maxX);
+                    dotY = fixBetween(dotY + mirrors[mirror][1]*dotA, -maxY, maxY);
+                    let v = Math.sqrt(dotA**2+dotB**2);
+                } else {
+                    dotX = fixBetween(dotX + mirrors[mirror][0]*dotA, -maxX, maxX);
+                    dotY = fixBetween(dotY + mirrors[mirror][1]*dotB, -maxY, maxY);
+                    let v = Math.sqrt(dotA**2+dotB**2);
+                }*/
                 //update SAT feedback
-                let v = Math.sqrt(dotA**2+dotB**2);
                 SAT1_score[0] += 1;
                 SAT1_score[1] += pathError*v;
                 SAT1_score[2] += v;
@@ -375,9 +388,9 @@ function draw() {
             noFill();
             translate(windowWidth/2, windowHeight/2);
             rect(-maxX*scaling, -maxY*scaling, maxX*scaling*2, maxY*scaling*2);
-            drawStar(offset==0);
-            drawCursor(offset==0);
-            drawTrace(offset==0);
+            drawStar(mirror==0);
+            drawCursor(mirror==0);
+            drawTrace(mirror==0);
             // save framerate
             fr = frameRate();
             dotA = 0;
@@ -397,10 +410,11 @@ function draw() {
             frameNum++;
             if(movin<-1)
                 movin += 1;
-            else if(movin<0) {
+            else if(movin==-1) {
                 movin += 1;
-                dotY = lines[startVertex].y-20;
-                dotX = lines[startVertex].x;
+                let startVertex_reflected = mirror_reflect(lines[startVertex].x, lines[startVertex].y, mirror);
+                dotX = startVertex_reflected[0];
+                dotY = startVertex_reflected[1]-20;
             } else if(movin==0) {
                 if(delay > 0)
                     delay -= 1;
@@ -409,7 +423,7 @@ function draw() {
                         dotX = lines[startVertex].x;
                         dotY = lines[startVertex].y;
                         dis_temp = [];
-                        vDis_temp = [];
+                        act_temp = [];
                         SAT1_score = [0.0,0.0,0];
                         frameNum = 0;
                         movin = 1;
@@ -423,9 +437,10 @@ function draw() {
                         return;
                     }
                 } else {
-                    let x = dotX - lines[startVertex].x;
-                    let y = dotY - lines[startVertex].y;
-                    if(x>-10 && x<10 && y>-10 && y<10) 
+                    let startVertex_reflected = mirror_reflect(lines[startVertex].x, lines[startVertex].y, mirror);
+                    let dx = dotX - startVertex_reflected[0];
+                    let dy = dotY - startVertex_reflected[1];
+                    if(dx>-10 && dx<10 && dy>-10 && dy<10) 
                         delay = 30;
                 }
             }
@@ -510,6 +525,17 @@ function pesudoRandom(num, len, perLen, defaul, special, noFirst) {
             flag = false;
     }
     return arr;
+}
+function mirror_reflect(x, y, ang) {
+    var x_r, y_r;
+    if(ang > 1) { // +-45 degree mirror
+        x_r = mirrors[ang][0]*y;
+        y_r = mirrors[ang][1]*x;
+    } else {
+        x_r = mirrors[ang][0]*x;
+        y_r = mirrors[ang][1]*y;
+    }
+    return [x_r, y_r];
 }
 function checkAllVertexTouched() {
     for(let i=0; i<nextVertex.length; i++) {
@@ -640,7 +666,7 @@ function drawTrace(state) { // draw trace behind triangle, state: true/false = i
         strokeWeight(4);
     stroke(baseColor);
     for(var i=1;i<dis_temp.length;i++)
-        line(dis_temp[i-1]*scaling,-vDis_temp[i-1]*scaling,dis_temp[i]*scaling,-vDis_temp[i]*scaling);
+        line(dis_temp[i-1][0]*scaling,-dis_temp[i-1][1]*scaling,dis_temp[i][0]*scaling,-dis_temp[i][1]*scaling);
         //line(coords[i-1]*scaling, (1-i)*scaling, coords[i]*scaling, -i*scaling);
 }
 function drawReturnCursor() {
@@ -666,18 +692,13 @@ function drawReturnCursor() {
         if(delay<0) {
             stroke('lightgray');
             fill('lightgray');
-            //rect(-maxX*scaling, -coverHeight*scaling, maxX*scaling*2, coverHeight*0.6*scaling);
-            rect((lines[startVertex].x-10)*scaling, (lines[startVertex].y-10)*scaling, 20*scaling, 20*scaling);
-            ellipse(dotX*scaling, -dotY*scaling, 20, 20);
-            //stroke('blue');
-            //line(maxX*scaling,dotY*scaling,maxX*scaling,0);
-            //line(-maxX*scaling,dotY*scaling,-maxX*scaling,0);
         } else {
             stroke('blue');
             fill('blue');
-            rect((lines[startVertex].x-10)*scaling, (lines[startVertex].y-10)*scaling, 20*scaling, 20*scaling);
-            ellipse(dotX*scaling, -dotY*scaling, 20, 20);
         }
+        let startVertex_reflected = mirror_reflect(lines[startVertex].x, lines[startVertex].y, mirror);
+        rect((startVertex_reflected[0]-10)*scaling, -(startVertex_reflected[1]+10)*scaling, 20*scaling, 20*scaling);
+        ellipse(dotX*scaling, -dotY*scaling, 20, 20);
         if(frameNum > 600) {
             stroke('lightgray');
             fill('lightgray');
@@ -695,8 +716,8 @@ function drawReturnCursor() {
             textSize(Math.floor(10*scaling));
             text(`Move the dot into the box.\nThen, draw the star as fast and as accurately as you can.`, 0, 0);
         } else {
-            drawStar(offset==0);
-            drawTrace(offset==0);
+            drawStar(mirror==0);
+            drawTrace(mirror==0);
             if(giveFeedback > 0) {
                 strokeWeight(1);
                 textAlign(CENTER,CENTER);
@@ -719,17 +740,16 @@ function startBreak(len) { // len-minutes break
     let instr = select('#endInstr');
     htmlDiv.show();
     timerCount = 60*len;
-    graceTime = 120; // participants have 120 seconds to click next button after break timer runs out
+    graceTime = 180; // participants have 120 seconds to click next button after break timer runs out
     instr.html(`<br>Let's take a ${len} minute break.<br><br>${len} : 00`);
     timer = setInterval(breakCountDown, 1000);
 }
 function breakCountDown() { // timer countdown for break
     timerCount--;
     if(timerCount>10) {
-        select('#endInstr').html(`<br>Let's take a ${-trainBlocks[currentTrainBlock]} minute break.<br>Please make sure you come back before ${-trainBlocks[currentTrainBlock]+graceTime/60} minutes or the experiment will terminate.`);
+        select('#endInstr').html(`<br>Let's take a ${-trainBlocks[currentTrainBlock]} minute break.<br><br>`);
     } else if(timerCount>0) {
-        select('#endInstr').html(`<br>Let's take a ${-trainBlocks[currentTrainBlock]} minute break.<br>Please make sure you come back before ${-trainBlocks[currentTrainBlock]+graceTime/60} minutes or the experiment will terminate.
-                                    <br><p style="font-size:10vw;color:red;">0 : ${String(timerCount%60).padStart(2,'0')}</p>`);
+        select('#endInstr').html(`<br>Let's take a ${-trainBlocks[currentTrainBlock]} minute break.<br><br><br><p style="font-size:10vw;color:red;">0 : ${String(timerCount%60).padStart(2,'0')}</p>`);
     } else if(timerCount == 0) {
         select('#endInstr').html(`<br><br><br>Press Space Bar to proceed with the experiment.<br>`);
         document.onkeyup = handleKeyReleased;
@@ -737,7 +757,7 @@ function breakCountDown() { // timer countdown for break
         beep();
     } else {
         if(graceTime+timerCount==60) {
-            select('#endInstr').html(`<br><br><br><span style="color:red;">Are you still there? Please press Space Bar now or the experiment will terminate.</span>`); // show timer : <br><span style="color:red;">${Math.floor((graceTime+timerCount)/60)} : ${String((graceTime+timerCount)%60).padStart(2,'0')}</span>
+            select('#endInstr').html(`<br><br><br><span style="color:red;">Are you still there? Please press Space Bar within 2 minutes or the experiment will terminate.</span>`); // show timer : <br><span style="color:red;">${Math.floor((graceTime+timerCount)/60)} : ${String((graceTime+timerCount)%60).padStart(2,'0')}</span>
         } else if(graceTime+timerCount==-1) { // timeout
             clearInterval(timer);
             butfunc = ()=>{select('#endDiv').hide(); currentTrainBlock++; sessionComplete++; trainBlockStart();};
@@ -845,6 +865,9 @@ function startGame() {
         return;
     }
     id = values[0].value;
+    mirror_mode = Number(values[1].value);
+    noSave = Number(values[2].value)!=1;
+    exDay = 1;
     
     cnv = createCanvas(windowWidth, windowHeight);
     cnv.parent("container-exp");
