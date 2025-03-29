@@ -45,14 +45,14 @@ function recordTrialSession(session) {
 }
 
 var noSave = true;
-let ver = 'denovo-0.51';
+let ver = 'denovo-0_51';
 let cnv;
 var cnv_hei;
 var cnv_wid;
 let dpi = -1;
 let currentTrainBlock = 0;
 //let trainBlocks = [6, 4, 4, 4, 4, -3, 4, 4, 7, 5, 5, -3, 5, 5, 5, 5];
-let trainBlocks = [4,-1,5];
+let trainBlocks = [6,5,-1,5,-1,5,6];
 /*
 -n: n-minutes break
 0: no path normal familiarization block
@@ -120,7 +120,7 @@ var freeze_time = 200;
 var freeze_margin;
 var dotU = [0,0];
 var maxV = [3,3];
-var maxTailLen = 60;
+var maxTailLen = 120;
 var tailLen;
 var noSleepState = false;
 var wakeLock;
@@ -147,9 +147,9 @@ function trainBlockStart() {
         let type = blockType%4;
         if(type < 2) {
             if(type == 0) {
-                sessionsType = [6, 4];
+                sessionsType = [6];
             } else if(type == 1) {
-                sessionsType = [7, 5, 4];
+                sessionsType = [7];
             }
         } else {
             if(type == 2) {
@@ -161,7 +161,8 @@ function trainBlockStart() {
     }
     sessions = sessionsType.length;
     currentSession = 0;
-    sessionInfo();
+    //sessionInfo();
+    startSession();
 }
 function sessionNext() {
     pauseDraw();
@@ -173,14 +174,11 @@ function startSession() {
     isDraw = true;
     select('#container-exp').show()
     dis = []; 
-    ang = [];
+    //vDist = [];
+    //ang = [];
     act = [];
-    vDist = [];
-    dis_temp = []; 
-    ang_temp = [];
-    act_temp = [];
-    vDist_temp = [];
     isTest = sessionsType[currentSession]%4 < 2;
+    offset = sessionsType[currentSession]%2;
     if(isTest) {
         maxPoints = 2400;
         blanknum = 0;
@@ -197,7 +195,7 @@ function startSession() {
         maxY = width_x*0.75; //180
         maxX = width_x/2; // 120
         scaling = scaling_base;
-        blank = [1,1,1]; // 3 sub-sessions
+        blank = [1,1,1,1,1,1]; // 6 sub-sessions
     }
     if(sessionsType[currentSession]>3) {
         lines = sinuousCurve(maxPoints, isTest);
@@ -234,7 +232,7 @@ function sessionInfo() {
             xh: lines,
             x: dis,
             y: vDist,
-            a: ang,
+            //a: ang,
             u: act,
             num: sessionComplete,
             type: sessionsType[currentSession-1],
@@ -300,11 +298,11 @@ function sessionInfo() {
     timer = setTimeout(()=>{select('#endInstr-span').html("Are you still there? Please click the button now or the experiment will terminate.");document.getElementById("endInstr-span").style.color = "red";
                             timer = setTimeout(()=>{forceQuit(2);},60000);},60000);
     if(currentSession < sessions) { // proceed to next session
-        offset = sessionsType[currentSession]%2;
+        let prev_offset = sessionsType[currentSession-1]%2;
         testTrain = sessionsType[currentSession]%4 > 1? 1: 0;
-        let color = offset==0? "blue":"red";
-        if(firstTrial[offset])
-            firstTrial[offset] = false;
+        let color = prev_offset==0? "blue":"red";
+        if(firstTrial[prev_offset])
+            firstTrial[prev_offset] = false;
         if(mse < 0)
             instr.html(`</br>Experiment Progress: ${int(sessionComplete/sessionTotal*100)}%<br><br><span id="endInstr-span"> </span>`);
         else
@@ -329,17 +327,13 @@ function draw() {
         if(frameNum >= maxPoints+maxTailLen) {
             // record final trajectories
             let mean_err = error/frameNum;
-            dis_temp.push(dotX);
-            vDist_temp.push(dotY);
+            dis_temp.push([dotX,dotY]);
+            //vDist_temp.push(dotY);
             act_temp.push(dotU);
             dis.push(dis_temp);
-            vDist.push(vDist_temp);
+            //vDist.push(vDist_temp);
             act.push(act_temp);
             errors.push(mean_err);
-            dis_temp = []; 
-            ang_temp = [];
-            act_temp = [];
-            vDist_temp = [];
             if(blanknum < blank.length-1) { // next sub-session
                 blanknum++;
                 fbMsg = 'Average Score: '+(100000/(1000+mean_err)).toFixed();
@@ -354,8 +348,8 @@ function draw() {
             movin=true;*/
         if(freeze<1) {
             // record trajectory
-            dis_temp.push(dotX);
-            vDist_temp.push(dotY);
+            dis_temp.push([dotX, dotY]);
+            //vDist_temp.push(dotY);
             act_temp.push(dotU);
             if(lines!=null) {
                 var pathError = sqError();
@@ -363,7 +357,7 @@ function draw() {
                     let prev_dotU = act_temp[act_temp.length-2];
                     if(dist2(dotU, prev_dotU) < maxV[0]*0.01) {
                         if(pathError>prev_error*0.9)
-                            inactivity += 1;
+                            ;//inactivity += 1;
                     } else if(inactivity > 0)
                         inactivity -= 1;
                     /*if(pathError > pathWidth)
@@ -433,8 +427,8 @@ function draw() {
     }
 }
 function startTrial() {
-    //dotX = 0;
-    //dotY = 0;
+    dis_temp = []; 
+    act_temp = [];
     dotX = lines[blanknum][0][0];
     dotY = lines[blanknum][0][1];
     dotU = [0,0];
@@ -572,7 +566,7 @@ function arrayRotate(arr, count) { // rotates array, ex. arrayRotate([0, 1, 2, 3
     arr.push(...arr.splice(0, (-count % len + len) % len))
     return arr
 }
-function drawCurve(coords, framenum) {
+/*function drawCurve(coords, framenum) {
     if(coords!==null) {
         noFill();
         let time = Math.max(framenum-maxTailLen+tailLen, 0)
@@ -583,6 +577,22 @@ function drawCurve(coords, framenum) {
             line(coords[i-1][0]*scaling, -coords[i-1][1]*scaling, coords[i][0]*scaling, -coords[i][1]*scaling);
         //noStroke();
         //fill('grey');
+        stroke('grey');
+        ellipse(coords[start][0]*scaling, -coords[start][1]*scaling, 30,30);
+    }
+}*/
+function drawCurve(coords, framenum) {
+    if(coords!==null) {
+        noFill();
+        let time = Math.max(framenum-maxTailLen+tailLen, 0)
+        let start = Math.max(time - tailLen, 0);
+        let c = 128;
+        strokeWeight(6);
+        for(let i = start+1; i<time; i++) {
+            stroke(c,c,c);
+            line(coords[i-1][0]*scaling, -coords[i-1][1]*scaling, coords[i][0]*scaling, -coords[i][1]*scaling);
+            c += 1;
+        }
         stroke('grey');
         ellipse(coords[start][0]*scaling, -coords[start][1]*scaling, 30,30);
     }
@@ -727,9 +737,11 @@ function forceQuit(reason) { // force quit experiment because of : 1. low frame 
 }
 function startGame() {
     var values = document.getElementsByName('cover-select');
-    if(!values[0].value) {
-        alert('The id cannot be empty!');
-        return;
+    if(values[2].value == '1') {
+        if(!values[0].value || !values[1].value) {
+            alert('The id cannot be empty!');
+            return;
+        }
     }
     if(typeof DeviceOrientationEvent.requestPermission === 'function') {
         DeviceOrientationEvent.requestPermission()
@@ -742,12 +754,13 @@ function startGame() {
         }).catch(console.error);
     }
     id = values[0].value;
-    let nor = Number(values[1].value);
+    exDay = Number(values[1].value);
+    noSave = Number(values[2].value)!=1;
+    /*let nor = Number(values[1].value);
     if(nor == 0)
         trainBlocks = [4, -1, 5]; // 4
     else
-        trainBlocks = [5];
-    exDay = 1;
+        trainBlocks = [5];*/
     
     
     cnv = createCanvas(window.innerWidth, window.innerHeight);
