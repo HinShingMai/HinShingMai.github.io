@@ -231,7 +231,7 @@ function sessionInfo() {
         let blockData = {
             xh: lines,
             x: dis,
-            y: vDist,
+            //y: vDist,
             //a: ang,
             u: act,
             num: sessionComplete,
