@@ -525,7 +525,7 @@ function draw() {
         //let high = int(maxY*blank[blanknum]-dotY);
         //translate(cnv_wid/2, cnv_hei/2);
         translate(window.innerWidth/2, window.innerHeight/2);
-        rotate(-screen.orientation.angle/180*PI);
+        //rotate(-screen.orientation.angle/180*PI);
         //console.log(screen.orientation.angle);
         rect(-maxX*scaling, -maxY*scaling, maxX*scaling*2, maxY*scaling*2);
         drawCurve(lines[blanknum], frameNum);
@@ -936,13 +936,15 @@ function endGame() {
 function windowResized() {
     //console.log("resized1 "+isDraw);
     resizeCanvas(window.innerWidth, window.innerHeight, true);
-    if(screen.orientation.angle%180 == 0) {
+    cnv_hei = window.innerHeight;
+    cnv_wid = window.innerWidth;
+    /*if(screen.orientation.angle%180 == 0) {
         cnv_hei = window.innerHeight;
         cnv_wid = window.innerWidth;
     } else {
         cnv_hei = window.innerWidth;
         cnv_wid = window.innerHeight;
-    }
+    }*/
     // set scaling depending on screen size
     let sx = cnv_wid/width_x;
     let sy = cnv_hei/width_x/1.5;
