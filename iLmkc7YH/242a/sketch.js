@@ -885,13 +885,15 @@ function startGame() {
     //console.log(cnv.size());
     cnv.parent("container-exp");
     document.body.style.overflow = 'hidden';
-    if(screen.orientation.angle%180 == 0) {
+    cnv_hei = window.innerHeight;
+    cnv_wid = window.innerWidth;
+    /*if(screen.orientation.angle%180 == 0) {
         cnv_hei = window.innerHeight;
         cnv_wid = window.innerWidth;
     } else {
         cnv_hei = window.innerWidth;
         cnv_wid = window.innerHeight;
-    }
+    }*/
     let sx = cnv_wid/width_x;
     let sy = cnv_hei/width_x/1.5;
     scaling_base = sx < sy? sx:sy;
