@@ -783,9 +783,9 @@ function startGame() {
     noSave = true;
     let nor = Number(values[0].value);
     if(nor == 0)
-        trainBlocks = [4]; // 4
+        trainBlocks = [6]; // 4
     else
-        trainBlocks = [5];
+        trainBlocks = [7];
     
     
     cnv = createCanvas(window.innerWidth, window.innerHeight);
