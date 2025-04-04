@@ -606,14 +606,14 @@ function drawCurve(coords, framenum) {
         let time = Math.max(framenum-maxTailLen+tailLen, 0)
         let start = Math.max(time - tailLen, 0);
         let c = 128;
-        strokeWeight(36); // 6
+        strokeWeight(24); // 6
         for(let i = start+1; i<time; i++) {
             //stroke(c,c,c);
-            stroke(255,255,c);
+            stroke(c,255,c);
             line(coords[i-1][0]*scaling, -coords[i-1][1]*scaling, coords[i][0]*scaling, -coords[i][1]*scaling);
             c += 1;
         }
-        stroke(255,255,128); // grey
+        stroke(128,255,128); // grey
         strokeWeight(6);
         fill('white');
         ellipse(coords[start][0]*scaling, -coords[start][1]*scaling, 30,30);
