@@ -613,14 +613,11 @@ function drawCurve(coords, framenum) {
             c += 2; // 1
         }
         push();
-        noStroke();
-        fill('white');
+        strokeWeight(6);
+        stroke('white');
         for(let i = start+1; i<time; i++) {
-            if(i%20 == 10) {
-                let ang = Math.atan2(coords[i+5][1]-coords[i][1], coords[i+5][0]-coords[i][0]);
-                //console.log(ang);
-                //triangle(coords[i+2][0]*scaling, -coords[i+2][1]*scaling, coords[i][0]*scaling+4*Math.sin(ang), -coords[i][1]*scaling-4*Math.cos(ang), coords[i][0]*scaling-4*Math.sin(ang), -coords[i][1]*scaling+4*Math.cos(ang));
-                triangle(coords[i+5][0]*scaling, -coords[i+5][1]*scaling, coords[i][0]*scaling+4*Math.sin(ang), -coords[i][1]*scaling+4*Math.cos(ang), coords[i][0]*scaling-4*Math.sin(ang), -coords[i][1]*scaling-4*Math.cos(ang));
+            if(i%10 == 8) {
+                line(coords[i-1][0]*scaling, -coords[i-1][1]*scaling, coords[i][0]*scaling, -coords[i][1]*scaling);
             }
         }
         pop();
