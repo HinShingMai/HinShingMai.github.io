@@ -491,8 +491,8 @@ function sqError() {
     //return (dotX - target[0])**2 + (dotY - target[1])**2;
 }
 function sinuousCurve(len, isTest) { // generate trajectory
-    const speed = 1.1;
-    const step = 0.001;
+    const speed = 1;
+    const step = 1/180*0.001;
     var ampl = amplitudes;
     var freq = frequency;
     var repeat;
@@ -521,8 +521,7 @@ function sinuousCurve(len, isTest) { // generate trajectory
     }
     var paths = [];
     pOffsets = offset;
-    console.log(offset);
-    for(let k=0; k<repeat; k++) { // generate each sub-trajectory
+    /*for(let k=0; k<repeat; k++) { // generate each sub-trajectory
         let points = [];
         let start = 0;
         for(let i=0; i<len+maxTailLen; i++) {
@@ -536,14 +535,15 @@ function sinuousCurve(len, isTest) { // generate trajectory
             start += 1/180;
         }
         paths.push(points);
-    }
-    console.log(paths)
-    /*for(let k=0; k<repeat; k++) {
+    }*/
+    for(let k=0; k<repeat; k++) {
         let X = 0; // put starting coordinate into points
         let Y = 0;
         for(let i=0; i<ampl.length; i++) {
-            X += maxX/1.5*ampl[i]*sin(offset[k][i]);
-            Y += maxY/1.5*ampl[i]*cos(offset[k][i]);
+            X += 10*ampl[0][i]*cos(offset[k][0][i]);
+            Y += 15*ampl[1][i]*cos(offset[k][1][i]);
+            //X += maxX/1.5*ampl[i]*sin(offset[k][i]);
+            //Y += maxY/1.5*ampl[i]*cos(offset[k][i]);
         }
         points = [[X, Y]];
         let dis = 0;
@@ -553,8 +553,8 @@ function sinuousCurve(len, isTest) { // generate trajectory
             while(dis < speed) { // add next point of SPEED distance away
                 let post_pt = [0, 0];
                 for(let j=0; j<ampl.length; j++) {
-                    post_pt[0] += maxX/1.5*ampl[j]*sin(2*PI*start*freq[j]+offset[k][j]);
-                    post_pt[1] += maxY/1.5*ampl[j]*cos(2*PI*start*freq[j]+offset[k][j]);
+                    post_pt[0] += 10*ampl[0][j]*cos(2*PI*start*freq[0][j]+offset[k][0][j]);
+                    post_pt[1] += 15*ampl[1][j]*cos(2*PI*start*freq[1][j]+offset[k][1][j]);
                 }
                 dis += Math.sqrt(dist2(post_pt, prev_pt));
                 prev_pt = post_pt;
@@ -562,14 +562,9 @@ function sinuousCurve(len, isTest) { // generate trajectory
             }
             points.push(prev_pt);
             dis -= speed;
-        }*/
-        /*console.log(points);
-        let sPos = int(random()*points.length);
-        pOffsets.startpos.push(sPos);
-        var path = arrayRotate(points.slice(0), sPos); // randomize starting position for each sub-trajectory
-        paths.push(path.concat(path.slice(0,maxTailLen)));
+        }
         paths.push(points);
-    }*/
+    }
     return paths;
 }
 function randTargets(num) { // generate random points for familiarization session
