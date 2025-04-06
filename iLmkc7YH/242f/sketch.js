@@ -492,7 +492,7 @@ function sqError() {
 }
 function sinuousCurve(len, isTest) { // generate trajectory
     const speed = 1;
-    const step = 1/180*0.001;
+    const step = 1/180*0.1;
     var ampl = amplitudes;
     var freq = frequency;
     var repeat;
