@@ -777,16 +777,18 @@ function handleOrientationChange(e) {
 }
 function handleTouchEvent(e) {
     var touches = e.touches;
+    //console.log(touches);
     touchState = [false, false];
-    for(let i=0; i<touches; i++) {
-        let x = touches[i].clientX;
-        let y = touches[i].clientY;
+    for(let i=0; i<touches.length; i++) {
+        let x = touches[i].clientX-cnv_wid/2;
+        let y = touches[i].clientY-cnv_hei/2;
+        //console.log(""+x+"  "+y);
         if(!touchState[0]) {
-            if(x-40 < -maxY*scaling && Math.abs(y) < 40)
+            if(x-40 < -maxX*scaling && Math.abs(y) < 40)
                 touchState[0] = true;
         }
         if(!touchState[1]) {
-            if(x+40 > maxY*scaling && Math.abs(y) < 40)
+            if(x+40 > maxX*scaling && Math.abs(y) < 40)
                 touchState[1] = true;
         }
     }
