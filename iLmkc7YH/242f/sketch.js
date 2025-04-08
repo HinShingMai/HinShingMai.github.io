@@ -218,7 +218,7 @@ function sessionInfo() {
     var mse;
     htmlDiv.show();
     if(lines!=null && currentSession > 0) { // handles data
-        mse = 100000/(1000+average(errors)); // average(errors)
+        mse = errorToScore(average(errors)); // average(errors)
         /*blockErr.push(mse);
         blockNam.push((isTest?'Test':'Train')+sessionComplete);
         if(offset == 0) {
@@ -328,7 +328,7 @@ function draw() {
     if(isDraw) {
         if(frameNum >= maxPoints+maxTailLen) {
             // record final trajectories
-            let mean_err = error/frameNum;
+            let mean_err = trimmedAverage(error, 0.025);// error/frameNum;
             dis_temp.push([dotX,dotY]);
             //vDist_temp.push(dotY);
             act_temp.push(dotU);
@@ -338,7 +338,7 @@ function draw() {
             errors.push(mean_err);
             if(blanknum < blank.length-1) { // next sub-session
                 blanknum++;
-                fbMsg = 'Average Score: '+(100000/(1000+mean_err)).toFixed();
+                fbMsg = 'Average Score: '+errorToScore(mean_err).toFixed();
                 startTrial();
             } else {
                 //console.log("draw end: "+isDraw)
@@ -388,7 +388,7 @@ function draw() {
             dotY = dotY - b*fixBetween(dotU[1],-30,30)*maxV[1]/30;
             dotY = fixBetween(dotY, -maxY, maxY);
             if(movin) {
-                error += pathError;
+                error.push(pathError);
             }
             prev_error = pathError;
         } else {
@@ -441,7 +441,7 @@ function startTrial() {
     freeze = maxTailLen;
     frameNum = 0;
     erBuffer = ' ';
-    error = 0.0;
+    error = [];
     prev_error = 0.0;
 }
 function resetAndUnfreeze() {
@@ -469,6 +469,9 @@ function pauseDraw() {
     if(wakeLock)
         wakeLock.release().then(() => {wakeLock = null;});
 }
+function errorToScore(e) {
+    return 360000/(3600+e);
+}
 function fixBetween(x, minimum, maximum) {
     if(x < minimum)
         return minimum;
@@ -482,6 +485,16 @@ function linearError() { // horizontal distance to trajectory
     return Math.abs(dotX-lines[blanknum][-Math.floor(dotY)]);
 }
 const average = array => array.reduce((a, b) => a + b) / array.length; // compute array mean
+function trimmedAverage(e, trim=0) { // trimmed mean error: (error array, trim ratio on each side)
+  if (e.length < 2) {
+    return undefined;
+  }
+  var sorted = e.toSorted();
+  var n = sorted.length;
+  var trimmed = sorted.slice(trim*n, -trim*n);
+  var n_t = trimmed.length
+  return average(trimmed);
+}
 function dist2(v, w) { return (v[0] - w[0])**2 + (v[1] - w[1])**2 } // squared distance from point to point
 function sqError() {
     if(lines==null)
@@ -496,31 +509,31 @@ function sinuousCurve(len, isTest) { // generate trajectory
     var ampl = amplitudes;
     var freq = frequency;
     var repeat;
-    var offset = [];
+    var phase = [];
     if(isTest) {
         repeat = blank.length;
         for(let k=0;k<repeat; k++) {
             let rand_start = random()*2*PI; // same trajectory but random starting position for test
-            let offset_t = [[],[]];
+            let phase_t = [[],[]];
             for(let i=0; i<freq[0].length; i++)
-                offset_t[0].push(rand_start*freq[0][i]/freq[0][0]);
+                phase_t[0].push(rand_start*freq[0][i]/freq[0][0]);
             for(let i=0; i<freq[1].length; i++)
-                offset_t[1].push(rand_start*freq[1][i]/freq[1][0]);
-            offset.push(offset_t);
+                phase_t[1].push(rand_start*freq[1][i]/freq[1][0]);
+            phase.push(phase_t);
         }
     } else {
         repeat = blank.length;
         for(let k=0;k<repeat; k++) {
-            let offset_t = [[],[]];
-            for(let i=0; i<freq[0].length; i++) // random offsets for each frequency
-                offset_t[0].push(random()*2*PI);
+            let phase_t = [[],[]];
+            for(let i=0; i<freq[0].length; i++) // random phases for each frequency
+                phase_t[0].push(random()*2*PI);
                 for(let i=0; i<freq[1].length; i++)
-                offset_t[1].push(random()*2*PI);
-            offset.push(offset_t);
+                phase_t[1].push(random()*2*PI);
+            phase.push(phase_t);
         }
     }
     var paths = [];
-    pOffsets = offset;
+    pphases = phase;
     /*for(let k=0; k<repeat; k++) { // generate each sub-trajectory
         let points = [];
         let start = 0;
@@ -528,8 +541,8 @@ function sinuousCurve(len, isTest) { // generate trajectory
             X = 0;
             Y = 0;
             for(let j=0; j<freq[0].length; j++) {
-                X += 10*ampl[0][j]*cos(2*PI*start*freq[0][j]+offset[k][0][j]);
-                Y += 15*ampl[1][j]*cos(2*PI*start*freq[1][j]+offset[k][1][j]);
+                X += 10*ampl[0][j]*cos(2*PI*start*freq[0][j]+phase[k][0][j]);
+                Y += 15*ampl[1][j]*cos(2*PI*start*freq[1][j]+phase[k][1][j]);
             }
             points.push([X, Y]);
             start += 1/180;
@@ -540,10 +553,10 @@ function sinuousCurve(len, isTest) { // generate trajectory
         let X = 0; // put starting coordinate into points
         let Y = 0;
         for(let i=0; i<ampl.length; i++) {
-            X += 10*ampl[0][i]*cos(offset[k][0][i]);
-            Y += 15*ampl[1][i]*cos(offset[k][1][i]);
-            //X += maxX/1.5*ampl[i]*sin(offset[k][i]);
-            //Y += maxY/1.5*ampl[i]*cos(offset[k][i]);
+            X += 10*ampl[0][i]*cos(phase[k][0][i]);
+            Y += 15*ampl[1][i]*cos(phase[k][1][i]);
+            //X += maxX/1.5*ampl[i]*sin(phase[k][i]);
+            //Y += maxY/1.5*ampl[i]*cos(phase[k][i]);
         }
         points = [[X, Y]];
         let dis = 0;
@@ -553,8 +566,8 @@ function sinuousCurve(len, isTest) { // generate trajectory
             while(dis < speed) { // add next point of SPEED distance away
                 let post_pt = [0, 0];
                 for(let j=0; j<ampl.length; j++) {
-                    post_pt[0] += 10*ampl[0][j]*cos(2*PI*start*freq[0][j]+offset[k][0][j]);
-                    post_pt[1] += 15*ampl[1][j]*cos(2*PI*start*freq[1][j]+offset[k][1][j]);
+                    post_pt[0] += 10*ampl[0][j]*cos(2*PI*start*freq[0][j]+phase[k][0][j]);
+                    post_pt[1] += 15*ampl[1][j]*cos(2*PI*start*freq[1][j]+phase[k][1][j]);
                 }
                 dis += Math.sqrt(dist2(post_pt, prev_pt));
                 prev_pt = post_pt;
@@ -596,7 +609,7 @@ function arrayRotate(arr, count) { // rotates array, ex. arrayRotate([0, 1, 2, 3
 function drawCurve(coords, framenum) {
     if(coords!==null) {
         noFill();
-        let time = Math.max(framenum-maxTailLen+tailLen, 0)
+        let time = Math.max(framenum-maxTailLen+tailLen, 0);
         let start = Math.max(time - tailLen, 0);
         let c = 0; // 128
         strokeWeight(24); // 6
