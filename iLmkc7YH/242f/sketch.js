@@ -62,7 +62,8 @@ let trainBlocks = [6,5,-1,5,-1,5,6];
 7: reverse testing block
 */
 let totalTrainBlocks;
-let amplitudes = [[2.31, 2.31, 2.31, 1.76, 1.30, 0.97],[2.31, 2.31, 2.31, 1.58, 1.03, 0.81]];
+//let amplitudes = [[2.31, 2.31, 2.31, 1.76, 1.30, 0.97],[2.31, 2.31, 2.31, 1.58, 1.03, 0.81]];
+let amplitudes = [[2.31, 2.31, 2.31, 2.31, 2.31, 2.31],[2.31, 2.31, 2.31, 2.31, 2.31, 2.31]];
 let frequency = [[0.1, 0.25, 0.55, 0.85, 1.15, 1.55],[0.15, 0.35, 0.65, 0.95, 1.45, 1.85]];
 let frameNum = 0; // Number of frames in the current session
 var dotX;
@@ -470,7 +471,7 @@ function pauseDraw() {
         wakeLock.release().then(() => {wakeLock = null;});
 }
 function errorToScore(e) {
-    return 360000/(3600+e);
+    return 180000/(1800+e);
 }
 function fixBetween(x, minimum, maximum) {
     if(x < minimum)
