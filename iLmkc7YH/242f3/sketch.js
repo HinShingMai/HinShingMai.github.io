@@ -125,6 +125,7 @@ var tailLen;
 var noSleepState = false;
 var wakeLock;
 var touchState = [false, false];
+var touchSize = 40;
 function setup() {
     isDraw = false;
     frameRate(60);
@@ -381,6 +382,10 @@ function draw() {
             if(frameNum > 240) {
                 fbMsg = ' ';
             }
+            if(touchState[0]&&touchState[1])
+                erBuffer = ' ';
+            else
+                erBuffer = 'Touch both button on each side to move the ball!';
             // motion model
             var b = offset==0? 1: -1;
             dotX = dotX + b*fixBetween(dotU[0],-30,30)*maxV[0]/30;
@@ -701,7 +706,7 @@ function drawOverlay() {
         strokeWeight(6);
         noFill();
     }
-    ellipse(-maxX*scaling, 0*scaling, 30,30);
+    ellipse(-maxX*scaling+touchSize/2, 0*scaling, touchSize,touchSize);
     if(touchState[1]) {
         noStroke();
         fill('grey');
@@ -710,7 +715,7 @@ function drawOverlay() {
         strokeWeight(6);
         noFill();
     }
-    ellipse(maxX*scaling, 0*scaling, 30,30);
+    ellipse(maxX*scaling-touchSize/2, 0*scaling, touchSize,touchSize);
 }
 function pause() { // pause due to inactivity
     pauseDraw();
@@ -766,7 +771,7 @@ function startBackTimer() { // starts inactivity background timer
     timer = setTimeout(inactivityTimer, 60000);
 }
 function handleDeviceOrientation(e) {
-    if(movin) {
+    if(movin &&touchState[0]&&touchState[1]) {
         dotU[1] = e.beta;
         dotU[0] = e.gamma;
     }
@@ -784,11 +789,11 @@ function handleTouchEvent(e) {
         let y = touches[i].clientY-cnv_hei/2;
         //console.log(""+x+"  "+y);
         if(!touchState[0]) {
-            if(x-40 < -maxX*scaling && Math.abs(y) < 40)
+            if(x-touchSize*2 < -maxX*scaling && Math.abs(y) < touchSize)
                 touchState[0] = true;
         }
         if(!touchState[1]) {
-            if(x+40 > maxX*scaling && Math.abs(y) < 40)
+            if(x+touchSize*2 > maxX*scaling && Math.abs(y) < touchSize)
                 touchState[1] = true;
         }
     }
