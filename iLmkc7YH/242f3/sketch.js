@@ -126,6 +126,7 @@ var noSleepState = false;
 var wakeLock;
 var touchState = [false, false];
 var touchSize = 40;
+var backcolor;
 function setup() {
     isDraw = false;
     frameRate(60);
@@ -350,61 +351,70 @@ function draw() {
             }
         } /*else if(!movin && dotY>=plen*blanknum+straightLen*0.75) // enable controls after a short freeze at the beginning
             movin=true;*/
-        if(freeze<1) {
-            // record trajectory
-            dis_temp.push([dotX, dotY]);
-            //vDist_temp.push(dotY);
-            act_temp.push(dotU);
-            if(lines!=null) {
-                var pathError = sqError();
-                if(act_temp.length > 1) {
-                    let prev_dotU = act_temp[act_temp.length-2];
-                    if(dist2(dotU, prev_dotU) < maxV[0]*0.01) {
-                        if(pathError>prev_error*0.9)
-                            ;//inactivity += 1;
-                    } else if(inactivity > 0)
-                        inactivity -= 1;
-                    /*if(pathError > pathWidth)
-                        inactivity++;*/
+        if(touchState[0] && touchState[1]) {
+            if(freeze<1) {
+                // record trajectory
+                dis_temp.push([dotX, dotY]);
+                //vDist_temp.push(dotY);
+                act_temp.push(dotU);
+                if(lines!=null) {
+                    var pathError = sqError();
+                    if(act_temp.length > 1) {
+                        let prev_dotU = act_temp[act_temp.length-2];
+                        if(dist2(dotU, prev_dotU) < maxV[0]*0.01) {
+                            if(pathError>prev_error*0.9)
+                                ;//inactivity += 1;
+                        } else if(inactivity > 0)
+                            inactivity -= 1;
+                        /*if(pathError > pathWidth)
+                            inactivity++;*/
+                    }
                 }
+                if(frameNum%5 == 0) {
+                    if(traceBuffer != null)
+                        trace.push(traceBuffer);
+                    if(trace.length > traceLen)
+                        trace.shift();
+                    traceBuffer = {x: dotX, y: dotY};
+                    //erBuffer = "Score: "+(100000/(1000+pathError)).toFixed();
+                }
+                if(inactivity > 100) {
+                    pause();
+                }
+                if(frameNum > 240) {
+                    fbMsg = ' ';
+                }
+                /*if(touchState[0]&&touchState[1])
+                    erBuffer = ' ';
+                else
+                    erBuffer = 'Touch both button on each side to move the ball!';*/
+                // motion model
+                var b = offset==0? 1: -1;
+                dotX = dotX + b*fixBetween(dotU[0],-30,30)*maxV[0]/30;
+                dotX = fixBetween(dotX, -maxX, maxX);
+                
+                dotY = dotY - b*fixBetween(dotU[1],-30,30)*maxV[1]/30;
+                dotY = fixBetween(dotY, -maxY, maxY);
+                if(movin) {
+                    error.push(pathError);
+                }
+                prev_error = pathError;
+            } else {
+                freeze -= 1;
+                if(freeze == 0)
+                    resetAndUnfreeze();
             }
-            if(frameNum%5 == 0) {
-                if(traceBuffer != null)
-                    trace.push(traceBuffer);
-                if(trace.length > traceLen)
-                    trace.shift();
-                traceBuffer = {x: dotX, y: dotY};
-                //erBuffer = "Score: "+(100000/(1000+pathError)).toFixed();
-            }
-            if(inactivity > 100) {
-                pause();
-            }
-            if(frameNum > 240) {
-                fbMsg = ' ';
-            }
-            if(touchState[0]&&touchState[1])
-                erBuffer = ' ';
-            else
-                erBuffer = 'Touch both button on each side to move the ball!';
-            // motion model
-            var b = offset==0? 1: -1;
-            dotX = dotX + b*fixBetween(dotU[0],-30,30)*maxV[0]/30;
-            dotX = fixBetween(dotX, -maxX, maxX);
-            
-            dotY = dotY - b*fixBetween(dotU[1],-30,30)*maxV[1]/30;
-            dotY = fixBetween(dotY, -maxY, maxY);
-            if(movin) {
-                error.push(pathError);
-            }
-            prev_error = pathError;
+            frameNum++;
+            erBuffer = ' ';
+            //backcolor = 'white';
         } else {
-            freeze -= 1;
-            if(freeze == 0)
-                resetAndUnfreeze();
+            erBuffer = 'Touch both button on both sides to unpause !';
+            //backcolor = 'lighgray';
         }
         dotU = [0,0]; // 0,0
         // draw
         clear();
+        //background(backcolor); // white
         background('white');
         stroke('black');
         strokeWeight(4);
@@ -423,7 +433,7 @@ function draw() {
         textSize(Math.floor(10*scaling));
         text(fbMsg+"\n\n"+erBuffer, 0, 0);
         
-        drawCurve(lines[blanknum], frameNum);
+        drawCurve(lines[blanknum], frameNum-1);
         drawBike();
         drawTrace();
         drawOverlay();
@@ -432,7 +442,6 @@ function draw() {
         if(frameNum%10==0)
             frBuffer = fr.toFixed();
         fps += fr;
-        frameNum++;
     }
 }
 function startTrial() {
