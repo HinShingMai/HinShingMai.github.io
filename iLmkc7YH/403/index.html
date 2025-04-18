@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  </head>
+  <body>
+    <div id="instrDiv" style="font-size: 20px;">
+        <form id="cover-form1">
+            <label for="traj">training traj choice:</label></br>
+            <select id="traj" name="cover-select">
+            <option value='0' selected>1, 1, 1</option>
+            <option value='1'>1, 1, -1</option>
+            <option value='2'>1, -1, 1</option>
+            <option value='3'>1, -1, -1</option>
+            <option value='4'>-1, 1, 1</option>
+            <option value='5'>-1, 1, -1</option>
+            <option value='6'>-1, -1, 1</option>
+            <option value='7'>-1, -1, -1</option>
+            </select></br>
+        </form>
+        <button id="CoverBt" class="button button" onclick="startGame()">Start</button>
+    </div>
+    <div id="container-exp" class="exp" style="display:none"></div>
+    <div id="endDiv" class="center_div" style="display:none">
+        <div id="endInstr" style="position: absolute;width:100%;height:50%;top: 0;"></div>
+        <!--<button id="startBt" class="button button">Continue</button>-->
+        <div id="plot" style="position: absolute;width:100%;height:50%;bottom: 0;"></div>
+    </div>
+    <div id="container-failed" style="display:none">
+        <div class="media-left pull-left" href="#">
+            <!-- **TODO** REPLACE THE LOGO HERE WITH YOUR  UNIVERSITY, LAB, or COMPANY -->
+            <!--<img id="adlogo" alt="Lab Logo" />--> 
+        </div>
+        <div id="failed-1" class="media-body" style="display:none">
+            <h1>Oh no!</h1>
+            <hr />
+            <p>The study has been suspended because we detected significant lag during the experiment.</p>
+            <p>This experiment requires a fast computer to display browser animations smoothly. We regret to inform you that your current device might be insufficient for the task.</p>
+            <p>For our research, we require participants to have similar frame rates during the experiment to ensure that the data is comparable.</p>
+            <p>Using a slow computer and having a low frame rate will also cause the experiment to take much longer to complete.</p>
+            <p>You can try closing background apps and unnecessary browser windows. Then, refresh the page and try again. You can also try using a different laptop if you have one.</p>
+            <p>You can also leave the study via this link: <a href="https://app.prolific.com/submissions/complete?cc=CNY5AF0A">Completion Code: CNY5AF0A</a>. We will treat you as being Screened Out and you will be paid a partial compensation for your time.</p>
+            <p>We're sorry for this inconvenience.</p>
+            <!--
+                    <h2>You have a wonderful life now.</h2>
+                    -->
+        </div>
+        <div id="failed-2" class="media-body" style="display:none">
+            <h1>Oh no!</h1>
+            <hr />
+            <p>The study has been suspended due to inactivity.</p>
+            <p>In our experiment, We study the learning process of participants on a motor task.</p>
+            <p>Taking long breaks between learning sessions will interfere with the learning process.</p>
+            <div id="failed-2-return">
+                <p>If you are still interested in the experiment, please click the return button below to go back.</p>
+                <button id="returnBt">return</button>
+                <p>You can also leave the study via this link: <a href="https://app.prolific.com/submissions/complete?cc=CNY5AF0A">Completion Code: CNY5AF0A</a>. We will treat you as being Screened Out and you will be paid a partial compensation for your time.</p></div>
+            <div id="failed-2-disqualify" style="display:none">
+                <p>Because of this, we had to disconnect you from the study as your data will likely be unhelpful to our research.</p>
+                <p>You can leave via this link: <a href="https://app.prolific.com/submissions/complete?cc=CNY5AF0A">Completion Code: CNY5AF0A</a>. We will treat you as being Screened Out and you will be paid a partial compensation for your time.</p>
+                <p>Thank you for your participation and interest in our experiment.</p></div>
+            <!--
+                    <h2>You have a wonderful life now.</h2>
+                    -->
+        </div>
+    </div>
+    <main>
+    </main>
+    <script src="sketch.js"></script>
+  </body>
+</html>
