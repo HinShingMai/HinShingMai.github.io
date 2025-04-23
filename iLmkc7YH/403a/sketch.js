@@ -1,4 +1,5 @@
-let ver = 0.2;
+let ver = 'rlearn-0_2';
+var id = null;
 let cnv;
 let dpi = -1;
 let currentTrainBlock = 0;
@@ -82,7 +83,8 @@ var keyfunc;
 var dpi_scaling = 0;
 var page = 0;
 var ding = [new Audio('./ding-1-c.mp3'), new Audio('./ding-13-c.mp3'), null, new Audio('./ding-25-c.mp3')];
-const trialInstr = ["","Follow the path on screen!","Try to maximize your score!","Try to follow the movement that\n gave you the highest score!"];
+const trialInstr = ["","Move the dot into the box at the bottom of the screen. Then, \n\nFollow the path on screen!","Try to follow the path on screen!\n\nOne of them will later be chosen to be the correct path.",
+"Try to maximize your score by following the correct path!","Try to follow the movement that\n gave you the highest score!"];
 function setup() {
     ding[2] = ding[1];
     isDraw = false;
@@ -161,17 +163,17 @@ function startSession() {
         if(sessionsType[currentSession] > 2) { // baseline or retention block
             reflect = 1;
             if(sessionsType[currentSession] == 3) { // baseline
-                modes = Array(16).fill(6);
-                dis_instr = 1;
+                dis_instr = 2;
                 blank = Array.from(ampl_sign.keys()).sort(() => Math.random()-0.5);
+                modes = Array(blank.length).fill(6);
             } else if(sessionsType[currentSession] == 4) { // retention
                 modes = Array(10).fill(5);
-                dis_instr = 3;
+                dis_instr = 4;
                 blank = Array(modes.length).fill(sign_choice);
             }
         } else {
             modes = Array(20).fill(0);
-            dis_instr = 2;
+            dis_instr = 3;
             blank = Array(modes.length).fill(sign_choice);
             /*if(currentSession > trainBlocks.length-3) // retention or generalization
                 modes = Array(40).fill(0);
@@ -211,11 +213,11 @@ function sessionInfo() {
         isPlot = false;
         mse = 1.0*mse/errors.length;
         // Record data
-        if(dis.length > 0)
+        /*if(dis.length > 0)
             recordTrialSession();
         //subject.progress++;
         //lines = null;
-        /*if(sessionComplete<2&&avgfps<50) { // Screen out participants
+        if(sessionComplete<2&&avgfps<50) { // Screen out participants
             forceQuit(1);
         }*/
     }
@@ -282,7 +284,7 @@ function draw() {
                         //let mean_speed = SAT1_score[0]/SAT1_score[2]; // SAT_score = [sum of speed, sum of error, n]
                         let mean_error = SAT1_score[1]/SAT1_score[2];
                         movin = -120;
-                        let score = 400/(mean_error+400);
+                        let score = 200/(mean_error+200);
                         scores.push(score);
                         score_base.push(score);
                         score_max = fixBetween(score*100, 0, 100).toFixed(0);
@@ -300,12 +302,12 @@ function draw() {
                         //let mean_speed = SAT1_score[0]/SAT1_score[2];
                         let mean_error = SAT1_score[1]/SAT1_score[2];
                         movin = -60;
-                        let score = 400/(mean_error+400);
+                        let score = 200/(mean_error+200);
                         scores.push(score);
                         ding[1].play();
                     }
                     blanknum++;
-                    if(blanknum%10 == 0)
+                    if(blanknum >= blank.length || blanknum%10 == 0)
                         recordTrialSession();
                     dotA = 0.0;
                     dotB = 0.0;
@@ -401,6 +403,11 @@ function draw() {
                 movin += 1;
             else if(movin<0) {
                 movin += 1;
+                if(blanknum >= blank.length) {
+                    isDraw = false;
+                    sessionNext();
+                    return;
+                }
                 dotY = -40;
                 dotX = 0;
             } else if(movin==0) {
@@ -514,8 +521,13 @@ function sinuousCurve(len, c) { // len: total length of trajectory, c: constant 
     for(let k=0; k<repeat; k++) { // generate each sub-trajectory
         let points = [];
         //let points2 = [];
+        let sig = ampl_sign[c[k]];
+        let amp_s = [amp*sig[0], amp*sig[1]];
+        let wid_s = [];
+        wid_s.push(sig[0]==0? 0: wid/Math.abs(sig[0]));
+        wid_s.push(sig[1]==0? 0: wid/Math.abs(sig[1]));
         for(let i=0; i<len; i++) {
-            points.push(amp*ampl_sign[c[k]][0]*Math.E**(-wid*(i-first_mean)**2)+amp*ampl_sign[c[k]][1]*Math.E**(-wid*(i-second_mean)**2)); // sum of two gaussian curves
+            points.push(amp_s[0]*Math.E**(-wid_s[0]*(i-first_mean)**2)+amp_s[1]*Math.E**(-wid_s[1]*(i-second_mean)**2)); // sum of two gaussian curves
         }
         paths.push(points);
     }
@@ -733,7 +745,7 @@ function drawReturnCursor() {
             strokeWeight(1);
             textAlign(CENTER);
             textSize(Math.floor(10*scaling));
-            text(`Move the dot into the box at the bottom of the screen.\nThen, ${trialInstr[dis_instr]}`, 0, -maxY*2/3*scaling);
+            text(trialInstr[dis_instr], 0, -maxY*2/3*scaling);
             //text(trialInstr[dis_instr], 0, -maxY*2/3*scaling);
         } else {
             rect(-maxX*scaling, sMargin*scaling, maxX*scaling*2, -wHeight*scaling);//
@@ -768,13 +780,15 @@ function startBreak(len) { // len-minutes break
     htmlDiv.show();
     timerCount = 60*len;
     graceTime = 180; // participants have 120 seconds to click next button after break timer runs out
-    instr.html(`<br>Let's take a ${len} minute break.<br><br>${len} : 00`);
+    instr.html(`<br>Let's take a ${len} minute break.<br><br>`);
+    //instr.html(`<br>Let's take a ${len} minute break.<br><br>${len} : 00`);
     timer = setInterval(breakCountDown, 1000);
 }
 function breakCountDown() { // timer countdown for break
     timerCount--;
     if(timerCount>10) {
-        select('#endInstr').html(`<br>Let's take a ${-trainBlocks[currentTrainBlock]} minute break.<br>`);
+        select('#endInstr').html(`<br>Let's take a ${-trainBlocks[currentTrainBlock]} minute break.<br><br>${String(Math.floor(timerCount/60)).padStart(2,'0')} : ${String(timerCount%60).padStart(2,'0')}`);
+        //select('#endInstr').html(`<br>Let's take a ${-trainBlocks[currentTrainBlock]} minute break.<br>`);
     } else if(timerCount>0) {
         select('#endInstr').html(`<br>Let's take a ${-trainBlocks[currentTrainBlock]} minute break.<br><br><br><p style="font-size:10vw;color:red;">0 : ${String(timerCount%60).padStart(2,'0')}</p>`);
     } else if(timerCount == 0) {
@@ -803,15 +817,15 @@ function beep() {
 function recordTrialSession() {
     let section = [blanknum-dis.length, blanknum];
     let session = {
-        xh: lines_real,
-        xs: lines_show,
+        xh: lines_real.slice(section[0], section[1]),
+        //xs: lines_show,
         x: Object.assign({}, dis),
         y: Object.assign({}, vDis),
         sec: section,
         num: sessionComplete,
         type: sessionsType[0],
         len: blank,
-        id: null,//subject.id,
+        id: null, // id
         fps: fps[0]/fps[1],
         version: ver,
         scale: scaling,
@@ -915,6 +929,8 @@ function forceQuit(reason) { // force quit experiment because of : 1. low frame 
 function startGame() {
     var values = document.getElementsByName('cover-select');
     sign_choice = Number(values[0].value);
+    //id = values[1].value;
+    //noSave = Number(values[2].value)!=1;
     
     cnv = createCanvas(windowWidth, windowHeight);
     cnv.parent("container-exp");
