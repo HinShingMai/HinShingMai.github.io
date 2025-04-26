@@ -3,7 +3,7 @@ var id = null;
 let cnv;
 let dpi = -1;
 let currentTrainBlock = 0;
-let trainBlocks = [0,3];
+let trainBlocks = [0,3,1]; // 0,3,1
 /*
 -n: n-minutes break
 0: familiarization block
@@ -166,7 +166,7 @@ function startSession() {
             if(sessionsType[currentSession] == 3) { // baseline
                 dis_instr = 2;
                 //blank = Array.from(ampl_sign.keys()).sort(() => Math.random()-0.5);
-                blank = Array.from(ampl_sign.keys().flatMap(i => [i,i,i])).sort(() => Math.random()-0.5);
+                blank = Array.from(ampl_sign.keys().flatMap(i => [i,i])).sort(() => Math.random()-0.5);
                 modes = Array(blank.length).fill(6);
             } else if(sessionsType[currentSession] == 4) { // retention
                 modes = Array(10).fill(5);
@@ -174,7 +174,7 @@ function startSession() {
                 blank = Array(modes.length).fill(sign_choice);
             }
         } else {
-            modes = Array(20).fill(0);
+            modes = Array(40).fill(0);
             dis_instr = 3;
             blank = Array(modes.length).fill(sign_choice);
             /*if(currentSession > trainBlocks.length-3) // retention or generalization
@@ -747,6 +747,9 @@ function drawReturnCursor() {
             rect(-maxX*scaling, sMargin*scaling, maxX*scaling*2, -wHeight*scaling);//
             drawGoal();
             if(mode != 0 && mode != 5) {
+                drawCurve(lines_show[blanknum-1]);
+                drawTrace(true);
+            } else if(blanknum == blank.length) {
                 drawCurve(lines_show[blanknum-1]);
                 drawTrace(true);
             }
