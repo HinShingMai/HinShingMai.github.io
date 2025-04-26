@@ -2,7 +2,6 @@
 <html lang="en">
   <head>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <link rel="stylesheet" type="text/css" href="style.css">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,7 +10,7 @@
   <body>
     <div id="instrDiv" style="font-size: 20px;">
         <form id="cover-form1">
-            <!--<label for="traj">training traj choice:</label></br>
+            <label for="traj">training traj choice:</label>
             <select id="traj" name="cover-select">
             <option value='0' selected>1, 1</option>
             <option value='1'>1, -1</option>
@@ -37,13 +36,18 @@
             <option value='21'>0, -1</option>
             <option value='22'>-2, 0</option>
             <option value='23'>0, -2</option>
-            </select></br>-->
+            </select></br></br>
             <label for="err">error function:</label>
             <select id="err" name="cover-select">
             <option value='1' selected>400/(400+x^2)</option>
             <option value='2'>200/(200+x^2)</option>
             <option value='3'>100/(100+x^2)</option>
             <option value='4'>4096/(4096+x^3)</option>
+            </select></br><br>
+            <label for="sb">skip baseline block? :</label>
+            <select id="sb" name="cover-select">
+            <option value='0' selected>No</option>
+            <option value='1'>Yes</option>
             </select></br><br>
         </form>
         <button id="CoverBt" class="button button" onclick="startGame()">Start</button>

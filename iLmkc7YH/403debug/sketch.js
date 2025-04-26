@@ -3,7 +3,7 @@ var id = null;
 let cnv;
 let dpi = -1;
 let currentTrainBlock = 0;
-let trainBlocks = [0,3,1]; // 0,3,1
+var trainBlocks = [0,3,1]; // 0,3,1
 /*
 -n: n-minutes break
 0: familiarization block
@@ -927,9 +927,14 @@ function forceQuit(reason) { // force quit experiment because of : 1. low frame 
 }
 function startGame() {
     var values = document.getElementsByName('cover-select');
-    //sign_choice = Number(values[0].value);
-    sign_choice = 0;
-    err_func = Number(values[0].value);
+    sign_choice = Number(values[0].value);
+    //sign_choice = 0;
+    err_func = Number(values[1].value);
+    var skip_baseline = Number(values[2].value);
+    if(skip_baseline == 0)
+        trainBlocks = [0,3,1];
+    else if(skip_baseline == 1)
+        trainBlocks = [0,1];
     //id = values[1].value;
     //noSave = Number(values[2].value)!=1;
     
