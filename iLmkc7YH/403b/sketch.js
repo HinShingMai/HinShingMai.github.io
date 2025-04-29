@@ -180,7 +180,7 @@ function startSession() {
             reflect = 1;
             if(sessionsType[currentSession] == 3) { // baseline
                 dis_instr = 2;
-                blank = Array.from(ampl_sign.keys().flatMap(i => [i,i,i])).sort(() => Math.random()-0.5);
+                blank = Array.from(ampl_sign.keys().flatMap(i => [i,i])).sort(() => Math.random()-0.5);
                 modes = Array(blank.length).fill(6);
             } else if(sessionsType[currentSession] == 4) { // retention
                 modes = Array(20).fill(5).concat(Array(50).fill(0));//Array(70).fill(5);

@@ -369,8 +369,8 @@ function draw() {
                 drawCurve(lines_show);//
                 drawTrace(inPath);
             }*/
+            rect(-maxX*scaling, sMargin*scaling, maxX*scaling*2, -wHeight*scaling);
             if(delay == -1) { // in trial
-                rect(-maxX*scaling, sMargin*scaling, maxX*scaling*2, -wHeight*scaling);//
                 drawGoal();
             } else { // pretrial
                 drawInstr();
@@ -396,7 +396,7 @@ function draw() {
             strokeWeight(4);
             noFill();
             translate(windowWidth/2, windowHeight*(sMargin+maxY)/wHeight);
-            //rect(-maxX*scaling, sMargin*scaling, maxX*scaling*2, -wHeight*scaling);
+            rect(-maxX*scaling, sMargin*scaling, maxX*scaling*2, -wHeight*scaling);
             drawReturnCursor();
             frameNum++;
             if(movin<-1)
