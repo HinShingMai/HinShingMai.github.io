@@ -62,8 +62,46 @@ let trainBlocks = [6,5,-1,5,-1,5,6];
 7: reverse testing block
 */
 let totalTrainBlocks;
-let amplitudes = [[2.31, 2.31, 2.31, 1.76, 1.30, 0.97],[2.31, 2.31, 2.31, 1.58, 1.03, 0.81]];
-let frequency = [[0.1, 0.25, 0.55, 0.85, 1.15, 1.55],[0.15, 0.35, 0.65, 0.95, 1.45, 1.85]];
+//let amplitudes = [[2.31, 2.31, 2.31, 1.76, 1.30, 0.97], [2.31, 2.31, 2.31, 1.58, 1.03, 0.81]];
+//let frequency = [[0.1, 0.25, 0.55, 0.85, 1.15, 1.55],[0.15, 0.35, 0.65, 0.95, 1.45, 1.85]];
+var amplitudesA = [[[6.93,0.97,0,0,0], [6.93,0.81,0,0,0]],
+                  [[6.93,1.30, 0.97,0,0], [6.93,1.03, 0.81,0,0]],
+                  [[6.93,1.76, 1.30, 0.97,0], [6.93,1.58, 1.03, 0.81,0]],
+                  [[6.93,0.97,0,0,0], [6.93,0.81,0,0,0]],
+                  [[6.93,1.30, 0.97,0,0], [6.93,1.03, 0.81,0,0]],
+                  [[6.93,1.76, 1.30, 0.97,0], [6.93,1.58, 1.03, 0.81,0]],
+                  [[4.62,2.31,0.97,0,0], [4.62,2.31,0.81,0,0]],
+                  [[4.62,2.31,1.30, 0.97,0], [4.62,2.31,1.03, 0.81,0]],
+                  [[4.62,2.31,1.76, 1.30, 0.97], [4.62,2.31,1.58, 1.03, 0.81]],
+                  [[4.62,2.31,0.97,0,0], [4.62,2.31,0.81,0,0]],
+                  [[4.62,2.31,1.30, 0.97,0], [4.62,2.31,1.03, 0.81,0]],
+                  [[4.62,2.31,1.76, 1.30, 0.97], [4.62,2.31,1.58, 1.03, 0.81]],
+                  [[4.62,2.31,0.97,0,0], [4.62,2.31,0.81,0,0]],
+                  [[4.62,2.31,1.30, 0.97,0], [4.62,2.31,1.03, 0.81,0]],
+                  [[4.62,2.31,1.76, 1.30, 0.97], [4.62,2.31,1.58, 1.03, 0.81]],
+                  [[4.62,2.31,0.97,0,0], [4.62,2.31,0.81,0,0]],
+                  [[4.62,2.31,1.30, 0.97,0], [4.62,2.31,1.03, 0.81,0]],
+                  [[4.62,2.31,1.76, 1.30, 0.97], [4.62,2.31,1.58, 1.03, 0.81]]];
+var frequencyA = [[[0.1, 1.55,0,0,0], [0.15, 1.85,0,0,0]],
+                  [[0.1, 1.15, 1.55,0,0], [0.15, 1.45, 1.85,0,0]],
+                  [[0.1, 0.85, 1.15, 1.55,0], [0.15, 0.95, 1.45, 1.85,0]],
+                  [[0.1, 1.55,0,0,0], [0.1, 1.85,0,0,0]],
+                  [[0.1, 1.15, 1.55,0,0], [0.1, 1.45, 1.85,0,0]],
+                  [[0.1, 0.85, 1.15, 1.55,0], [0.1, 0.95, 1.45, 1.85,0]],
+                  [[0.1, 0.25,1.55,0,0], [0.15, 0.35,1.85,0,0]],
+                  [[0.1, 0.25,1.15, 1.55,0], [0.15, 0.35,1.45, 1.85,0]],
+                  [[0.1, 0.25,0.85, 1.15, 1.55], [0.15, 0.35,0.95, 1.45, 1.85]],
+                  [[0.1, 0.25,1.55,0,0], [0.1, 0.25,1.85,0,0]],
+                  [[0.1, 0.25,1.15, 1.55,0], [0.1, 0.25,1.45, 1.85,0]],
+                  [[0.1, 0.25,0.85, 1.15, 1.55], [0.1, 0.25,0.95, 1.45, 1.85]],
+                  [[0.1, 0.25,1.55,0,0], [0.1, 0.35,1.85,0,0]],
+                  [[0.1, 0.25,1.15, 1.55,0], [0.1, 0.35,1.45, 1.85,0]],
+                  [[0.1, 0.25,0.85, 1.15, 1.55], [0.1, 0.35,0.95, 1.45, 1.85]],
+                  [[0.1, 0.25,1.55,0,0], [0.15, 0.25,1.85,0,0]],
+                  [[0.1, 0.25,1.15, 1.55,0], [0.15, 0.25,1.45, 1.85,0]],
+                  [[0.1, 0.25,0.85, 1.15, 1.55], [0.15, 0.25,0.95, 1.45, 1.85]]];
+var amplitudes;
+var frequency;
 let frameNum = 0; // Number of frames in the current session
 var dotX;
 var dotY;
@@ -495,7 +533,7 @@ function sqError() {
 }
 function sinuousCurve(len, isTest) { // generate trajectory
     const speed = 1;
-    const step = 1/180*0.1;
+    const step = 1/1800;
     var ampl = amplitudes;
     var freq = frequency;
     var repeat;
@@ -504,11 +542,12 @@ function sinuousCurve(len, isTest) { // generate trajectory
         repeat = blank.length;
         for(let k=0;k<repeat; k++) {
             let rand_start = random()*2*PI; // same trajectory but random starting position for test
+            //rand_start = 0;
             let offset_t = [[],[]];
             for(let i=0; i<freq[0].length; i++)
                 offset_t[0].push(rand_start*freq[0][i]/freq[0][0]);
             for(let i=0; i<freq[1].length; i++)
-                offset_t[1].push(rand_start*freq[1][i]/freq[1][0]);
+                offset_t[1].push(rand_start*freq[1][i]/freq[0][0]);
             offset.push(offset_t);
         }
     } else {
@@ -531,8 +570,8 @@ function sinuousCurve(len, isTest) { // generate trajectory
             X = 0;
             Y = 0;
             for(let j=0; j<freq[0].length; j++) {
-                X += 10*ampl[0][j]*cos(2*PI*start*freq[0][j]+offset[k][0][j]);
-                Y += 15*ampl[1][j]*cos(2*PI*start*freq[1][j]+offset[k][1][j]);
+                X += 10*ampl[0][j]*sin(2*PI*start*freq[0][j]+offset[k][0][j]);
+                Y += 10*ampl[1][j]*cos(2*PI*start*freq[1][j]+offset[k][1][j]);
             }
             points.push([X, Y]);
             start += 1/180;
@@ -542,8 +581,8 @@ function sinuousCurve(len, isTest) { // generate trajectory
     for(let k=0; k<repeat; k++) {
         let X = 0; // put starting coordinate into points
         let Y = 0;
-        for(let i=0; i<ampl.length; i++) {
-            X += 10*ampl[0][i]*cos(offset[k][0][i]);
+        for(let i=0; i<freq[0].length; i++) {
+            X += 10*ampl[0][i]*sin(offset[k][0][i]);
             Y += 15*ampl[1][i]*cos(offset[k][1][i]);
             //X += maxX/1.5*ampl[i]*sin(offset[k][i]);
             //Y += maxY/1.5*ampl[i]*cos(offset[k][i]);
@@ -555,8 +594,8 @@ function sinuousCurve(len, isTest) { // generate trajectory
         for(let i=1; i<len+maxTailLen; i++) {
             while(dis < speed) { // add next point of SPEED distance away
                 let post_pt = [0, 0];
-                for(let j=0; j<ampl.length; j++) {
-                    post_pt[0] += 10*ampl[0][j]*cos(2*PI*start*freq[0][j]+offset[k][0][j]);
+                for(let j=0; j<freq[0].length; j++) {
+                    post_pt[0] += 10*ampl[0][j]*sin(2*PI*start*freq[0][j]+offset[k][0][j]);
                     post_pt[1] += 15*ampl[1][j]*cos(2*PI*start*freq[1][j]+offset[k][1][j]);
                 }
                 dis += Math.sqrt(dist2(post_pt, prev_pt));
@@ -568,6 +607,7 @@ function sinuousCurve(len, isTest) { // generate trajectory
         }
         paths.push(points);
     }
+    console.log(paths);
     return paths;
 }
 function randTargets(num) { // generate random points for familiarization session
@@ -600,18 +640,35 @@ function drawCurve(coords, framenum) {
     if(coords!==null) {
         noFill();
         let time = Math.max(framenum-maxTailLen+tailLen, 0);
-        let start = Math.max(time - tailLen - 10, 0);
+        let start = Math.max(time - tailLen, 0);
         let targt = Math.max(time - tailLen, 0);
         let c = 0; // 128
-        strokeWeight(36); // 6
-        for(let i = start+1; i<time; i++) {
-            stroke(c,255,c);
+        strokeWeight(42); // 6
+        //strokeCap(SQUARE);
+        for(let i = start+2; i<time-1; i++) {
+            stroke(c*2,135+c,c*2); // c,255,c
             line(coords[i-1][0]*scaling, -coords[i-1][1]*scaling, coords[i][0]*scaling, -coords[i][1]*scaling);
-            c += 2; // 1
+            c += 1; // 1
         }
+        strokeWeight(30); // 6
+        stroke('yellow');
+        for(let i = start+1; i<time; i++) {
+            line(coords[i-1][0]*scaling, -coords[i-1][1]*scaling, coords[i][0]*scaling, -coords[i][1]*scaling);
+        }
+        /*strokeWeight(48);
+        if(start+1 < time)
+            line(coords[start][0]*scaling, -coords[start][1]*scaling, coords[start+1][0]*scaling, -coords[start+1][1]*scaling);
+        if(time-1 > start)
+            line(coords[time-2][0]*scaling, -coords[time-2][1]*scaling, coords[time-1][0]*scaling, -coords[time-1][1]*scaling);
+        strokeCap(ROUND);*/
         push();
+        /*strokeCap(PROJECT);
+        if(start+1 < time)
+            line(coords[start][0]*scaling, -coords[start][1]*scaling, coords[start+1][0]*scaling, -coords[start+1][1]*scaling);
+        if(time-1 > start)
+            line(coords[time-1][0]*scaling, -coords[time-1][1]*scaling, coords[time][0]*scaling, -coords[time][1]*scaling);*/
         noStroke();
-        fill('white');
+        fill('green');
         for(let i = start+1; i<time; i++) {
             if(i%20 == 10) {
                 let ang = Math.atan2(coords[i+5][1]-coords[i][1], coords[i+5][0]-coords[i][0]);
@@ -786,6 +843,9 @@ function startGame() {
     /*id = values[0].value;
     exDay = Number(values[1].value);
     noSave = Number(values[2].value)!=1;*/
+    trajChoice = Number(values[0].value);
+    amplitudes = amplitudesA[trajChoice];
+    frequency = frequencyA[trajChoice];
     id = '';
     exDay = 0;
     noSave = true;
