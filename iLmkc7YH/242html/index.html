@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Security-Policy" content="
+    default-src * data: blob: ws: wss: gap://ready file://*;
+    style-src * 'unsafe-inline'; 
+    script-src * 'unsafe-inline' 'unsafe-eval';
+    connect-src * ws: wss:;" />
+    <title>Motion Experiment v.0.4</title>
+
+    <link rel="stylesheet" href="./static/bootstrap.min.css" type="text/css" />
+    <link rel="stylesheet" href="./static/style.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <!-- <style>
+        #instrDiv, #endDiv {
+            font-size: 64px; /* Change as per your need */
+            text-align: center;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%; /* you can adjust this as per your requirements */
+            line-height: 1.5; /* to adjust space between lines */
+        }
+    </style> -->
+
+</head>
+
+<body>
+    <!-- Consent Page-->
+    <div id="container-consent">
+        <div id="consent">
+            <p>Congratulations, your device has passed the graphics test!</p>
+            <h2>Next, we need your consent to proceed...</h2>
+            <hr />
+            <div class="legal well">
+                <!-- **TODO** REPLACE COMPENSATION AND CONSENT FORM TO YOUR OWN-->
+                <p>
+                    This research study was approved by the Institutional Review Board of
+                    the University of Southern California in Los Angeles. Please review
+
+                    the conditions and informed consent document below. Please contact
+                    us if you have any questions.
+
+                </p>
+              
+    
+                <p>
+                    As a reminder, you must follow these conditions below: 
+                </p>
+            
+                <p>
+                    <br> 
+                    <p style="color:blue">
+                        1. You must perform this experiment on a computer with a touchpad.
+                    </p>
+                     <!-- <p style="color:blue">
+                        2. You need to complete the second session one day after the first, preferably
+                            exactly 24 hours later. However, a range of 20 to 30 hours is acceptable. If
+                            outside this range, we cannot use your data, and you will not receive the
+                            completion bonus.
+                     </p> -->
+                    <!-- <p style="color:blue">
+                        3. Complete both days in an upright body position at the same desk/table with the laptop at the same distance from your body.
+                     </p> -->
+                    <!--<p style="color:blue">
+                        2. If you have multiple monitors, use only the laptop monitor. Unplug all other monitors. 
+                    </p>-->
+
+                    <p style="color:blue">
+                        2. Complete in a quiet environment where you can focus. 
+                    </p>
+                    
+                <iframe frameborder="1" id="consentForm" src="./static/Consentform.pdf"></iframe>
+                <!--<div id="consentForm">
+                    <iframe frameborder="1" id="consentForm" src="https://docs.google.com/document/d/e/2PACX-1vT8mTpSfTmhpoz5mxNa6RdKbTAxg4XqTrd1kMnWezs4tYdGXqHWJmjOqnej25GGvLrg9TtdE-XJtXs2/pub?embedded=true"></iframe>
+                </div>-->
+                <!--<object data="https://docs.google.com/document/d/e/2PACX-1vT8mTpSfTmhpoz5mxNa6RdKbTAxg4XqTrd1kMnWezs4tYdGXqHWJmjOqnej25GGvLrg9TtdE-XJtXs2/pub?embedded=true" type="application/pdf" width="100%" height="800px">
+                    <p>It appears you don't have a PDF plugin for this browser. No biggie... you can <a href="https://docs.google.com/document/d/e/2PACX-1vT8mTpSfTmhpoz5mxNa6RdKbTAxg4XqTrd1kMnWezs4tYdGXqHWJmjOqnej25GGvLrg9TtdE-XJtXs2/pub?embedded=true">click here to download the PDF file.</a></p>  
+                </object>-->
+                <button type="button" class="btn btn-default btn-sm" onClick="window.print();">
+              <span class="glyphicon glyphicon-print"></span> Print a copy of this
+              </button>
+            </div>
+            <hr />
+            <h4>If you agree and consent to these terms, please click "I Agree" to continue. Otherwise, please exit the page.</h4>
+            <br />
+            <center>
+                <button type="button" class="btn btn-danger btn-lg">
+              <span class="glyphicon glyphicon-ban-circle"></span> I do <u><b>NOT</b></u> consent to these terms.
+              </button> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <button type="button" class="btn btn-primary btn-lg">
+              <span class="glyphicon glyphicon-ok"></span> I Agree 
+              </button>
+            </center>
+        </div>
+    </div>
+                     
+
+    <div id="container-instructions1" style="display:none">
+        <h1><b><u>Welcome</u></b></h1>
+        <p>But first, we need to test your computer's graphics to see if the experiment will run smoothly on your device.</p>
+        <hr>
+        <div class="instructions well">
+            <h2>
+                To make sure the experiment runs smoothly on your computer:
+            </h2>
+            <!--<p>
+                <br> 1. If you have multiple monitors, please leave only one monitor on and disconnect all others.
+            </p>
+            <p>
+                 2. Close any unnecessary background applications that might slow down your computer.
+            </p>
+            <p>
+                 3. Close all of your browser windows and tabs except for the current page and the Prolific page.
+            </p>
+            <p>
+                When you are ready, click the button below to start the test.
+            </p>-->
+            <form id="close-form">
+                <label for="close1"> 1. If you have multiple monitors, please leave only one monitor on and disconnect all others.</label>
+                <input type="checkbox" id="close1" name="close1" value="c1"><br>
+                <label for="close2"> 2. Close any unnecessary background applications that might slow down your computer.</label>
+                <input type="checkbox" id="close2" name="close2" value="c2"><br>
+                <label for="close3"> 3. Close all of your browser windows and tabs except for the current page and the Prolific page.</label>
+                <input type="checkbox" id="close3" name="close3" value="c3"><br><br>
+            </form>
+            <p>
+                Once you check all the checkboxes, click the button below to start the test.
+            </p>
+        </div>
+        
+        <center>
+            <!--<button type="button" class="btn btn-primary btn-lg" onClick="startDPITest(); return show('container-dpi', 'container-instructions1');">
+            <span class="glyphicon glyphicon-arrow-left"></span> Back 
+            </button> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-->
+            <button type="button" class="btn btn-primary btn-lg">
+            <!--<button type="button" class="btn btn-primary btn-lg" onClick="return show('container-instructions2', 'container-instructions1');">-->
+            <span class="glyphicon glyphicon-arrow-right"></span> Start Test
+            </button>
+        </center>
+    </div>
+
+    <div id="container-dpi" style="display:none">
+        <!--<div id="container-instructions1" style="display:none">-->
+        <h1>Measure your device sensitivity</h1>
+        <hr>
+        <div class="instructions well">
+            <p>
+                Before starting the experiment, we need to measure the sensitivity of the device (touchpad/trackpad). 
+            </p>
+    
+            <p>
+                For the measurement, place a credit card on the touchpad so that the shorter side is horizontal. When you are ready, press the space bar to start the measurement.
+            </p>
+            
+            <p>
+                Then, swipe your finger from left to right on the touchpad over the credit card, making sure you move the same distance as the shorter side of the card.
+            </p>
+            
+            <p>
+                Press Space again when you are finished. If you need to restart the measurement, press r.
+            </p>
+            
+            <div class="row">
+                <div>
+                    <center>
+                        <!--<video controls autoplay loop muted src="images/dpi_1.mp4" alt="Demo of sensitivity measurement" style="width:100%"></video>-->
+                    </center>
+                </div>
+            </div>
+    
+            <hr>
+            <p id="dpi-instr">
+                When you are ready, press space to start the measurement.
+            </p>
+    
+            <!--<p style="color:rgb(0, 0, 0)">
+                <br>1. Scroll down until you reach the section titled “DPI analyzer” with a digital ruler displayed on the screen 
+                <br>2. <b>Input into "Target distance" the distance you will move your finger horizontally on the trackpad.</b> If you are using a card for measurement, the distance should be the length of the card. The dimensions of a card is typically 2.125″ x 3.375″ (85.6mm x 54mm).
+                <br>3. Make sure that the "Units" are correct and "Axis" is set to "X+".
+                <br>4. <b>Put your ID or ruler on the touchpad.</b> You might want to use one hand to hold it in place.
+                <br>5. <b>Select the center of the red crosshair on the ruler displayed on the screen (on the bottom left corner of the ruler). Swipe to the right horizontally. Use your ruler to make sure the distance your finger moved is equal to the distance you entered previously. If you are using an ID, you should swipe you finger from one end of the ID to another.</b>
+                <br>6. <b>Record the number shown for "Actual DPI" and input that in the text box below.</b>
+                <br> ***Your cursor should be smooth when you do the experiment, otherwise the DPI has not been configured correctly. 
+                <br> ***An approximate value for the dpi is sufficient. You can round the dpi to the nearest ten.
+            </p> -->
+        </div>
+        <!--<form id="dpiform">
+            <div class="questions" id="dpi">
+                Please input the "Actual DPI" number here:
+                <input id="dpi" type="text" name="dpi" value="">
+            </div>
+        </form>-->
+        <hr>
+        <center>
+            <button type="button" class="btn btn-primary btn-lg">
+            <span class="glyphicon glyphicon-arrow-left"></span> Back 
+            </button> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <button type="button" class="btn btn-primary btn-lg">
+            <span class="glyphicon glyphicon-arrow-right"></span> Next
+            </button>
+        </center>
+    </div>             
+   
+
+
+    <div id="container-instructions2" style="display:none">
+        <h1>What To Do in the Experiment</h1>
+        <hr>
+        <div class="instructions well">
+
+            <h1 style="color:red">
+                In each session in the experiment:
+            </h1>
+           
+            <p>
+                1. You will use your cursor to control an arrow on the screen.
+            </p>
+
+            <p>
+                2. You must use the trackpad to control the arrow in this experiment. Do not control the arrow with your mouse.
+            </p>
+            
+            <p>
+                3. Swipe left or right to swing the arrow's tail, which controls how fast the arrow turns.
+            </p>
+            
+            <p>
+                4. Your goal is to follow the gray path as closely as possible.
+            </p>
+            
+            <p>
+                5. Please do not click on or lift your finger off the trackpad unless you're finger is drifting off the edge.
+            </p>
+            
+            <p>
+                6. There will be training and test sessions. During the latter, the top of the screen may be obstructed, limiting your view.
+            </p>
+            
+            <p>
+                7. You will be presented with either a <span style="color:blue">"blue"</span> or a <span style="color:red">"red"</span> arrow in each session.
+            </p>
+            
+            <!--<p>
+                8. Please type "trojan" on the next page to indicate that you have read the instructions. 
+            </p>-->
+
+        
+            <hr>
+
+            <div class="row">
+                <center>
+                    <div class="columnB2">
+                        <!--<video controls autoplay loop muted src="images/demo_4.mp4" alt="Experiment demo video" style="width:100%"></video>-->
+                    </div>
+                </center>
+            </div>
+        </div>
+        <hr>
+        <center>
+            <!--<button type="button" class="btn btn-primary btn-lg" onClick="return show('container-instructions1', 'container-instructions2');">-->
+            <button type="button" class="btn btn-primary btn-lg">
+            <span class="glyphicon glyphicon-arrow-left"></span> Back 
+            </button> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <!--<button type="button" class="btn btn-primary btn-lg" onClick="show('container-info','container-instructions2');startGame();">-->
+            <button type="button" class="btn btn-primary btn-lg">
+            <!--Begin Experiment <span class="glyphicon glyphicon-arrow-right"></span>-->
+            <span class="glyphicon glyphicon-arrow-right"></span> Begin Experiment 
+            </button>
+        </center>
+    </div>
+
+
+                   
+    <!-- Instructions to measure DPI
+    **TODO** To integrate section, modify the "onClick" method in the previous segment as well as TODO comments in index.js-->
+   <!--<div id="container-instructions1" style="display:none">--> 
+    
+    <!-- Initial Form for basic information 
+    **TODO** Update questions accordingly to what kinds of information you require-->
+    
+    <!--<div id="container-instructions2" style="display:none">-->
+    <!--<div id="container-dpi" style="display:none">--> 
+    <div id="container-info" style="display:none">
+        <!-- CHANGE INDEX.JS CHECKINFO() IF MODIFIED -->
+        <h1>Basic Information</h1>
+        <hr>
+        <form id='infoform'>
+            <div class="row question">
+                <p>
+                    Now, please enter some basic information about yourself.
+                </p>
+
+                <div class="questions" id="pid">
+                    Your Prolific ID:
+                    (please ensure you are entering the ID correctly or else we may not be able to send your payment)
+                    <input id="pid" type="text" name="pid" value="">
+                </div>
+                <!-- delete -->
+                <!--<div class="questions" id="email">
+                    Email:
+                    <input id="email" type="text" name="email" value="">
+                    </div>
+                    -->
+
+                <!-- <div class="questions" id="day">
+                    Which day of the experiment are you on today:
+                        <select id="daytype" name="daytype">
+                        <option value=""></option>
+                        <option value="Day1">Day 1 </option>
+                        <option value="Retention"> Day 2</option>
+                        <option value="test"> (Ignore Admin Purposes ONLY)</option>
+                    </select>
+                </div> -->
+
+
+                <!-- <div class="questions" id="startcode">
+                    What's the code from the last page (Reread the instructions page if you don't know):
+                    <input id="startcode" type="text" name="startcode" value="">
+                </div> -->
+
+                <!-- <hr>
+
+               
+                <p style="color:red">
+                        If you are on Day 2 you do NOT need to fill out the information below!
+                </p> -->
+          
+
+            
+               
+
+                <div class="questions" id="age">
+                    Age:
+                    <input id="age" type="text" name="age" value="">
+                </div>
+
+                <div class="questions" id="sex">
+                    Gender:
+                    <select id="gender" name="gender">
+                    <option value=""></option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Genderqueer/Non-Binary</option>
+                    <option value="pref">Prefer not to say</option>
+                   <!-- <option value="prefer">Prefer not to say</option>-->
+                </select>
+                </div>
+
+                <div class="questions" id="handedness">
+                    Right or left handed:
+                    <select id="hand" name="hand">
+                    <option value=""></option>
+                    <option value="right">Right</option>
+                    <option value="left">Left</option>
+                    <option value="both">Ambidextrous</option>
+                </select>
+                </div>
+                
+
+                <div class="questions" id="stem">
+                    Do you have or are in the process of obtaining a STEM degree? 
+                    <select id="maj" name="maj">
+                    <option value=""></option>
+                    <option value="y">Yes</option>
+                    <option value="n">No</option>
+                </select>
+                </div>
+
+                <div class="questions" id="games">
+                    How many hours of video games do you play weekly?
+                    <select id="vid" name="vid">
+                    <option value=""></option>
+                    <option value="0"> 0</option>
+                    <option value="4-"> less than 5</option>
+                    <option value="5-10">5-10</option>
+                    <option value="10-15">10-15</option>
+                    <option value="15-20">15-20</option>
+                    <option value="25+">20+</option>
+                </select>
+                </div>
+
+                <div class="questions" id="sleep">
+                    Around how many hours do you sleep daily?
+                    <select id="sleep" name="sleep">
+                    <option value=""></option>
+                    <option value="4-"> less than 5</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9+">9+</option>
+                </select>
+                </div>
+
+                <div class="questions" id="laptop">
+                    Approximately how many hours did you spend on your laptop yesterday?
+                    <select id="sleep" name="sleep">
+                    <option value=""></option>
+                    <option value="1-"> 1 or less </option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                    <option value="11">11</option>
+                    <option value="12">12</option>
+                    <option value="13">13</option>
+                    <option value="14">14</option>
+                    <option value="15+">15+</option>
+                     
+                      
+  
+                </select>
+                </div>
+  
+                <hr>
+
+                <p>
+                    You are not <em>required</em>, but are encouraged to complete these.
+                </p>
+
+                <div class="questions" id="ethnicity">
+                    Ethnic Origin:
+                    <select id="ethnic" name="ethnic">
+                    <option value="">
+                    <option value="hispanic">Hispanic or Latino</option>
+                    <option value="non-hispanic">Others</option>
+                       
+                </select>
+                </div>
+
+                <div class="questions" id="racial origin">
+                    Racial Origin:
+                    <select id="race" name="race">
+                    <option value="">
+                    <option value="indian/native">American Indian or Alaskan Native</option>
+                    <option value="asian">Asian</option>
+                    <option value="african-american">Black or African American</option>
+                    <option value="pacific-islander">Native Hawaiian or Other Pacific Islander</option>
+                    <option value="white">White or Caucasian</option>
+                    <option value="multiple">More than one race</option>
+                    <option value="unkown">Unknown</option>
+                </select>
+                </div>
+
+            </div>
+        </form>
+        <hr>
+        <center>
+            <!-- <h1><b><em>Please enter fullscreen mode before you begin.</em></b></h1> //only for safari
+            <hr> -->
+            <button type="button" id="back" value="back" class="btn btn-primary btn-lg previous">
+                <span class="glyphicon glyphicon-arrow-left"></span> Back 
+            </button> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <!--<button type="button" id="begin" value="next" class="btn btn-primary btn-lg continue" -->
+            <button type="button" class="btn btn-primary btn-lg">
+                Next <span class="glyphicon glyphicon-arrow-right"></span>
+                <!--Begin Experiment <span class="glyphicon glyphicon-arrow-right"></span>-->
+            </button>
+        </center>
+    </div>
+
+
+    <!-- Instruction Page 1-->
+    <!--<div id="container-dpi" style="display:none">--> 
+    <!--<div id="container-instructions2" style="display:none">-->
+    
+
+    
+    <!-- Game page -->
+    <div id="container-exp" class="exp" style="display:none">
+    </div>
+
+    <div id="instrDiv" class="center_div" style="display:none"></div>
+    <div id="endDiv" class="center_div" style="display:none">
+        <div id="endInstr" style="position: absolute;width:100%;height:45%;top: 0;"></div>
+        <button id="startBt" type="button" class="button">Continue</button>
+        <div id="plot" style="position: absolute;width:100%;height:45%;bottom: 0;text-align: center;align-items: center;justify-content: center;"></div>
+    </div>
+
+    <!-- Thank you page 
+    **TODO** Update the completion code if necessary-->
+    <div id="container-not-an-ad" style="display:none">
+        <div class="media-left pull-left" href="#">
+            <!-- REPLACE THE LOGO HERE WITH YOUR  UNIVERSITY, LAB, or COMPANY -->
+            
+        </div>
+        <div class="media-body">
+            <h1>Thanks for your participation today!</h1>
+            <hr />
+
+            <h2>Now just two more questions and you're done!</h2>
+            <form id="distractionForm">
+                <div class="question" id="distraction">
+                    <p>
+                        Hopefully you were in a distraction-free environement but if by chance there were any distractions please check the boxes below.  
+                    </p>
+                    <p>
+                        Please answer truthfully (there will be no penalty).
+                    </p>
+                    <br>
+                    <input type="checkbox" id="distract0" name="distract0" value="sleep">
+                    <label for="distract0"> I fell asleep</label><br>
+                    <input type="checkbox" id="distract1" name="distract1" value="Phone">
+                    <label for="distract1"> I used my cellphone</label><br>
+                    <input type="checkbox" id="distract2" name="distract2" value="internet">
+                    <label for="distract2"> I browsed the internet</label><br>
+                    <input type="checkbox" id="distract3" name="distract3" value="person">
+                    <label for="distract3"> Another person spoke to me</label><br>
+                    <input type="checkbox" id="distract4" name="distract4" value="tv">
+                    <label for="distract4"> I watched TV</label><br>
+                    <input type="checkbox" id="distract5" name="distract5" value="music">
+                    <label for="distract5"> I listened to music</label><br>
+                    <input type="checkbox" id="distract6" name="distract6" value="restroom">
+                    <label for="distract6"> I went to the restroom</label><br>
+                    <input type="checkbox" id="distract8" name="distract8" value="noise">
+                    <label for="distract7"> There was a distracting noise in the background</label><br>
+                    <input type="checkbox" id="distract9" name="distract9" value="notif">
+                    <label for="distract8"> I received a notification/call on a digital device</label><br>
+                    <input type="checkbox" id="distract10" name="distract10" value="other">
+                    <label for="distract4"> Other</label><br>
+                </div>
+                <div class="question" id="feedback">
+                    If you checked "Other," please indicate here:
+                    <input id="distracto" type="text" name="distracto" value="">
+                </div>
+            </form>
+            <form id="mouseOrPad">
+                <div class="question">
+                    Using a mouse or touchpad:
+                    <select id="mouseortouch" name="mouseortouch">
+                    <option value=""></option>
+                    <option value="M">Mouse</option>
+                    <option value="T">Touchpad</option>
+                    </select>
+                </div>
+            </form>
+            <form id="rating">
+                <div class="question" id="rating"> 
+                    How much did you enjoy this experiment on a scale of 1-5? 
+                    <select id="rating" name="rating">
+                        <option value=""></option>
+                        <option value="1"> 1 </option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                    </select>
+                </div>
+            </form>
+
+            <form id="feedbackForm">
+                <div class="question" id="feedback">
+                    Let us know if you had any issues with this experiment.
+                    <input id="feedback" type="text" name="feedback" value="">
+                </div>
+            </form>
+            <!-- <h2 style="color:red"> To ensure you get paid, make sure (1) press submit AND (2) paste this code in Prolific: C19SLTLP</h2> -->
+           
+            <center>
+                <!-- <h1><b><em>Please enter fullscreen mode before you begin.</em></b></h1> //only for safari
+                <hr> -->
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <button type="button" id="end" value="final">
+                    Submit 
+                </button>
+            </center>
+            <!-- **TODO** Customize the message you want for your experiment -->
+            
+            <!-- <h2>If you do not receive compensation in 7 business days please reach out to jayaswal@usc.edu</h2> -->
+            <h2>Have a great day!</h2>
+        </div>
+    </div>
+
+    <!-- Ended early page -->
+    <div id="container-failed" style="display:none">
+        <div class="media-left pull-left" href="#">
+            <!-- **TODO** REPLACE THE LOGO HERE WITH YOUR  UNIVERSITY, LAB, or COMPANY -->
+            <!--<img id="adlogo" alt="Lab Logo" />--> 
+        </div>
+        <div id="failed-1" class="media-body" style="display:none">
+            <h1>Oh no!</h1>
+            <hr />
+            <p>The study has been suspended because we detected significant lag during the experiment.</p>
+            <p>This experiment requires a fast computer to display browser animations smoothly. We regret to inform you that your current device might be insufficient for the task.</p>
+            <p>For our research, we require participants to have similar frame rates during the experiment to ensure that the data is comparable.</p>
+            <p>Using a slow computer and having a low frame rate will also cause the experiment to take much longer to complete.</p>
+            <p>You can try closing background apps and unnecessary browser windows. Then, refresh the page and try again. You can also try using a different laptop if you have one.</p>
+            <p>You can also leave the study via this link: <a href="https://app.prolific.com/submissions/complete?cc=CNY5AF0A">Completion Code: CNY5AF0A</a>. We will treat you as being Screened Out and you will be paid a partial compensation for your time.</p>
+            <p>We're sorry for this inconvenience.</p>
+            <!--
+                    <h2>You have a wonderful life now.</h2>
+                    -->
+        </div>
+        <div id="failed-2" class="media-body" style="display:none">
+            <h1>Oh no!</h1>
+            <hr />
+            <p>The study has been suspended due to inactivity.</p>
+            <p>In our experiment, We study the learning process of participants on a motor task.</p>
+            <p>Taking long breaks between learning sessions will interfere with the learning process.</p>
+            <div id="failed-2-return">
+                <p>If you are still interested in the experiment, please click the return button below to go back.</p>
+                <button id="returnBt">return</button>
+                <p>You can also leave the study via this link: <a href="https://app.prolific.com/submissions/complete?cc=C3NQAYOS">Completion Code: C3NQAYOS</a>. We will treat you as being Screened Out and you will be paid a partial compensation for your time.</p></div>
+            <div id="failed-2-disqualify" style="display:none">
+                <p>Because of this, we had to disconnect you from the study as your data will likely be unhelpful to our research.</p>
+                <p>You can leave via this link: <a href="https://app.prolific.com/submissions/complete?cc=C3NQAYOS">Completion Code: C3NQAYOS</a>. We will treat you as being Screened Out and you will be paid a partial compensation for your time.</p>
+                <p>Thank you for your participation and interest in our experiment.</p></div>
+            <!--
+                    <h2>You have a wonderful life now.</h2>
+                    -->
+        </div>
+    </div>
+
+    <!-- Final Page -->
+    <div id="final-page" style="display:none">
+        <div class="media-left pull-left" href="#">
+            <!-- **TODO** REPLACE THE LOGO HERE WITH YOUR  UNIVERSITY, LAB, or COMPANY -->
+           <!--<img id="adlogo" alt="Lab Logo" />--> 
+        </div>
+        <div class="media-body">
+            <h1>Your responses has been saved, thank you!</h1>
+            <hr />
+            <p>You can return to Prolific via this link: <a href="https://app.prolific.com/submissions/complete?cc=CQMEKND0">Completion Code: CQMEKND0</a></p>
+        </div>
+    </div>
+    <div id="final-page2" style="display:none">
+        <div class="media-left pull-left" href="#">
+            <!-- **TODO** REPLACE THE LOGO HERE WITH YOUR  UNIVERSITY, LAB, or COMPANY -->
+           <!--<img id="adlogo" alt="Lab Logo" />--> 
+        </div>
+        <div class="media-body">
+            <h1>Your responses has been saved, thank you!</h1>
+        </div>
+    </div>
+</body>
+
+<!--<script src="static/lib/jquery-min.js"></script>
+<script src="static/lib/bootstrap.min.js"></script>
+<script src="static/lib/d3.v3.min.js"></script>
+<script src="static/lib/underscore-min.js"></script>
+<script src="static/lib/backbone-min.js"></script>
+<script src="index_new.js"></script>-->
+
+</html>
