@@ -718,6 +718,9 @@ function drawOverlay() {
         fill('grey');
     } else {
         stroke('grey');
+        strokeWeight(1);
+        fill('grey');
+        text("Press", -maxX*scaling+touchSize/2, maxY*scaling-touchSize/2);
         strokeWeight(6);
         noFill();
     }
@@ -727,6 +730,9 @@ function drawOverlay() {
         fill('grey');
     } else {
         stroke('grey');
+        strokeWeight(1);
+        fill('grey');
+        text("Press", maxX*scaling-touchSize/2, maxY*scaling-touchSize/2);
         strokeWeight(6);
         noFill();
     }
