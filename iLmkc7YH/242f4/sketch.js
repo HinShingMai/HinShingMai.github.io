@@ -802,9 +802,9 @@ function handleOrientationChange(e) {
     windowResized();
 }
 function handleTouchEvent(e) {
-    if (e.touches.length>1) { // disable zooming etc. If there is more than one touch
+    /*if (e.touches.length>1) { // disable zooming etc. If there is more than one touch
         e.preventDefault();
-    }
+    }*/
     var touches = e.touches;
     //console.log(touches);
     touchState = [false, false];

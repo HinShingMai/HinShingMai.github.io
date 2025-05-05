@@ -630,8 +630,6 @@ function drawCurve(coords, framenum) {
         strokeWeight(6);
         for(let i = start+1; i<time; i++)
             line(coords[i-1][0]*scaling, -coords[i-1][1]*scaling, coords[i][0]*scaling, -coords[i][1]*scaling);
-        //noStroke();
-        //fill('grey');
         stroke('grey');
         ellipse(coords[start][0]*scaling, -coords[start][1]*scaling, 30,30);
     }
