@@ -849,7 +849,7 @@ function startGame() {
     id = '';
     exDay = 0;
     noSave = true;
-    let nor = Number(values[0].value);
+    let nor = Number(values[1].value);
     if(nor == 0)
         trainBlocks = [6]; // 4
     else
