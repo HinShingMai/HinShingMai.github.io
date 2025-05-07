@@ -485,10 +485,10 @@ function runDraw() {
     clear();
     window.addEventListener('deviceorientation', handleDeviceOrientation);
     //screen.orientation.addEventListener("change", handleOrientationChange);
-    window.addEventListener('touchstart', handleTouchEvent1);
-    window.addEventListener('touchmove', handleTouchEvent2);
-    window.addEventListener('touchcancel', handleTouchEvent3);
-    window.addEventListener('touchend', handleTouchEvent4);
+    window.addEventListener('touchstart', handleTouchEvent);
+    window.addEventListener('touchmove', handleTouchEvent);
+    window.addEventListener('touchcancel', handleTouchEvent);
+    window.addEventListener('touchend', handleTouchEvent);
     loop();
     try {
         //wakeLock = await navigator.wakeLock.request("screen");
@@ -503,10 +503,10 @@ function pauseDraw() {
     clear();
     window.removeEventListener("deviceorientation", handleDeviceOrientation);
     //screen.orientation.removeEventListener("change", handleOrientationChange);
-    window.removeEventListener('touchstart', handleTouchEvent1);
-    window.removeEventListener('touchmove', handleTouchEvent2);
-    window.removeEventListener('touchcancel', handleTouchEvent3);
-    window.removeEventListener('touchend', handleTouchEvent4);
+    window.removeEventListener('touchstart', handleTouchEvent);
+    window.removeEventListener('touchmove', handleTouchEvent);
+    window.removeEventListener('touchcancel', handleTouchEvent);
+    window.removeEventListener('touchend', handleTouchEvent);
     if(wakeLock)
         wakeLock.release().then(() => {wakeLock = null;});
 }
