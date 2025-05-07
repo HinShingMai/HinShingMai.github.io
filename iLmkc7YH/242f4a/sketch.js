@@ -132,7 +132,7 @@ var noSleepState = false;
 var wakeLock;
 var touchState = [false, false];
 var touchSize = 80;
-var touchesList = null;
+var touchesList = [];
 var backcolor;
 function setup() {
     isDraw = false;
