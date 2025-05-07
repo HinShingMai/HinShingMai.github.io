@@ -358,6 +358,20 @@ function draw() {
             }
         } /*else if(!movin && dotY>=plen*blanknum+straightLen*0.75) // enable controls after a short freeze at the beginning
             movin=true;*/
+        touchState = [false, false];
+        for(let i=0; i<touchesList.length; i++) {
+            let x = touchesList[i].clientX-cnv_wid/2;
+            let y = touchesList[i].clientY-cnv_hei/2;
+            //console.log(""+x+"  "+y);
+            if(!touchState[0]) {
+                if(x-touchSize*2 < -maxX*scaling && y+touchSize*2 > maxY*scaling) // Math.abs(y) < touchSize
+                    touchState[0] = true;
+            }
+            if(!touchState[1]) {
+                if(x+touchSize*2 > maxX*scaling && y+touchSize*2 > maxY*scaling)
+                    touchState[1] = true;
+            }
+        }
         if(true) {//(touchState[0] && touchState[1]) {
             if(freeze<1) {
                 // record trajectory
@@ -390,20 +404,6 @@ function draw() {
                 }
                 if(frameNum > 240) {
                     fbMsg = ' ';
-                }
-                touchState = [false, false];
-                for(let i=0; i<touchesList.length; i++) {
-                    let x = touchesList[i].clientX-cnv_wid/2;
-                    let y = touchesList[i].clientY-cnv_hei/2;
-                    //console.log(""+x+"  "+y);
-                    if(!touchState[0]) {
-                        if(x-touchSize*2 < -maxX*scaling && y+touchSize*2 > maxY*scaling) // Math.abs(y) < touchSize
-                            touchState[0] = true;
-                    }
-                    if(!touchState[1]) {
-                        if(x+touchSize*2 > maxX*scaling && y+touchSize*2 > maxY*scaling)
-                            touchState[1] = true;
-                    }
                 }
                 // motion model
                 var b = offset==0? 1: -1;
