@@ -359,7 +359,7 @@ function draw() {
             strokeWeight(4);
             noFill();
             translate(windowWidth/2, windowHeight*(sMargin+maxY)/wHeight);
-            //rect(-maxX*scaling, sMargin*scaling, maxX*scaling*2, -wHeight*scaling);
+            rect(-maxX*scaling, sMargin*scaling, maxX*scaling*2, -wHeight*scaling);
             /*if(mode == 0 || mode > 3) { // nofeedback trials
                 if(delay == -1) {
                     rect(-maxX*scaling, sMargin*scaling, maxX*scaling*2, -wHeight*scaling);//
@@ -381,7 +381,6 @@ function draw() {
                 drawTrace(inPath);
             }*/
             if(delay == -1) { // in trial
-                rect(-maxX*scaling, sMargin*scaling, maxX*scaling*2, -wHeight*scaling);//
                 drawGoal();
             } else { // pretrial
                 drawInstr();
@@ -407,7 +406,7 @@ function draw() {
             strokeWeight(4);
             noFill();
             translate(windowWidth/2, windowHeight*(sMargin+maxY)/wHeight);
-            //rect(-maxX*scaling, sMargin*scaling, maxX*scaling*2, -wHeight*scaling);
+            rect(-maxX*scaling, sMargin*scaling, maxX*scaling*2, -wHeight*scaling);
             drawReturnCursor();
             frameNum++;
             if(movin<-1)
@@ -561,9 +560,13 @@ function sinuousCurve(len, c) { // len: total length of trajectory, c: traj type
                 points.push(amp_s*sin(PI*i/150)-amp_s/2*sin(PI*i/75));
             }
         } else { // asymmetric S curve
-            let amp_s = amp*sig[0]/1.6;
-            for(let i=0; i<len; i++) {
-                points.push(amp_s*sin(PI*i/150)-amp_s/2*sin(PI*i/300)-amp_s/2.7*sin(PI*i/75));
+            let amp_s = amp*Math.sign(sig[0])/0.8;
+            if(sig[0] == 1 || sig[0] == -1) { // small peak first
+                for(let i=0; i<len; i++)
+                    points.push(amp_s*sin(PI*i/150)-amp_s/2*sin(PI*i/300)-amp_s/2.7*sin(PI*i/75));
+            } else { // large peak first
+                for(let i=0; i<len; i++)
+                    points.push(amp_s*sin(PI*i/150+2*PI)-amp_s/2*sin(PI*i/300+PI)-amp_s/2.7*sin(PI*i/75+4*PI));
             }
         }
         paths.push(points);
