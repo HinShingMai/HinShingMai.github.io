@@ -30,10 +30,14 @@ let trainBlocks = [0,3,-1,1,-1,1,-10,4];//[0,3,1,4];
 */
 let totalTrainBlocks;
 let ampl_sign = 
-[[1,1],[2,2],[-1,-1],[-2,-2],
+/*[[1,1],[2,2],[-1,-1],[-2,-2],
 [-1,-2],[-2,-1],[1,2],[2,1],
 [1,-1],[2,-2],[-1,1],[-2,2],
-[-1,2],[-2,1],[1,-2],[2,-1]];
+[-1,2],[-2,1],[1,-2],[2,-1]];*/
+[[1,1],[-2,-2],[-1,-1],[2,2],
+[-1,-2],[2,1],[1,2],[-2,-1],
+[1,-1],[-2,2],[-1,1],[2,-2],
+[-1,2],[2,-1],[1,-2],[-2,1]];
 let sign_choice;
 let frameNum = 0; // Number of frames in the current session
 var dotX;
@@ -962,7 +966,7 @@ function handleCalibrationKey(e) { // handles key pressed during calibration
                 dotB = 0;
                 return;
             }
-            speed_scale = dotB/500;
+            speed_scale = dotB/800;
             console.log(speed_scale);
             document.getElementById("container-exp").onmousemove = handleMouseMove;
             document.onkeyup = null;
