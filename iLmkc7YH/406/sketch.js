@@ -149,7 +149,7 @@ function startSession() {
         if(currentTrainBlock==0) {
             document.onkeyup = handleCalibrationKey;
             mode = 2; // 0: normal, 1: familiarization, 2/3: mouse calibration, 4: no-feedback straight, 5: no-feedback trial, 6: baseline trial
-            modes = Array(1).fill(1).concat(Array(1).fill(4)); // 10,10
+            modes = Array(10).fill(1).concat(Array(10).fill(4)); // 10,10
             movin = -300; // 1: in trial, 0: awaiting cursor to move back to starting position(resetting), <0: inter-trial cooldown
             dis_instr = 1;
             blank = Array(modes.length).fill(0);
@@ -171,8 +171,8 @@ function startSession() {
             reflect = 1;
             if(sessionsType[currentSession] == 3) { // baseline
                 dis_instr = 2;
-                //blank = Array.from([0,1,4,5,8,9,12,13].flatMap(i => [i,i,i,i,i,i,i,i,i,i])).sort(() => Math.random()-0.5);
-                blank = [0,1,2,3,4,5,6,7];
+                blank = Array.from([0,1,2,3,4,5,6,7].flatMap(i => [i,i,i,i,i])).sort(() => Math.random()-0.5);
+                //blank = [0,1,2,3,4,5,6,7];
                 modes = Array(blank.length).fill(6);
             } else if(sessionsType[currentSession] == 4) { // retention
                 modes = Array(20).fill(5).concat(Array(50).fill(0));//Array(70).fill(5);
