@@ -637,14 +637,14 @@ function drawReturnCursor() {
             ellipse(dotX*scaling, dotY*scaling, 30, 30);
         }
         if(frameNum > 1800) {
-            document.exitPointerLock();
+            /*document.exitPointerLock();
             cnv.parent().onmousemove = null;
             noLoop();
             butfunc = ()=>{cnv.parent().requestPointerLock({unadjustedMovement: true});
                             cnv.parent().onmousemove = handleMouseMove;
                             frameNum = 0;
                             loop();};
-            forceQuit(2);
+            forceQuit(2);*/
         } else if(frameNum > 1200) {
             stroke('lightgray');
             fill('lightgray');
@@ -674,8 +674,8 @@ function drawReturnCursor() {
             drawGoal(lines[blank[blanknum]]);
             if(mode != 0 && mode != 5)
                 drawCurve(lines[blank[blanknum]]);
-            //if(mode == 1)
-            drawTrace(true);
+            if(mode != 5)//if(mode == 1)
+                drawTrace(true);
             if(redo > 0) {
                 strokeWeight(1);
                 textAlign(CENTER);
