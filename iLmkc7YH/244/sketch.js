@@ -511,7 +511,8 @@ function pauseDraw() {
         wakeLock.release().then(() => {wakeLock = null;});
 }
 function errorToScore(e) {
-    return 360000/(3600+e);
+    //return 360000/(3600+e);
+    return 100*exp(-e/4096);
 }
 function fixBetween(x, minimum, maximum) {
     if(x < minimum)
