@@ -359,16 +359,27 @@ function draw() {
         } /*else if(!movin && dotY>=plen*blanknum+straightLen*0.75) // enable controls after a short freeze at the beginning
             movin=true;*/
         touchState = [false, false];
-        for(let i=0; i<touchesList.length; i++) {
+        /*for(let i=0; i<touchesList.length; i++) {
             let x = touchesList[i].clientX-cnv_wid/2;
             let y = touchesList[i].clientY-cnv_hei/2;
             //console.log(""+x+"  "+y);
             if(!touchState[0]) {
-                if(x-touchSize*2 < -maxX*scaling && y+touchSize*2 > maxY*scaling) // Math.abs(y) < touchSize
+                if(x-touchSize*2 < -maxX*scaling && y-touchSize*2 > maxY*scaling) // Math.abs(y) < touchSize
                     touchState[0] = true;
             }
             if(!touchState[1]) {
-                if(x+touchSize*2 > maxX*scaling && y+touchSize*2 > maxY*scaling)
+                if(x+touchSize*2 > maxX*scaling && y-touchSize*2 > maxY*scaling)
+                    touchState[1] = true;
+            }
+        }*/
+        for(let i=0; i<touchesList.length; i++) {
+            let x = touchesList[i].clientX-cnv_wid/2;
+            let y = touchesList[i].clientY-cnv_hei/2-maxY*scaling;
+            //console.log(""+x+"  "+y);
+            if(Math.abs(y) < touchSize) {// Math.abs(y) < touchSize
+                if(!touchState[0] && Math.abs(x+maxX*scaling) < touchSize*1.5)
+                    touchState[0] = true;
+                if(!touchState[1] && Math.abs(x-maxX*scaling) < touchSize*1.5)
                     touchState[1] = true;
             }
         }
@@ -438,7 +449,7 @@ function draw() {
         noFill();
         //let high = int(maxY*blank[blanknum]-dotY);
         //translate(cnv_wid/2, cnv_hei/2);
-        translate(window.innerWidth/2, window.innerHeight/2);
+        translate(window.innerWidth/2, (window.innerHeight-touchSize)/2);
         //rotate(-screen.orientation.angle/180*PI);
         rect(-maxX*scaling, -maxY*scaling, maxX*scaling*2, maxY*scaling*2);
         /*stroke('black');
@@ -657,19 +668,43 @@ function drawCurve(coords, framenum) {
             let v = unitVector(coords[time-1][0]*scaling-coords[time-2][0]*scaling, coords[time-1][1]*scaling-coords[time-2][1]*scaling);
             line(coords[time-2][0]*scaling, -coords[time-2][1]*scaling, (coords[time-1][0]*scaling+(v[0])*8), -(coords[time-1][1]*scaling+(v[1])*8));
         }
-        noStroke();
+        /*noStroke();
         fill('green');
         for(let i = start+1; i<time; i++) {
             if(i%20 == 10) {
                 let ang = Math.atan2(coords[i+5][1]-coords[i][1], coords[i+5][0]-coords[i][0]);
                 triangle(coords[i+5][0]*scaling, -coords[i+5][1]*scaling, coords[i][0]*scaling+4*Math.sin(ang), -coords[i][1]*scaling+4*Math.cos(ang), coords[i][0]*scaling-4*Math.sin(ang), -coords[i][1]*scaling-4*Math.cos(ang));
             }
+        }*/
+        strokeWeight(2);
+        strokeCap(ROUND);
+        stroke('green');
+        for(let i = start+1; i<time; i++) {
+            if(i%10 == 8) {
+                line(coords[i-1][0]*scaling, -coords[i-1][1]*scaling, coords[i][0]*scaling, -coords[i][1]*scaling);
+            }
+        }
+        if(freeze<1 && sqError() > 100*scaling**2) {
+            //var target = lines[blanknum][frameNum-tailLen];
+            //return dist2([dotX, dotY], target);
+            //return (dotX - target[0])**2 + (dotY - target[1])**2;
+            //noStroke();
+            stroke('grey');
+            fill('grey');
+            let dy = coords[start][1]-dotY;
+            let dx = coords[start][0]-dotX;
+            let ang = Math.atan2(dy, dx);
+            let ax = (dotX+dx/2)*scaling;
+            let ay = -(dotY+dy/2)*scaling;
+            triangle(ax+12*cos(ang), ay-12*sin(ang), ax+6*sin(ang), ay+6*cos(ang), ax-6*sin(ang), ay-6*cos(ang));
+            line(ax, ay, (dotX+dx/8)*scaling, -(dotY+dy/8)*scaling)
+            //line(ax, ay, dotX*scaling, -dotY*scaling)
         }
         pop();
         stroke('green'); // grey
         strokeWeight(4);
         fill('white');
-        ellipse(coords[targt][0]*scaling, -coords[targt][1]*scaling, 16,16);
+        ellipse(coords[targt][0]*scaling, -coords[targt][1]*scaling, 24,24); // 16
     }
 }
 function vectorSize(x, y) {
@@ -730,7 +765,7 @@ function drawOverlay() {
     if(!touchState[0] || !touchState[1]) {
         noStroke();
         fill(128,128,128,128);
-        rect(-cnv_wid/2, -cnv_hei/2, cnv_wid, cnv_hei);
+        rect(-cnv_wid/2, -(cnv_hei-touchSize)/2, cnv_wid, cnv_hei+touchSize);
         stroke('black');
         fill('black');
         textAlign(CENTER,CENTER);
@@ -757,11 +792,11 @@ function drawOverlay() {
         stroke('grey');
         strokeWeight(1);
         fill('grey');
-        text("Press", -maxX*scaling+touchSize/2, maxY*scaling-touchSize/2);
+        text("Press", -maxX*scaling+touchSize/2, maxY*scaling+touchSize/2);
         strokeWeight(6);
         noFill();
     }
-    ellipse(-maxX*scaling+touchSize/2, maxY*scaling-touchSize/2, touchSize,touchSize);
+    ellipse(-maxX*scaling+touchSize/2, maxY*scaling+touchSize/2, touchSize,touchSize);
     if(touchState[1]) {
         noStroke();
         fill('grey');
@@ -769,11 +804,11 @@ function drawOverlay() {
         stroke('grey');
         strokeWeight(1);
         fill('grey');
-        text("Press", maxX*scaling-touchSize/2, maxY*scaling-touchSize/2);
+        text("Press", maxX*scaling-touchSize/2, maxY*scaling+touchSize/2);
         strokeWeight(6);
         noFill();
     }
-    ellipse(maxX*scaling-touchSize/2, maxY*scaling-touchSize/2, touchSize,touchSize);
+    ellipse(maxX*scaling-touchSize/2, maxY*scaling+touchSize/2, touchSize,touchSize);
 }
 function pause() { // pause due to inactivity
     pauseDraw();
@@ -935,7 +970,7 @@ function startGame() {
         cnv_wid = window.innerHeight;
     }*/
     let sx = cnv_wid/width_x;
-    let sy = cnv_hei/width_x/1.5;
+    let sy = (cnv_hei-touchSize)/width_x/1.5;
     scaling_base = sx < sy? sx:sy;
     select('#instrDiv').hide();
     totalTrainBlocks = trainBlocks.length;
@@ -964,7 +999,7 @@ function windowResized() {
     }*/
     // set scaling depending on screen size
     let sx = cnv_wid/width_x;
-    let sy = cnv_hei/width_x/1.5;
+    let sy = (cnv_hei-touchSize)/width_x/1.5;
     scaling_base = sx < sy? sx:sy;
     scaling = scaling_base;
     //console.log("resized2 "+isDraw);
