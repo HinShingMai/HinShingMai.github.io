@@ -49,6 +49,7 @@ var isDraw;
 var dis;
 var vDis;
 var nse;
+var fail;
 var scores;
 var scores_unsorted;
 var saved_sat;
@@ -132,7 +133,7 @@ function startSession() {
     document.getElementById("container-exp").requestPointerLock({unadjustedMovement: true});
     dis = []; 
     vDis = [];
-    nse = [];
+    fail = [];
     scores = [];
     crossing = [];
     nextCrossing = 0;
@@ -212,16 +213,21 @@ function startSession() {
 }
 function setInTrialTimer() {
     if(timer) clearTimeout(timer);
+    timerCount = 0;
     timer = setTimeout(()=>{
-            document.exitPointerLock();
-            cnv.parent().onmousemove = null;
-            noLoop();
-            butfunc = ()=>{cnv.parent().requestPointerLock({unadjustedMovement: true});
-                            cnv.parent().onmousemove = handleMouseMove;
-                            frameNum = 0;
-                            setInTrialTimer();
-                            loop();};
-            forceQuit(2);} ,30000);
+            timerCount = 20;
+            beep();
+            timer = setTimeout(()=>{
+                document.exitPointerLock();
+                cnv.parent().onmousemove = null;
+                noLoop();
+                butfunc = ()=>{cnv.parent().requestPointerLock({unadjustedMovement: true});
+                                cnv.parent().onmousemove = handleMouseMove;
+                                frameNum = 0;
+                                setInTrialTimer();
+                                loop();};
+                forceQuit(2);} ,10000);
+            } ,20000);
 }
 function sessionInfo() {
     let htmlDiv = select('#endDiv');
@@ -329,6 +335,7 @@ function draw() {
                         if(blanknum > blank.length-2 || blanknum%10 == 9)
                             recordTrialSession();
                     } else {
+                        fail.push({x: dis_temp, y: vDis_temp, cross: crossing_temp, trial: blanknum})
                         movin = -120;
                         redo = 1;
                         ding[0].play();
@@ -360,6 +367,7 @@ function draw() {
             } else {
                 delay -= 1;
                 inPath = true;
+                setInTrialTimer();
             }
             // draw
             clear();
@@ -469,8 +477,13 @@ function draw() {
                 cnv.parent().onclick = handleExpClick;
         }
         textSize(12);
-        strokeWeight(1);
         text(`${currentTrainBlock} - ${Math.max(blanknum, 0)}/${blank.length}`, maxX*scaling-50, sMargin*scaling-10);
+        if(timerCount > 10) {
+            stroke('red');
+            fill('red');
+            textSize(Math.floor(12*scaling));
+            text("Are you still there?\nMove your cursor now or the experiment\nwill terminate due to inactivity.", 0, -maxY*scaling*0.3);
+        }
     }
 }
 function fixBetween(x, minimum, maximum) {
@@ -699,23 +712,7 @@ function drawReturnCursor() {
             ellipse(0, 0, 30, 30);  // start position?
             ellipse(dotX*scaling, dotY*scaling, 30, 30);
         }
-        if(frameNum > 1800) {
-            /*document.exitPointerLock();
-            cnv.parent().onmousemove = null;
-            noLoop();
-            butfunc = ()=>{cnv.parent().requestPointerLock({unadjustedMovement: true});
-                            cnv.parent().onmousemove = handleMouseMove;
-                            frameNum = 0;
-                            loop();};
-            forceQuit(2);*/
-        } else if(frameNum > 1200) {
-            stroke('lightgray');
-            fill('lightgray');
-            textSize(Math.floor(10*scaling));
-            strokeWeight(1);
-            textAlign(CENTER,CENTER);
-            text("You've been inactive for too long.\n\nMove the dot into the box now or\nthe experiment will terminate.", 0, -maxY*2/3*scaling);
-        } else if(frameNum > 600) {
+        if(frameNum > 600) {
             stroke('lightgray');
             fill('lightgray');
             textSize(Math.floor(10*scaling));
@@ -831,12 +828,13 @@ function recordTrialSession() {
         scale: scaling,
         error: Object.assign({}, errors),
         score: scores,
-        //SAT: saved_sat.slice(saved_sat.length-blank, saved_sat.length),
+        fails: fail,
         mode: modes.slice(section[0], section[1])
     }
     dis = [];
     vDis = [];
     errors = [];
+    fail = [];
     fps = [0.0,0];
     scores = [];
     console.log(session);
