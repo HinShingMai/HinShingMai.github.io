@@ -153,7 +153,7 @@ function startSession() {
             document.onkeyup = handleCalibrationKey;
             // -2/3: mouse calibration, 0: start of block, 1: normal, 2: familiarization, 3: no-feedback straight, 4: no-feedback trial, 5: baseline trial, 6: show target feedback trial
             mode = -2;
-            modes = Array(5).fill(2).concat(Array(5).fill(3)); // 10,10
+            modes = Array(5).fill(2).concat(Array(5).fill(3));
             movin = -300; // 1: in trial, 0: awaiting cursor to move back to starting position(resetting), <0: inter-trial cooldown
             dis_instr = 1;
             blank = Array(modes.length).fill(0);
@@ -179,12 +179,12 @@ function startSession() {
                 //blank = [0,1,2,3,4,5,6,7];
                 modes = Array(blank.length).fill(5);
             } else if(sessionsType[currentSession] == 4) { // retention
-                modes = Array(20).fill(4).concat(Array(50).fill(1));//Array(70).fill(5);
+                modes = Array(20).fill(4).concat(Array(49).fill(1)).concat(6);//Array(70).fill(5);
                 dis_instr = 4;
                 blank = Array(modes.length).fill(sign_choice);
             }
         } else {
-            modes = Array(100).fill(1);
+            modes = Array(75).fill(1);
             dis_instr = 3;
             blank = Array(modes.length).fill(sign_choice);
             /*if(currentSession > trainBlocks.length-3) // retention or generalization
@@ -659,7 +659,7 @@ function drawCursor(state) { // state: true/false = inPath/outOfPath, angle: ang
         line(dis_temp[i-1]*scaling,-vDis_temp[i-1]*scaling,dis_temp[i]*scaling,-vDis_temp[i]*scaling);
 }*/
 function drawTrace(state) { // draw trace behind triangle, state: true/false = inPath/outOfPath
-    var baseColor;
+    /*var baseColor;
     if(movin<1) {
         strokeWeight(8);
         baseColor = color('blue');
@@ -670,7 +670,12 @@ function drawTrace(state) { // draw trace behind triangle, state: true/false = i
         else
             baseColor = color('red');
     }
-    stroke(baseColor);
+    stroke(baseColor);*/
+    stroke('white');
+    if(movin<1)
+        strokeWeight(8);
+    else
+        strokeWeight(4);
     for(var i=0;i<crossing_temp.length;i++)
         line(crossing_temp[i]*scaling,-lines[blank[blanknum]][i].y*scaling-20,crossing_temp[i]*scaling,-lines[blank[blanknum]][i].y*scaling+20);
 }
@@ -770,7 +775,9 @@ function startBreak(len) { // len-minutes break
 }
 function breakCountDown() { // timer countdown for break
     timerCount--;
-    if(timerCount>10) {
+    if(timerCount == 60 && timerCount > 120) {
+        beep();
+    } else if(timerCount>10) {
         select('#endInstr').html(`<br>Let's take a ${-trainBlocks[currentTrainBlock]} minute break.<br><br>${String(Math.floor(timerCount/60)).padStart(2,'0')} : ${String(timerCount%60).padStart(2,'0')}`);
         //select('#endInstr').html(`<br>Let's take a ${-trainBlocks[currentTrainBlock]} minute break.<br>`);
     } else if(timerCount>0) {
