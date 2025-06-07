@@ -26,6 +26,7 @@ let totalTrainBlocks;
 let sign_choice;
 let horiSteps = 4;
 let weig = [1/horiSteps, 1/horiSteps, 1/horiSteps, 1/horiSteps];
+var learn_tgt = [[80,20,90,-60],[-75,30,65,-80]];
 let frameNum = 0; // Number of frames in the current session
 var dotX;
 var dotY;
@@ -39,7 +40,7 @@ var targetSize = 30;
 var scaling_base;
 var scaling;
 var lines;
-var random_lines = null;
+var YDist;
 var crossing;
 var nextCrossing;
 var currentSession;
@@ -175,28 +176,26 @@ function startSession() {
             reflect = 1;
             if(sessionsType[currentSession] == 3) { // baseline
                 dis_instr = 2;
-                blank = Array.from([0,1,2,3].flatMap(i => [i,i,i,i,i,i,i,i,i,i])).sort(() => Math.random()-0.5);
-                //blank = [0,1,2,3,4,5,6,7];
+                //blank = Array.from([0,1,2,3].flatMap(i => [i,i,i,i,i,i,i,i,i,i])).sort(() => Math.random()-0.5);
+                blank = [0,1,2,3];
                 modes = Array(blank.length).fill(5);
+                lines = randomLine(horiSteps,8);
             } else if(sessionsType[currentSession] == 4) { // retention
                 modes = Array(20).fill(4).concat(Array(49).fill(1)).concat(6);//Array(70).fill(5);
                 dis_instr = 4;
                 blank = Array(modes.length).fill(sign_choice);
+                lines = chosenLine(horiSteps);
             }
         } else {
             modes = Array(75).fill(1);
             dis_instr = 3;
             blank = Array(modes.length).fill(sign_choice);
-            /*if(currentSession > trainBlocks.length-3) // retention or generalization
-                modes = Array(40).fill(0);
-            else
-                modes = pesudoRandom(4, 10, 1, 0, 6, true);*/
+            lines = chosenLine(horiSteps);
         }
-        //modes = Array(40).fill(0);
         movin = -300;
-        if(!random_lines) // generate random targets for the first time
+        /*if(!random_lines) // generate random targets for the first time
             random_lines = randomLine(horiSteps,8);
-        lines = random_lines;
+        lines = random_lines;*/
     }
     console.log(lines);
     clear();
@@ -539,8 +538,8 @@ function getMeanStd(array) { // returns [mean, std]
   )];
 }
 function randomLine(steps, num) {
-    var YDist = Math.floor(maxPoints/steps);
-    targets = [];
+    YDist = Math.floor(maxPoints/steps);
+    var targets = [];
     for(let j=0; j<num; j++) {
         target = [];
         for(let i=0; i<steps; i++)
@@ -550,9 +549,20 @@ function randomLine(steps, num) {
     }
     return targets;
 }
+function chosenLine(steps) {
+    YDist = Math.floor(maxPoints/steps);
+    var targets = [];
+    for(let i=0; i<learn_tgt.length; i++) {
+        let target = [];
+        for(let j=0; j<steps; j++)
+            target.push({x: learn_tgt[i][j], y:(j+1)*YDist});
+        targets.push(target);
+    }
+    return targets;
+}
 function straightLine(len) {
-    var YDist = Math.floor(maxPoints/len);
-    targets = [];
+    YDist = Math.floor(maxPoints/len);
+    var targets = [];
     for(let i=0; i<len; i++)
         targets.push({x: 0, y:(i+1)*YDist})
     return [targets];
