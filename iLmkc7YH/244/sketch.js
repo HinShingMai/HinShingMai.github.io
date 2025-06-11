@@ -142,7 +142,17 @@ function setup() {
 function trainBlockStart() {
     blockType = trainBlocks[currentTrainBlock];
     // arrange sessions in a block
-    /*
+    /*  Blocks:
+        0: FPS test
+        1: Day 2+ retention test
+        2: normal predict test
+        3: reverse predict test
+        4: normal testing session
+        5: reverse testing session
+        6: normal training session
+        7: reverse training session
+        
+        Sessions:
         2: normal predict test
         3: reverse predict test
         4: normal testing session
@@ -683,22 +693,6 @@ function drawCurve(coords, framenum) {
             if(i%10 == 8) {
                 line(coords[i-1][0]*scaling, -coords[i-1][1]*scaling, coords[i][0]*scaling, -coords[i][1]*scaling);
             }
-        }
-        if(freeze<1 && sqError() > 100*scaling**2) {
-            //var target = lines[blanknum][frameNum-tailLen];
-            //return dist2([dotX, dotY], target);
-            //return (dotX - target[0])**2 + (dotY - target[1])**2;
-            //noStroke();
-            stroke('grey');
-            fill('grey');
-            let dy = coords[start][1]-dotY;
-            let dx = coords[start][0]-dotX;
-            let ang = Math.atan2(dy, dx);
-            let ax = (dotX+dx/2)*scaling;
-            let ay = -(dotY+dy/2)*scaling;
-            triangle(ax+12*cos(ang), ay-12*sin(ang), ax+6*sin(ang), ay+6*cos(ang), ax-6*sin(ang), ay-6*cos(ang));
-            line(ax, ay, (dotX+dx/8)*scaling, -(dotY+dy/8)*scaling)
-            //line(ax, ay, dotX*scaling, -dotY*scaling)
         }
         pop();
         stroke('green'); // grey
