@@ -33,7 +33,7 @@
 
 <body>
     <!-- Consent Page-->
-    <div id="container-consent">
+    <div id="container-consent" style="display:none">
         <div id="consent">
             <p>Congratulations, your device has passed the graphics test!</p>
             <h2>Next, we need your consent to proceed...</h2>
@@ -90,60 +90,66 @@
             <hr />
             <h4>If you agree and consent to these terms, please click "I Agree" to continue. Otherwise, please exit the page.</h4>
             <br />
-            <div class="row">
+            <button type="button" class="btn btn-danger btn-lg pull-left">Decline</button>
+            <button type="button" class="btn btn-primary btn-lg pull-right">Accept</button>
+            <!--<div class="row">
                 <div class="col-sx-6">
                 <button type="button" class="btn btn-danger btn-lg">Decline</button>
                 </div>
                 <div class="col-sx-6">
                 <button type="button" class="btn btn-primary btn-lg">Accept</button>
                 </div>
-            </div>
+            </div>-->
         </div>
     </div>
                      
 
-    <div id="container-instructions1" style="display:none">
-        <h1><b><u>Welcome</u></b></h1>
-        <p>But first, we need to test your computer's graphics to see if the experiment will run smoothly on your device.</p>
+    <div id="container-instructions1" class="container"
+        <h1>How to do the experiment</h1>
         <hr>
         <div class="instructions well">
-            <h2>
-                To make sure the experiment runs smoothly on your computer:
-            </h2>
-            <!--<p>
-                <br> 1. If you have multiple monitors, please leave only one monitor on and disconnect all others.
+
+            <p>
+                 1. You will be controlling a ball on the screen by tilting your phone.
             </p>
             <p>
-                 2. Close any unnecessary background applications that might slow down your computer.
+                 2. Hold the phone with both hands, keeping both thumbs on the two gray circles at the bottom of the screen.
             </p>
             <p>
-                 3. Close all of your browser windows and tabs except for the current page and the Prolific page.
+                 3. Your goal is to keep the ball on the target, which is marked by a green circle.
             </p>
             <p>
-                When you are ready, click the button below to start the test.
-            </p>-->
-            <form id="close-form">
-                <label for="close1"> 1. If you have multiple monitors, please leave only one monitor on and disconnect all others.</label>
-                <input type="checkbox" id="close1" name="close1" value="c1"><br>
-                <label for="close2"> 2. Close any unnecessary background applications that might slow down your computer.</label>
-                <input type="checkbox" id="close2" name="close2" value="c2"><br>
-                <label for="close3"> 3. Close all of your browser windows and tabs except for the current page and the Prolific page.</label>
-                <input type="checkbox" id="close3" name="close3" value="c3"><br><br>
-            </form>
-            <p>
-                Once you check all the checkboxes, click the button below to start the test.
+                 4. A yellow path ahead of the green circle shows where the target is moving.
             </p>
+            <p>
+                 5. You will receive a score for each trial based on your average distance to the target. Try to maximize your score!
+            </p>
+            <p>
+                 6. Be careful not to accidentally refresh or leave the page, as doing so will exit the experiment.
+            </p>
+            <p>
+                 7. Starting on day two, you will be presented with either a <span style="color:blue">blue</span> or <span style="color:red">red</span> ball to control at each trial, and they will behave differently.
+            </p>
+            <p>
+                 8. Please enter "trojan" in the next page to indicated that you have read the instructions.
+            </p>
+                     
+            <div class="row">
+                <div>
+                    <center>
+                        <video alt="User demonstration video" style="width:100%" loop autoplay muted controls="true" playsinline>
+                            <source src="static/demo_3.mp4" type="video/mp4" />
+                            <source src="static/demo_3.webm" type="video/webm" />
+                            Your browser does not support the video tag.
+                        </video>
+                    </center>
+                </div>
+            </div>
+            
         </div>
         
-        <center>
-            <!--<button type="button" class="btn btn-primary btn-lg" onClick="startDPITest(); return show('container-dpi', 'container-instructions1');">
-            <span class="glyphicon glyphicon-arrow-left"></span> Back 
-            </button> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-->
-            <button type="button" class="btn btn-primary btn-lg">
-            <!--<button type="button" class="btn btn-primary btn-lg" onClick="return show('container-instructions2', 'container-instructions1');">-->
-            <span class="glyphicon glyphicon-arrow-right"></span> Start Test
-            </button>
-        </center>
+        <button type="button" class="btn btn-primary btn-lg pull-left"><span class="glyphicon glyphicon-arrow-left"></span>Back</button>
+        <button type="button" class="btn btn-primary btn-lg pull-right">Next<span class="glyphicon glyphicon-arrow-right"></span></button>
     </div>
 
     <div id="container-dpi" style="display:none">
