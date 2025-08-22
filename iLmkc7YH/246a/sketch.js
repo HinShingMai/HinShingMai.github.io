@@ -419,7 +419,7 @@ function stepTime(timestamp) {
         if(blanknum < blank.length-1) { // next trial
             blanknum++;
             if(isTest == 2)
-                if(TrialEndCode == 2) topMsg = 'Fail: lasted '+(scoreBuffer[0]/60).toFixed()+'s';
+                if(TrialEndCode == 2) topMsg = 'Fail: lasted '+(scoreBuffer[1]/60).toFixed()+'s';
                 else topMsg = 'Success!';
             else topMsg = 'Previous Trial Score: '+score.toFixed()+'%'; // show score
             //fbMsg = 'Progress: '+int(sessionComplete/sessionTotal*100)+'%'; // show progress
