@@ -709,6 +709,7 @@ function sqError() {
 }
 function sinuousCurve(len, isTest) { // generate trajectory
     const step = 0.1;
+    var speed = tgtSpeed;
     var ampl = amplitudes;
     var freq = frequency;
     var repeat;
@@ -749,7 +750,9 @@ function sinuousCurve(len, isTest) { // generate trajectory
         let start = step;
         let prev_pt = points[0];
         for(let i=1; i<len+maxTailLen; i++) {
-            while(dis < tgtSpeed) { // add next point of SPEED distance away
+            if(isTest == 2)
+                speed = Math.min(i*0.03,tgtSpeed);
+            while(dis < speed) { // add next point of SPEED distance away
                 let post_pt = {x:0, y:0};
                 for(let j=0; j<ampl[0].length; j++) {
                     post_pt.x += ampl[0][j]*sin(2*PI*start*freq[0][j]+phase[k][0][j]);
@@ -760,7 +763,7 @@ function sinuousCurve(len, isTest) { // generate trajectory
                 start += step;
             }
             points.push(prev_pt);
-            dis -= tgtSpeed;
+            dis -= speed;
         }
         paths.push(points);
     }
