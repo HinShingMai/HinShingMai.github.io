@@ -187,7 +187,7 @@ function trainBlockStart() {
         startSession();
 }
 function getSessionLen(session) {
-    var sLen = [0,3,10,10,1,1,5,5,15,15];
+    var sLen = [0,3,10,10,3,3,5,5,15,15];
     return sLen[session];
 }
 function sessionNext() {
@@ -813,9 +813,9 @@ function drawCurve(coords, timestep) {
         if(isTest == 2) {
             fill('white');
             ellipse(coords[targt].x*scaling, -coords[targt].y*scaling, 24,24); // 16
-            /*noFill();
+            noFill();
             strokeWeight(2);
-            ellipse(coords[targt].x*scaling, -coords[targt].y*scaling, 2*bubbleSize*scaling,2*bubbleSize*scaling);*/
+            ellipse(coords[targt].x*scaling, -coords[targt].y*scaling, 2*bubbleSize*scaling,2*bubbleSize*scaling);
         } else {
             if(reward == 0 || mode >0)
                 fill('white');
