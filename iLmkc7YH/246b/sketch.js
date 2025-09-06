@@ -137,7 +137,7 @@ var wakeLock;
 var touchState = [false, false, false];
 var touchSize = 80;
 var touchesList = [];
-var blockDesc = ['FPS Test','Reverse Test','Normal Path Length Test','Reverse Path Length Test','Normal Short Test','Reverse Short Test','Normal Train','Reverse Train','Normal Train','Reverse Train'];
+var blockDesc = ['FPS Test','Reverse Test','Normal Path Length Test','Reverse Path Length Test','Normal Stay-In-the-Circle Test','Reverse Stay-In-the-Circle Test','Normal Train','Reverse Train','Normal Train','Reverse Train'];
 var trialSoundSrc = ['./static/coin3.mp3', './static/coin3.mp3', './static/coin3.mp3'];
 var trialAudioObj;
 var trialSoundState;
@@ -187,7 +187,7 @@ function trainBlockStart() {
         startSession();
 }
 function getSessionLen(session) {
-    var sLen = [0,3,10,10,3,3,5,5,15,15];
+    var sLen = [0,3,10,10,5,5,5,5,15,15];
     return sLen[session];
 }
 function sessionNext() {
@@ -222,7 +222,7 @@ function startSession() {
         blank = [1].concat(shuffle([0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8]));
     } else if(isTest==2) { // bubble test
         maxPoints = 600;
-        blank = Array(3).fill(1); // 5 sub-sessions
+        blank = Array(5).fill(1); // 5 sub-sessions
         trialFreeze = 120; // trial starts faster
     } else {
         if(sessionsType[currentSession]<8)

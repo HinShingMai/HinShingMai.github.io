@@ -142,7 +142,8 @@ var trialSoundSrc = ['./static/coin3.mp3', './static/coin3.mp3', './static/coin3
 var trialAudioObj;
 var trialSoundState;
 var soundTestState = 0;
-var bubbleSize = 60;
+var bubbleSize = 75;
+var bubbleGrace = 60
 function setup() {
     isDraw = false;
     frameRate(60);
@@ -202,29 +203,35 @@ function startSession() {
     act = [];
     tim = [];
     rew = [];
-    isTest = Math.floor(sessionsType[currentSession]/2);
+    isTest = Math.floor(sessionsType[currentSession]/2); // 1: horizon test, 2: bubble test, 3: train, 0: Other
     offsets = sessionsType[currentSession]%2;
     blanknum = 0;
     maxY = width_x*0.75;
     maxX = width_x/2;
     scaling = scaling_base;
-    maxPoints = 2700;
+    maxPoints = 1800;
     trialFreeze = 300;
     if(isTest==0) {
         if(sessionsType[currentSession] == 0) {
             maxPoints = 600;
             blank = [1];
+            trialFreeze = 120; // trial starts faster
         } else if(sessionsType[currentSession] == 1) {
             offsets = [1,0,1]
             blank = [1,1,1];
         }
     } else if(isTest==1) { // 10 minutes predict test
-        blank = [1].concat(shuffle([0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8]));
+        if(isFirstHorizon) {
+            blank = [1].concat([0,0.1,0.2,0.3,0.4,0.5,0.75]);
+            isFirstHorizon = false;
+        } else
+            blank = [1].concat([0,0.1,0.2,0.3,0.4,0.5,0.75].reverse());
+        //blank = [1].concat(shuffle([0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8]));
     } else if(isTest==2) { // bubble test
         maxPoints = 600;
         blank = Array(5).fill(1); // 5 sub-sessions
         trialFreeze = 120; // trial starts faster
-    } else {
+    } else { // Train
         if(sessionsType[currentSession]<8)
             blank = Array(5).fill(1); // 5 sub-sessions
         else
@@ -236,7 +243,7 @@ function startSession() {
     movin = true;
     fps = [0.0, 0];
     frBuffer = 60.0;
-    if(isTest == 2) topMsg = 'Stay in the green bubble!';
+    if(isTest == 2) topMsg = 'Stay near the target for 10 seconds!';
     else topMsg = '';
     scBuffer = '';
     startTrial();
@@ -244,7 +251,7 @@ function startSession() {
         midMsg = '';
         //fbMsg = 'Progress: '+int(sessionComplete/sessionTotal*100)+'%';
         if(mode == 0) {
-            fbMsg = 'Trial: '+(sessionComplete+1)+' / '+sessionTotal;
+            fbMsg = getProgressMsg();
             trialMsg = b_desc[offset];
         } else { // first trial calibration
             fbMsg = '';
@@ -278,11 +285,10 @@ function sessionInfo() {
     let htmlDiv = select('#endDiv');
     let instr = select('#endInstr');
     let plot = select('#plot');
-    var mse;
+    //var mse;
     htmlDiv.show();
     if(lines!=null && currentSession > 0) { // handles data
-        //mse = errorToScore(errors[errors.length-1]);
-        mse = stepScore();
+        //mse = stepScore();
         let avgfps = fps[0]/fps[1];
         /*if(isTest) {
             let msg;
@@ -304,12 +310,12 @@ function sessionInfo() {
             plot.html(msg);
         }*/
     } else {
-        mse = -1.0;
+        //mse = -1.0;
         plot.hide();
     }
-    mse = mse.toFixed();
+    //mse = mse.toFixed();
     select('#container-exp').hide()
-    let button = document.getElementById("startBt");
+    let button1 = document.getElementById("startBt");
     timer = setTimeout(()=>{select('#endInstr-span').html("Are you still there? Please click the button now or the experiment will terminate.");document.getElementById("endInstr-span").style.color = "red";
                             timer = setTimeout(()=>{forceQuit(2);},60000);},60000);
     select('#endInstr').style.fontSize = "min(4vh, 8vw)";
@@ -326,25 +332,19 @@ function sessionInfo() {
         let desc = getBlockDesc(sessionsType[currentSession]);
         if(firstTrial[prev_offset])
             firstTrial[prev_offset] = false;
-        if(mse < 0)
-            instr.html(`${desc}<br><br><br><span id="endInstr-span"> </span>`);
-        else
-            instr.html(`${desc}<br><br>Previous Trial Score: ${mse}%<br><span id="endInstr-span"> </span>`);
+        instr.html(`${desc}<br><br>${topMsg}<br><span id="endInstr-span"> </span>`);
         butfunc = ()=>{plot.hide();select('#endDiv').hide();startSession();};
     } else { // end of a block
         if(currentTrainBlock+1 < totalTrainBlocks){ // proceed to next block
             let desc = getBlockDesc(trainBlocks[currentTrainBlock+1]);
-            if(mse < 0)
-                instr.html(`${desc}<br><br><br><span id="endInstr-span"> </span>`);
-            else
-                instr.html(`${desc}<br><br>Previous Trial Score: ${mse}%<br><span id="endInstr-span"> </span>`);
+            instr.html(`${desc}<br><br>${topMsg}<br><span id="endInstr-span"> </span>`);
             butfunc = ()=>{plot.hide();select('#endDiv').hide(); currentTrainBlock++; trainBlockStart();};
         } else { // Final block, end game
-            instr.html(`<br><br><br>Previous Trial Score: ${mse}%<br><span id="endInstr-span"> </span>`);
+            instr.html(`<br><br><br>${topMsg}<br><span id="endInstr-span"> </span>`);
             butfunc = ()=>{plot.hide();select('#endDiv').hide(); currentTrainBlock++; endGame();};
         }
     }
-    button.onclick = ()=>{clearTimeout(timer);butfunc();};
+    button1.onclick = ()=>{clearTimeout(timer);butfunc();};
 }
 function getBlockDesc(block) {
     if(block < 0) {
@@ -366,7 +366,8 @@ function stepTime(timestamp) {
     var TrialEndCode;
     if(timestep >= maxPoints+trialFreeze)
         TrialEndCode = 1; // trial complete
-    else if(isTest==2 && Math.sqrt(prev_error)>bubbleSize)
+    //else if(isTest==2 && Math.sqrt(prev_error)>bubbleSize)
+    else if(isTest==2 && reward < -bubbleGrace)
         TrialEndCode = 2; // trial fail
     else
         TrialEndCode = 0; // continue trial
@@ -416,14 +417,13 @@ function stepTime(timestamp) {
         //recordTrial(trialcollection, trialData);
         sessionComplete++;
         console.log('Trial Completed:'+sessionComplete);
+        if(isTest == 2) {
+            if(TrialEndCode == 2) topMsg = 'Fail: lasted '+(scoreBuffer[1]/60).toFixed(2)+'s';
+            else topMsg = 'Success!';
+        } else topMsg = 'Previous Trial Score: '+score.toFixed()+'%'; // show score
         if(blanknum < blank.length-1) { // next trial
             blanknum++;
-            if(isTest == 2)
-                if(TrialEndCode == 2) topMsg = 'Fail: lasted '+(scoreBuffer[1]/60).toFixed(2)+'s';
-                else topMsg = 'Success!';
-            else topMsg = 'Previous Trial Score: '+score.toFixed()+'%'; // show score
-            //fbMsg = 'Progress: '+int(sessionComplete/sessionTotal*100)+'%'; // show progress
-            fbMsg = 'Trial: '+(sessionComplete+1)+' / '+sessionTotal;
+            fbMsg = getProgressMsg();
             startTrial();
             if(offsets.constructor === Array) // show next trial type if normal/reverse changes in block
                 trialMsg = b_desc[offset];
@@ -455,7 +455,7 @@ function stepTime(timestamp) {
                     midMsg = '';
                     if(mode == 3) { // end first trial calibration
                         mode = 0;
-                        fbMsg = 'Trial: '+(sessionComplete+1)+' / '+sessionTotal;
+                        fbMsg = getProgressMsg();
                         trialMsg = b_desc[offset];
                         dotX = lines[blanknum][0].x; // reset ball to starting position
                         dotY = lines[blanknum][0].y;
@@ -485,8 +485,8 @@ function stepTime(timestamp) {
         else // in trial
             freeze2 = touchFreezeLen;
     }
-    if(freeze2<=0) {
-        if(freeze<=0) {
+    if(freeze2<=0) { // bottom buttons pressed
+        if(freeze<=0) { // in trial
             // record trajectory
             dis_temp.push({x: dotX, y: dotY});
             act_temp.push({x: dotU[0], y: dotU[1]});
@@ -495,13 +495,17 @@ function stepTime(timestamp) {
             if(lines!=null) {
                 var pathError = sqError();
                 if(act_temp.length > 1 && mode != 4) {
-                    if(pathError > prev_error*1.25 && dist2(act_temp[act_temp.length-1],act_temp[act_temp.length-2]) < maxV[0]*0.01) { // check for inactivity
-                        inactivity1 += deltaT;
+                    if(dist2(act_temp[act_temp.length-1],act_temp[act_temp.length-2]) < maxV[0]*0.01) { // no tilt acceleration
+                        if(pathError > prev_error*0.9)
+                            inactivity1 += deltaT/2;
                     } else if(inactivity1 > 0) // inactivity decays when active
                         inactivity1 = Math.max(inactivity1-deltaT, 0);
                 }
                 if(isTest == 2) {
-                    reward = 0;
+                    if(Math.sqrt(pathError)>bubbleSize)
+                        reward--;
+                    else
+                        reward = 0;
                     //scoreBuffer[0] += reward*deltaT;
                     scoreBuffer[1] += deltaT;
                 } else {
@@ -513,7 +517,7 @@ function stepTime(timestamp) {
                         trialSounds[reward-1].addEventListener('ended', handleTrialSoundEnd, {once: true});
                         trialSounds[reward-1].play();
                     }*/
-                    if(mode == 0 && isTest != 2) {
+                    if(mode == 0) {
                         if(trialSoundState <= 0 && reward == maxReward) { // play sound based on reward (static duration)
                             trialSoundState = 60;
                             //trialAudioObj.src = trialSoundSrc[reward-1];
@@ -532,9 +536,6 @@ function stepTime(timestamp) {
                 traceBuffer = {x: dotX, y: dotY};
                 //scBuffer = errorToScore(prev_error).toFixed()+'%'; // update realtime score
             }
-            if(!noSave && inactivity1 > 600) { // pause due to inactivity
-                //pause();
-            }
             /*if(timestep == trialFreeze) { // hide score feedback after a few seconds in new trial
                 fbMsg = '';
                 topMsg = '';
@@ -552,7 +553,11 @@ function stepTime(timestamp) {
                 error.push({e:prev_error, w:deltaT});
             }
             prev_error = pathError;
-        } else {
+            if(!noSave && inactivity1 > 300) { // pause due to inactivity
+                pause();
+                return;
+            }
+        } else { // before trial freeze
             if(freeze < maxTailLen && mode == 0) { // start countdown
                 if(freeze <= 60)
                     trialMsg = 'Start';
@@ -576,7 +581,7 @@ function stepTime(timestamp) {
         if(inactivity2 > 0) // decays press button inactivity when active
             inactivity2 = Math.max(inactivity2-deltaT, 0);
         timestep+=deltaT;
-    } else {
+    } else { // bottom buttons not pressed
         inactivity2 += deltaT;
         if(inactivity1 > 0) // decays in trial inactivity when inactive
             inactivity1 = Math.max(inactivity1-deltaT, 0);
@@ -677,7 +682,9 @@ function errorToScore(e) { // computes score from mse
     return 100*exp(-e/4096);
 }
 function stepScore() { // computes overall score from step reward
-    return 100*scoreBuffer[0]/scoreBuffer[1]/maxReward/0.9;
+    if(isTest == 2)
+        return 100*(timestep-trialFreeze)/maxPoints;
+    return Math.min(100*scoreBuffer[0]/scoreBuffer[1]/maxReward/0.9, 100);
 }
 function stepFrameScore(e) { // computes step reward score at current timestep using squared error
     var reward = constrain(maxReward-Math.floor(Math.sqrt(e)/rewardStep), 0, maxReward);
@@ -707,8 +714,12 @@ function sqError() {
     return dist2({x:dotX, y:dotY}, target);
     //return (dotX - target[0])**2 + (dotY - target[1])**2;
 }
+function getProgressMsg() {
+    return 'Trial: '+(sessionComplete+1)+' ('+int(100*sessionComplete/sessionTotal)+'%)';
+}
 function sinuousCurve(len, isTest) { // generate trajectory
     const step = 0.1;
+    var speed = tgtSpeed;
     var ampl = amplitudes;
     var freq = frequency;
     var repeat;
@@ -749,7 +760,9 @@ function sinuousCurve(len, isTest) { // generate trajectory
         let start = step;
         let prev_pt = points[0];
         for(let i=1; i<len+maxTailLen; i++) {
-            while(dis < tgtSpeed) { // add next point of SPEED distance away
+            if(isTest == 2)
+                speed = Math.min(i*0.03,tgtSpeed);
+            while(dis < speed) { // add next point of SPEED distance away
                 let post_pt = {x:0, y:0};
                 for(let j=0; j<ampl[0].length; j++) {
                     post_pt.x += ampl[0][j]*sin(2*PI*start*freq[0][j]+phase[k][0][j]);
@@ -760,7 +773,7 @@ function sinuousCurve(len, isTest) { // generate trajectory
                 start += step;
             }
             points.push(prev_pt);
-            dis -= tgtSpeed;
+            dis -= speed;
         }
         paths.push(points);
     }
@@ -810,9 +823,9 @@ function drawCurve(coords, timestep) {
         if(isTest == 2) {
             fill('white');
             ellipse(coords[targt].x*scaling, -coords[targt].y*scaling, 24,24); // 16
-            noFill();
+            /*noFill();
             strokeWeight(2);
-            ellipse(coords[targt].x*scaling, -coords[targt].y*scaling, 2*bubbleSize*scaling,2*bubbleSize*scaling);
+            ellipse(coords[targt].x*scaling, -coords[targt].y*scaling, 2*bubbleSize*scaling,2*bubbleSize*scaling);*/
         } else {
             if(reward == 0 || mode >0)
                 fill('white');
@@ -867,6 +880,11 @@ function drawCursor() {
         //text(scBuffer, dotX*scaling, -dotY*scaling+txtSize);
         if(reward > 0 && mode == 0)
             text('+'+reward, dotX*scaling, -dotY*scaling-txtSize);
+        else if(reward < 0) {
+            stroke('red');
+            fill('red');
+            text('Too Far!', dotX*scaling, -dotY*scaling-txtSize);
+        }
     }
 }
 function drawTrace() { // draw trace behind player
