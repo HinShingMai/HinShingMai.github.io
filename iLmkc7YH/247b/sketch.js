@@ -900,11 +900,14 @@ function drawCursor() {
         if(reward > 0 && mode == 0)
             text('+'+reward, dotX*scaling, -dotY*scaling-txtSize);
         else if(reward < 0) {
-            if(scoreBuffer[0] > -31 || scoreBuffer[0]%10 < -5) {
+            stroke('red');
+            fill('red');
+            text('Too Far!', dotX*scaling, -dotY*scaling-txtSize);
+            /*if(scoreBuffer[0] > -31 || scoreBuffer[0]%10 < -5) {
                 stroke('red');
                 fill('red');
                 text('Too Far!', dotX*scaling, -dotY*scaling-txtSize);
-            }
+            }*/
         }
     }
 }
