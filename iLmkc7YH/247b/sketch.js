@@ -369,7 +369,7 @@ function stepTime(timestamp) {
     if(timestep >= maxPoints+trialFreeze)
         TrialEndCode = 1; // trial complete
     //else if(isTest==2 && Math.sqrt(prev_error)>bubbleSize)
-    else if(isTest==2 && scoreBuffer[0] < -bubbleGrace) {
+    else if(isTest==2) {
         runningError = rMean(error);
         if(runningError > bubbleGrace)
             TrialEndCode = 2; // trial fail
