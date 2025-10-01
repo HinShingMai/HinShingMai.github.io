@@ -705,7 +705,7 @@ function wMean(arr) { // weighted mean
     }
     return mean/wSum;
 }
-function rMean(arr, win=60) { // compute running average with window size
+function rMean(arr, win=120) { // compute running average with window size
     var mean = 0.;
     var time = 0.;
     for(let i=arr.length-1;i>=0;i--) {
