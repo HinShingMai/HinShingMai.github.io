@@ -1,4 +1,4 @@
-var noSave = false;
+var noSave = true;
 let ver = 'denovo-0_54';
 var id;
 var exDay;
@@ -9,14 +9,6 @@ var cnv_wid;
 var mode = 0;
 let currentTrainBlock = 0;
 let trainBlocks = [6,5,-1,5,-1,5,6];
-/*
--n: n-minutes break
-0: no path normal familiarization block
-4: normal training block
-5: reverse training block
-6: normal testing block
-7: reverse testing block
-*/
 let totalTrainBlocks;
 let amplitudes = [[6.93*10,4.03*0.73/2.27*1.30*1.30*7.5, 4.03*0.73/2.27*0.97*0.97*7.5], [6.93*15,3.42*0.73/1.84*1.03*1.03*11.25, 3.42*0.73/1.84*0.81*0.81*11.25]];
 let frequency = [[0.1/21.48,1.15/21.48, 1.55/21.48], [0.15/21.48,1.45/21.48, 1.85/21.48]];
@@ -84,13 +76,14 @@ const tgtSpeed = 1.75;
 var maxTailLen = 120;
 var tailLen;
 var trialFreeze;
+var trialEndFreeze = 120;
 var touchFreezeLen = 180;
 var touchCalibrLen = 600;
 var wakeLock;
 var touchState = [false, false, false];
 var touchSize = 80;
 var touchesList = [];
-var blockDesc = ['FPS Test','Reverse Test','Normal Path Length Test','Reverse Path Length Test','Normal Stay-In-the-Circle Test','Reverse Stay-In-the-Circle Test','Normal Train','Reverse Train','Normal Train','Reverse Train'];
+var blockDesc = ['FPS Test','Reverse Test','Normal Horizon Test','Reverse Horizon Test','Normal Too-Far Test','Reverse Too-Far Test','Normal Short-test','Reverse Short-test','Normal Train','Reverse Train'];
 var trialSoundSrc = ['./static/coin3.mp3', './static/coin3.mp3', './static/coin3.mp3'];
 var trialAudioObj;
 var trialSoundState;
@@ -129,7 +122,6 @@ function trainBlockStart() {
         9: reverse training session long
     */
     if(blockType<0) {
-        startBreak(-blockType);
         return;
     } else {
         sessionsType = [blockType];
@@ -142,7 +134,7 @@ function trainBlockStart() {
         startSession();
 }
 function getSessionLen(session) {
-    var sLen = [0,3,10,10,5,5,5,5,15,15];
+    var sLen = [0,3,4,4,5,5,1,1,1,1,5,5,15,15];
     return sLen[session];
 }
 function sessionNext() {
@@ -157,14 +149,14 @@ function startSession() {
     act = [];
     tim = [];
     rew = [];
-    isTest = Math.floor(sessionsType[currentSession]/2); // 1: horizon test, 2: bubble test, 3: train, 0: Other
+    isTest = Math.floor(sessionsType[currentSession]/2); // 1: horizon test, 2: bubble test, 3: test, 4: train
     offsets = sessionsType[currentSession]%2;
     blanknum = 0;
     maxY = width_x*0.75;
     maxX = width_x/2;
     scaling = scaling_base;
     maxPoints = 1800;
-    trialFreeze = 300;
+    trialFreeze = 120;
     if(isTest==0) {
         if(sessionsType[currentSession] == 0) {
             maxPoints = 600;
@@ -175,21 +167,16 @@ function startSession() {
             blank = [1,1,1];
         }
     } else if(isTest==1) { // 10 minutes predict test
-        if(isFirstHorizon) {
-            blank = [1].concat([0,0.1,0.2,0.3,0.4,0.5,0.75]);
-            isFirstHorizon = false;
-        } else
-            blank = [1].concat([0,0.1,0.2,0.3,0.4,0.5,0.75].reverse());
-        //blank = [1].concat(shuffle([0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8]));
+        blank = [0,0.2,0.4,0.75];
     } else if(isTest==2) { // bubble test
         maxPoints = 600;
         blank = Array(5).fill(1); // 5 sub-sessions
         trialFreeze = 120; // trial starts faster
-    } else { // Train
+    } else { // Test
         if(sessionsType[currentSession]<8)
-            blank = Array(5).fill(1); // 5 sub-sessions
-        else
-            blank = Array(15).fill(1); // 15 sub-sessions
+            blank = [1]
+        else // Train
+            blank = Array(5).fill(1); // 15 sub-sessions
         //blank = [1,1,1];
     }
     lines = sinuousCurve(maxPoints, isTest);
@@ -289,86 +276,61 @@ function getBlockDesc(block) {
         return `Now we start ${getSessionLen(block)} sessions of<br><br><span style="color:${color};">${blockDesc[block]}</span>`;
     }
 }
+function nextTrial(timestamp) {
+    if(mode!=3) { // familiarization does not count toward trials
+        sessionComplete++;
+        console.log('Trial Completed:'+sessionComplete);
+    }
+    topMsg = '';
+    fbMsg = getProgressMsg();
+    if(blanknum<blank.length-1) { // next trial
+        blanknum++;
+        startTrial();
+        if(offsets.constructor === Array) // show next trial type if normal/reverse changes in block
+            trialMsg = b_desc[offset];
+        let nextFrame = timestamp+(1-timestep%1)/0.06;
+        gameLoop = setTimeout(()=>requestAnimationFrame(stepTime), nextFrame-performance.now());
+    } else if(isTest==4) { // end of session
+        sessionNext();
+    } else { // end of session after freeze
+        //let nextFrame = timestamp+(trialEndFreeze-timestep%1)/0.06;
+        //gameLoop = setTimeout(()=>requestAnimationFrame(sessionNext), nextFrame-performance.now());
+        sessionNext();
+    }
+}
 function stepTime(timestamp) {
     var deltaT;
     if(!gameLoopTime)
         gameLoopTime = timestamp;
     deltaT = constrain((timestamp - gameLoopTime)*0.06, 0.1, 15);
     gameLoopTime = timestamp;
-    //console.log(deltaT)
-    var runningError;
     var TrialEndCode;
     if(timestep >= maxPoints+trialFreeze)
         TrialEndCode = 1; // trial complete
     //else if(isTest==2 && Math.sqrt(prev_error)>bubbleSize)
-    else if(isTest==2) {
-        runningError = rMean(error);
-        if(runningError > bubbleGrace)
-            TrialEndCode = 2; // trial fail
-    } else
+    else if(isTest==2 && scoreBuffer[0] < -bubbleGrace)
+        TrialEndCode = 2; // trial fail
+    else
         TrialEndCode = 0; // continue trial
-    if(TrialEndCode>0) {
+    if(TrialEndCode>0) { // end trial
         if(mode == 4) { // do not save data if the session is fps test
             isDraw = false;
             endFPSTest();
             return;
-        }
-        if(isTest==2 && TrialEndCode == 1) { // play success sound for bubble test complete
-            if(trialAudioObj.paused) trialAudioObj.play();
-            else trialAudioObj.currentTime = 0
-        }
-        // record final trajectories
-        let mean_err = trimmedAverage(error, 0.01);// error/timestep;
-        //dis_temp.push({x: dotX, y: dotY});
-        //act_temp.push({x: dotU[0], y: dotU[1]});
-        dis.push(dis_temp);
-        act.push(act_temp);
-        tim.push(tim_temp);
-        rew.push(rew_temp);
-        errors.push(mean_err);
-        //let score = errorToScore(mean_err);
-        let score = stepScore();
-        let trialData = { // save data
-            xh: lines[blanknum],
-            x: dis_temp,
-            u: act_temp,
-            t: tim_temp,
-            r: rew_temp,
-            BlockNo: currentTrainBlock,
-            TrialNo: blanknum,
-            BlockType: sessionsType[currentSession],
-            horizon: blank[blanknum],
-            offset: Object.assign({}, pOffsets[blanknum]),
-            TrajErr: error,
-            err: mean_err,
-            score: score,
-            id: id,
-            fps: fps[0]/fps[1],
-            time: new Date().toISOString(),
-            day: exDay,
-            version: ver,
-            scale: scaling
-        }
-        console.log(trialData)
-        //recordTrial(trialcollection, trialData);
-        sessionComplete++;
-        console.log('Trial Completed:'+sessionComplete);
-        if(isTest == 2) {
-            if(TrialEndCode == 2) topMsg = 'Fail: lasted '+(scoreBuffer[1]/60).toFixed(2)+'s';
-            else topMsg = 'Success!';
-        } else topMsg = 'Previous Trial Score: '+score.toFixed()+'%'; // show score
-        if(blanknum < blank.length-1) { // next trial
-            blanknum++;
-            fbMsg = getProgressMsg();
-            startTrial();
-            if(offsets.constructor === Array) // show next trial type if normal/reverse changes in block
-                trialMsg = b_desc[offset];
-        } else { // end of session
-            isDraw = false;
-            sessionNext();
+        } else if(mode == 3) { // no need to display after trial messages in familiarization
+            nextTrial(timestamp);
             return;
         }
+        if(isTest==2) {
+            if(TrialEndCode == 1) topMsg = 'Success!';
+            else topMsg = 'Trial Ended after '+(scoreBuffer[1]/60).toFixed(1)+'s. To Far!';
+        } else if(isTest==4) topMsg = ''; // no score for familiarization
+        else topMsg = 'Score: '+stepScore().toFixed()+'%'; // show score
+        let nextFrame = timestamp+(trialEndFreeze-timestep%1)/0.06;
+        gameLoop = setTimeout(()=>requestAnimationFrame(nextTrial), nextFrame-performance.now());
+        return;
     }
+    // check if bottom buttons pressed
     touchState = [false, false, false];
     for(let i=0; i<touchesList.length; i++) {
         let x = touchesList[i].clientX-cnv_wid/2;
@@ -381,6 +343,7 @@ function stepTime(timestamp) {
                 touchState[1] = true;
         }
     }
+    // handle bottom buttons logic
     if(noSave || (touchState[0] && touchState[1])) {
         touchState[2] = true;
         if(freeze2 > 0) {
@@ -389,8 +352,8 @@ function stepTime(timestamp) {
                 freeze2 = 0;
                 if(mode != 4) {
                     midMsg = '';
-                    if(mode == 3) { // end first trial calibration
-                        mode = 0;
+                    if(mode == 3) { // end first trial familiarization
+                        //mode = 0;
                         fbMsg = getProgressMsg();
                         trialMsg = b_desc[offset];
                         dotX = lines[blanknum][0].x; // reset ball to starting position
@@ -399,28 +362,29 @@ function stepTime(timestamp) {
                 }
             } else
                 if(mode==3) {
-                    midMsg = 'Tilt your phone around to move the ball\n\nRelease the buttons if you need more time \nto find a comfortable grip\n\n'+
-                            'Keep buttons pressed to resume: \n'+Math.ceil(freeze2/60);
-                    // moves ball during calibration
-                    dotX = dotX + deltaT*b_val[offset][0]*constrain(dotU[0]/30,-1,1)*maxV[0];
-                    dotX = constrain(dotX, -maxX, maxX);
-                    dotY = dotY - deltaT*b_val[offset][1]*constrain(dotU[1]/30,-1,1)*maxV[1];
-                    dotY = constrain(dotY, -maxY, maxY);
+                    midMsg = 'Try to tilt your phone left, right,\nup and down by 30 degrees.\n\nRelease the buttons if you need more time \nto find a comfortable grip\n\n'+
+                            'Keep buttons pressed to continue: \n'+Math.ceil(freeze2/60);
+                    // moves ball during familiarization
+                    //dotX = dotX + deltaT*b_val[offset][0]*constrain(dotU[0]/30,-1,1)*maxV[0];
+                    //dotX = constrain(dotX, -maxX, maxX);
+                    //dotY = dotY - deltaT*b_val[offset][1]*constrain(dotU[1]/30,-1,1)*maxV[1];
+                    //dotY = constrain(dotY, -maxY, maxY);
                 } else if(mode==0) midMsg = 'Keep buttons pressed to resume: '+Math.ceil(freeze2/60);
         }
     } else { // bottom buttons not pressed
         if(mode==3)
-            midMsg = 'Calibration:\n\nPress both buttons at the bottom to begin\n\nThen, find a grip that allows you to \nmove the ball while holding the buttons down\n\n'+
-                    'If you need more time, \nrelease the buttons to restart calibration'
+            midMsg = 'familiarization:\n\nPress both buttons at the bottom to begin\n\nThen, find a grip that allows you to \ntilt the phone while holding the buttons down\n\n'+
+                    'If you need more time, \nrelease the buttons to restart familiarization'
         else if(mode==0)
             midMsg = 'Press the buttons on both sides to start!';
-        if(mode == 3) // first trial calibration
+        if(mode == 3) // first trial familiarization
             freeze2 = touchCalibrLen;
         else if(freeze>0) // before trial start
             freeze2 = 1;
         else // in trial
             freeze2 = touchFreezeLen;
     }
+    // update dynamics
     if(freeze2<=0) { // bottom buttons pressed
         if(freeze<=0) { // in trial
             // record trajectory
@@ -448,9 +412,15 @@ function stepTime(timestamp) {
                     reward = stepFrameScore(pathError);
                     scoreBuffer[0] += reward*deltaT;
                     scoreBuffer[1] += deltaT;
+                    /*if(trialSoundState == 0 && reward > 0 && mode == 0) { // play sound based on reward (play after audio ended)
+                        trialSoundState = 1;
+                        trialSounds[reward-1].addEventListener('ended', handleTrialSoundEnd, {once: true});
+                        trialSounds[reward-1].play();
+                    }*/
                     if(mode == 0) {
                         if(trialSoundState <= 0 && reward == maxReward) { // play sound based on reward (static duration)
                             trialSoundState = 60;
+                            //trialAudioObj.src = trialSoundSrc[reward-1];
                             if(trialAudioObj.paused) trialAudioObj.play();
                             else trialAudioObj.currentTime = 0
                         } else
@@ -464,6 +434,7 @@ function stepTime(timestamp) {
                 if(trace.length > traceLen)
                     trace.shift();
                 traceBuffer = {x: dotX, y: dotY};
+                //scBuffer = errorToScore(prev_error).toFixed()+'%'; // update realtime score
             }
             /*if(timestep == trialFreeze) { // hide score feedback after a few seconds in new trial
                 fbMsg = '';
@@ -483,13 +454,14 @@ function stepTime(timestamp) {
             }
             prev_error = pathError;
         } else { // before trial freeze
-            if(freeze < maxTailLen && mode == 0) { // start countdown
-                if(freeze <= 60)
-                    trialMsg = 'Start';
-            } if(freeze <= maxTailLen && isTest!=2) { // hide score and trial when countdown starts
+            if(freeze <= 60 && mode == 0) { // start countdown
+                trialMsg = 'Start';
+            } /*if(freeze <= maxTailLen && isTest!=2) { // hide score and trial when countdown starts
                 fbMsg = '';
                 topMsg = '';
-            }
+                //if(mode == 0)
+                    //trialMsg = freeze/60;
+            }*/
             freeze -= deltaT;
             if(freeze <= 0) { // start moving
                 freeze = 0;
@@ -540,8 +512,6 @@ function startTrial() { // init new trial
     act_temp = [];
     tim_temp = [];
     rew_temp = [];
-    dotX = lines[blanknum][0].x;
-    dotY = lines[blanknum][0].y;
     dotU = [0,0];
     inactivity1 = 0;
     inactivity2 = 0;
@@ -549,15 +519,22 @@ function startTrial() { // init new trial
     traceBuffer = null;
     tailLen = maxTailLen*blank[blanknum];
     freeze = trialFreeze;
-    freeze2 = 1;
+    if(mode == 3) { 
+        freeze2 = touchCalibrLen;
+        dotX = lines[blanknum][0].x;
+        dotY = lines[blanknum][0].y;
+    } else {
+        freeze2 = 0;
+        dotX = lines[blanknum][0].x;
+        dotY = lines[blanknum][0].y;
+    }
     timestep = 0;
     error = [];
     prev_error = 0.0;
     reward = 0;
     scoreBuffer = [0,0];
-    runningError = 0;
     offset = offsets.constructor === Array? offsets[blanknum] : offsets;
-    trialSoundState = 0;
+    trialSoundState = 60;
 }
 function resetAndUnfreeze() { // unpause handler
     dotU = [0,0];
@@ -660,7 +637,7 @@ function sinuousCurve(len, isTest) { // generate trajectory
     var freq = frequency;
     var repeat;
     var phase = [];
-    if(isTest<3) {
+    if(isTest<4) {
         repeat = blank.length;
         for(let k=0;k<repeat; k++) {
             let rand_start = random()*2*PI; // same trajectory but random starting position for test
@@ -763,16 +740,7 @@ function drawCurve(coords, timestep) {
             strokeWeight(2);
             ellipse(coords[targt].x*scaling, -coords[targt].y*scaling, 2*bubbleSize*scaling,2*bubbleSize*scaling);*/
         } else {
-            if(reward == 0 || mode >0)
-                fill('white');
-            else if(reward == 3)
-                fill('green');
-            else if(reward == 2)
-                fill('lightgreen');
-            else if(reward == 1)
-                fill('yellow');
-            else
-                fill('white');
+            fill('white');
             ellipse(coords[targt].x*scaling, -coords[targt].y*scaling, 24,24); // 16
         }
     }
@@ -817,14 +785,11 @@ function drawCursor() {
         if(reward > 0 && mode == 0)
             text('+'+reward, dotX*scaling, -dotY*scaling-txtSize);
         else if(reward < 0) {
-            stroke('red');
-            fill('red');
-            text('Too Far!', dotX*scaling, -dotY*scaling-txtSize);
-            /*if(scoreBuffer[0] > -31 || scoreBuffer[0]%10 < -5) {
+            if(scoreBuffer[0] > -31 || scoreBuffer[0]%10 < -5) {
                 stroke('red');
                 fill('red');
                 text('Too Far!', dotX*scaling, -dotY*scaling-txtSize);
-            }*/
+            }
         }
     }
 }
@@ -919,27 +884,6 @@ function drawOverlay() {
     }
     ellipse(maxX*scaling-touchSize/2, maxY*scaling+touchSize/2, touchSize,touchSize);
 }
-function startBreak(len) { // len-minutes break
-    let htmlDiv = select('#endDiv');
-    let instr = select('#endInstr');
-    htmlDiv.show();
-    timerCount = 20*len;
-    graceTime = 180; // participants have 120 seconds to click next button after break timer runs out
-    instr.html(`<br>Let's take a ${timerCount} seconds break.<br><br>${Math.floor(timerCount/60)} : ${String(timerCount%60).padStart(2,'0')}`);
-    select('#startBt').hide();
-    timer = setInterval(breakCountDown, 1000);
-}
-function breakCountDown() { // timer countdown for break
-    timerCount--;
-    if(timerCount>0) {
-        select('#endInstr').html(`<br>Let's take a ${-trainBlocks[currentTrainBlock]*20} seconds break.<br><br>${Math.floor(timerCount/60)} : ${String(timerCount%60).padStart(2,'0')}`);
-    } else if(timerCount == 0) {
-        let btn = document.getElementById("startBt");
-        select('#endInstr').html(`<br><br><br>Please click the button and proceed with the experiment.<br>`);
-        btn.style.display = 'inline-block';
-        btn.onclick = ()=>{select('#endDiv').hide(); currentTrainBlock++; clearInterval(timer); trainBlockStart();};
-    }
-}
 function handleDeviceOrientation(e) {
     if(movin &&touchState[2]) {
         dotU[1] = e.beta;
@@ -962,7 +906,7 @@ function handleTrialSoundEnd(e) {
 }
 function computeSessionTotal() {
     var t=0;
-    let x=[0,3,10,10,5,5,5,5,15,15];
+    let x=[0,3,4,4,5,5,1,1,1,1,5,5,15,15];
     for(let i=0;i<totalTrainBlocks;i++) {
         if(trainBlocks[i]<0)
             t++;
@@ -994,20 +938,14 @@ function startGame() {
             }
         }).catch(console.error);
     }
-    /*id = values[0].value;
-    exDay = Number(values[1].value);
-    noSave = Number(values[2].value)!=1;*/
     id = '';
+    mode = 0;
     exDay = 0;
+    currentTrainBlock = 0;
+    const schedules = [[[6,4,2,7,5,3],[6],[4],[2]],[[7,5,3],[7],[5],[3]]];
     let nor = Number(values[0].value);
-    if(nor == 0)
-        trainBlocks = [4]; // 4
-    else
-        trainBlocks = [5];
-    //trainBlocks = [1];
-    let trajChoice = Number(values[1].value);
-    //amplitudes = amplitudes_select[trajChoice];
-    //frequency = frequency_select[trajChoice];
+    let trialChoice = Number(values[1].value);
+    trainBlocks = schedules[nor][trialChoice];
     
     
     cnv = createCanvas(window.innerWidth, window.innerHeight);
@@ -1028,7 +966,8 @@ function startGame() {
 function endGame() {
     select('#container-exp').hide();
     pauseDraw();
-    remove();
+    select('#instrDiv').show();
+    cnv.remove();
 }
 function windowResized() {
     resizeCanvas(window.innerWidth, window.innerHeight, true);
